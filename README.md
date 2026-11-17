@@ -90,7 +90,10 @@ hundred numbers, and everything is generated from them at start-up.
   (time of day), `SCRIPT_cloud_sea.gd` (the cloud deck the island floats
   over), `SCRIPT_horizon_clouds.gd`, `SCRIPT_forest_fog.gd`.
 - The look: `shaders/SHADER_post_dither.gdshader`, an ordered dither onto a
-  fixed palette (`data/palettes/LUT_forest-003.png`).
+  fixed palette (`data/palettes/LUT_forest-003.png`), and over it a CRT:
+  slight curvature, scanlines, chroma bleed, dot crawl, ghosting, noise and
+  chromatic aberration. `crt_amount` in `project.godot` turns it off (0.0)
+  and the `crt_tune_*` vectors beside it are its strengths.
 
 **What was written for this project**
 

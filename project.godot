@@ -12,7 +12,7 @@ config_version=5
 
 config/name="West Virginia"
 config/description="A procedural floating island with rivers and a dark mere: a standalone example of the terrain and water engines."
-config/version="1"
+config/version="2"
 run/main_scene="res://scenes/SCENE_west_virginia.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 boot_splash/bg_color=Color(0, 0, 0, 1)
@@ -66,9 +66,12 @@ display_frame={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+; THE CRT IS ON: the post pass (shaders/SHADER_post_dither.gdshader) draws the
+; picture as a tube would, tuned by the six crt_tune_* vectors below. 0.0 here
+; turns it off.
 crt_amount={
 "type": "float",
-"value": 0.0
+"value": 1.0
 }
 crt_tune_a={
 "type": "vec4",
