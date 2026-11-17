@@ -1,0 +1,166 @@
+[
+ {
+  "name": "fern_small_a",
+  "lods": [
+   {
+    "file": "fern_small_a/fern_small_a_lod0.gltf",
+    "triangles": 432,
+    "vertices": 189
+   },
+   {
+    "file": "fern_small_a/fern_small_a_lod1.gltf",
+    "triangles": 108,
+    "vertices": 72
+   },
+   {
+    "file": "fern_small_a/fern_small_a_lod2.gltf",
+    "triangles": 48,
+    "vertices": 36
+   },
+   {
+    "file": "fern_small_a/fern_small_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fern_small_a/fern_small_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "impostor_view": [
+   256,
+   128
+  ],
+  "radius": 0.4093505478620086,
+  "top": 0.2917261920757551,
+  "height": 0.29,
+  "impostor_size_m": [
+   0.851,
+   0.303
+  ]
+ },
+ {
+  "name": "fern_medium_a",
+  "lods": [
+   {
+    "file": "fern_medium_a/fern_medium_a_lod0.gltf",
+    "triangles": 624,
+    "vertices": 273
+   },
+   {
+    "file": "fern_medium_a/fern_medium_a_lod1.gltf",
+    "triangles": 156,
+    "vertices": 104
+   },
+   {
+    "file": "fern_medium_a/fern_medium_a_lod2.gltf",
+    "triangles": 72,
+    "vertices": 54
+   },
+   {
+    "file": "fern_medium_a/fern_medium_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fern_medium_a/fern_medium_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "impostor_view": [
+   256,
+   128
+  ],
+  "radius": 0.7104983722276015,
+  "top": 0.502649557952933,
+  "height": 0.5,
+  "impostor_size_m": [
+   1.478,
+   0.523
+  ]
+ },
+ {
+  "name": "fern_medium_b",
+  "lods": [
+   {
+    "file": "fern_medium_b/fern_medium_b_lod0.gltf",
+    "triangles": 528,
+    "vertices": 231
+   },
+   {
+    "file": "fern_medium_b/fern_medium_b_lod1.gltf",
+    "triangles": 132,
+    "vertices": 88
+   },
+   {
+    "file": "fern_medium_b/fern_medium_b_lod2.gltf",
+    "triangles": 64,
+    "vertices": 48
+   },
+   {
+    "file": "fern_medium_b/fern_medium_b_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fern_medium_b/fern_medium_b_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "impostor_view": [
+   256,
+   128
+  ],
+  "radius": 1.0104356497109253,
+  "top": 0.5873140868128692,
+  "height": 0.59,
+  "impostor_size_m": [
+   2.102,
+   0.611
+  ]
+ },
+ {
+  "name": "fern_large_a",
+  "lods": [
+   {
+    "file": "fern_large_a/fern_large_a_lod0.gltf",
+    "triangles": 816,
+    "vertices": 357
+   },
+   {
+    "file": "fern_large_a/fern_large_a_lod1.gltf",
+    "triangles": 204,
+    "vertices": 136
+   },
+   {
+    "file": "fern_large_a/fern_large_a_lod2.gltf",
+    "triangles": 96,
+    "vertices": 72
+   },
+   {
+    "file": "fern_large_a/fern_large_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fern_large_a/fern_large_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "impostor_view": [
+   256,
+   128
+  ],
+  "radius": 1.2072602375261456,
+  "top": 0.7752962844924645,
+  "height": 0.78,
+  "impostor_size_m": [
+   2.511,
+   0.806
+  ]
+ }
+]

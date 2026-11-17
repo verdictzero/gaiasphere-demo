@@ -6,7 +6,7 @@
     python3 tools/build_impostors.py assets/fir
 
 Per tree:
-  textures/impostors/<tree>_impostor_basecolor.png   512x1024 RGBA, left half = view
+  textures/impostors/<tree>_impostor_basecolor.png   RGBA atlas, left half = view
   textures/impostors/<tree>_impostor_normal.png      from +Z, right half = view from +X
   <tree>/<tree>_lod3_cross.gltf      two crossed planes, each as a front and a back quad
                                      (8 triangles, single-sided)
@@ -24,10 +24,10 @@ from scipy import ndimage as ndi
 sys.path.insert(0, str(Path(__file__).parent))
 import build_fir as bf  # noqa: E402
 
-VIEW_W, VIEW_H = 256, 1024
+DEFAULT_VIEW = (256, 1024)        # texels per view; a manifest entry may set impostor_view
 
 
-def load_view(color_path, normal_path):
+def load_view(color_path, normal_path, VIEW_W, VIEW_H):
     """2x supersampled hard-alpha renders -> alpha-weighted downsample + edge bleed."""
     c = np.asarray(Image.open(color_path).convert("RGBA")).astype(np.float32) / 255
     n = np.asarray(Image.open(normal_path).convert("RGBA")).astype(np.float32) / 255
@@ -86,8 +86,9 @@ def main():
     tex_dir.mkdir(parents=True, exist_ok=True)
     for entry in manifest:
         name, f = entry["name"], frames[entry["name"]]
-        cz, nz = load_view(bake / f"{name}_color_z.png", bake / f"{name}_normal_z.png")
-        cx, nx = load_view(bake / f"{name}_color_x.png", bake / f"{name}_normal_x.png")
+        view = entry.get("impostor_view", DEFAULT_VIEW)
+        cz, nz = load_view(bake / f"{name}_color_z.png", bake / f"{name}_normal_z.png", *view)
+        cx, nx = load_view(bake / f"{name}_color_x.png", bake / f"{name}_normal_x.png", *view)
         to_img(np.hstack([cz, cx]), "RGBA").save(tex_dir / f"{name}_impostor_basecolor.png", optimize=True)
         to_img(np.hstack([nz, nx]), "RGB").save(tex_dir / f"{name}_impostor_normal.png", optimize=True)
 

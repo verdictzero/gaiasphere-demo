@@ -1,0 +1,53 @@
+[
+ {
+  "file": "textures/grass_clump_a_basecolor.png",
+  "size": [
+   1024,
+   1024
+  ],
+  "content_px": [
+   1015,
+   1020
+  ],
+  "coverage": 0.256,
+  "pivot_uv": [
+   0.5,
+   1.0
+  ],
+  "aspect_content": 0.995
+ },
+ {
+  "file": "textures/grass_clump_b_basecolor.png",
+  "size": [
+   1024,
+   1024
+  ],
+  "content_px": [
+   1016,
+   870
+  ],
+  "coverage": 0.208,
+  "pivot_uv": [
+   0.5,
+   1.0
+  ],
+  "aspect_content": 1.168
+ },
+ {
+  "file": "textures/grass_clump_c_basecolor.png",
+  "size": [
+   1024,
+   1024
+  ],
+  "content_px": [
+   1015,
+   719
+  ],
+  "coverage": 0.145,
+  "pivot_uv": [
+   0.5,
+   1.0
+  ],
+  "aspect_content": 1.412
+ }
+]

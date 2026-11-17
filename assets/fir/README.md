@@ -51,7 +51,7 @@ Tangents are not stored; let the importer generate MikkTSpace.
 ## Rebuild
 
     pip install numpy pillow scipy
-    python3 tools/key_branch.py assets/fir/source/fir_branch_magenta.jpg assets/fir/textures/fir_branch_basecolor.png
+    python3 tools/key_magenta.py card assets/fir/source/fir_branch_magenta.jpg assets/fir/textures/fir_branch_basecolor.png --base 150,862 --tip 1870,240 --edge 0
     python3 tools/build_fir.py assets/fir
     (cd tools/impostor && npm install && node bake.js ../../assets/fir)   # needs Playwright + Chromium
     python3 tools/build_impostors.py assets/fir

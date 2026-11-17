@@ -1,0 +1,166 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "tools/build_fir.py"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "fern_medium_b_LOD1",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "fern_medium_b_LOD1",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "TEXCOORD_1": 3,
+      "COLOR_0": 4
+     },
+     "indices": 5,
+     "material": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "fern_frond",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 0.7
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.4,
+   "doubleSided": false
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 33071,
+   "wrapT": 33071
+  }
+ ],
+ "images": [
+  {
+   "uri": "../textures/fern_frond_basecolor.png"
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "fern_medium_b_lod1.bin",
+   "byteLength": 4664
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 1056,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 1056,
+   "byteLength": 1056,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 2112,
+   "byteLength": 704,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 2816,
+   "byteLength": 704,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 3520,
+   "byteLength": 352,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 3872,
+   "byteLength": 792,
+   "target": 34963
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 88,
+   "type": "VEC3",
+   "min": [
+    -1.0079392194747925,
+    0.0,
+    -0.7811444997787476
+   ],
+   "max": [
+    0.7224788665771484,
+    0.5945941805839539,
+    0.8912749886512756
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 88,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 88,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5126,
+   "count": 88,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5121,
+   "count": 88,
+   "type": "VEC4",
+   "normalized": true
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5123,
+   "count": 396,
+   "type": "SCALAR"
+  }
+ ]
+}

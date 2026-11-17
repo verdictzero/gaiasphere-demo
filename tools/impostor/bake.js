@@ -6,7 +6,7 @@ const {chromium} = require('playwright');
 
 const repo = path.resolve(__dirname, '../..');
 const assets = path.resolve(process.argv[2]);
-const W = 512, H = 2048;            // per view, 2x supersampled; packed down by build_impostors.py
+const SS = 2;                       // supersampling; packed down by build_impostors.py
 const MARGIN = 1.04;
 const types = {'.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
   '.gltf': 'model/gltf+json', '.bin': 'application/octet-stream', '.png': 'image/png', '.jpg': 'image/jpeg'};
@@ -32,6 +32,8 @@ const server = http.createServer((req, res) => {
   const frames = {};
   for (const t of manifest) {
     const radius = t.radius * MARGIN, y0 = -0.02 * t.top, y1 = t.top * 1.02;
+    const [vw, vh] = t.impostor_view || [256, 1024];   // texels per view in the atlas
+    const W = vw * SS, H = vh * SS;
     const url = `${base}/${path.relative(repo, assets)}/${t.lods[0].file}`;
     const imgs = await page.evaluate(a => window.bake(...a), [url, radius, y0, y1, W, H]);
     ['color_z', 'normal_z', 'color_x', 'normal_x'].forEach((n, i) =>
