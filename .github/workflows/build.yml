@@ -1,11 +1,14 @@
 # Builds the Windows and Linux executables and attaches them to a release.
 #
-#   push a tag v<something>   -> a release of that name with both zips
-#   run it by hand (Actions)  -> the zips as a workflow artifact, no release
+#   push to the release branch -> a release v<config/version> (project.godot's)
+#                                 with both zips; bump the version to make another
+#   push a tag v<something>    -> a release of that name
+#   run it by hand (Actions)   -> the zips as a workflow artifact, no release
 name: Build
 
 on:
   push:
+    branches: [release]
     tags: ["v*"]
   workflow_dispatch:
 
@@ -57,10 +60,21 @@ jobs:
           path: build/WestVirginia_*.zip
 
       - name: Release
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" build/WestVirginia_windows.zip build/WestVirginia_linux.zip \
-            --title "West Virginia $GITHUB_REF_NAME" \
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            name="$GITHUB_REF_NAME"
+          else
+            name="v$(sed -n 's/^config\/version="\(.*\)"$/\1/p' project.godot | head -1)"
+          fi
+          if gh release view "$name" >/dev/null 2>&1; then
+            echo "::error::$name is already released. Bump config/version in project.godot and push again."
+            exit 1
+          fi
+          gh release create "$name" build/WestVirginia_windows.zip build/WestVirginia_linux.zip \
+            --target "$GITHUB_SHA" \
+            --title "West Virginia $name" \
             --notes "Unzip and run. The first launch builds the island and takes a while; later ones are quick. Controls are in the README."

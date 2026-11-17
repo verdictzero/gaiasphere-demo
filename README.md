@@ -110,9 +110,10 @@ vehicle's wake, burning vegetation). Nothing in this project switches them on.
     tools/build.sh linux
 
 It needs the Godot 4.7-dev5 editor on the path (or `GODOT=/path/to/it`) and
-fetches the two export templates it wants if they are missing. Pushing a tag
-that starts with `v` builds both on GitHub and attaches them to a release
-(`.github/workflows/build.yml`).
+fetches the two export templates it wants if they are missing. Pushing to the
+`release` branch builds both on GitHub and attaches them to a release named
+after `config/version` in `project.godot` (`.github/workflows/build.yml`), so
+a new release is: bump that number, push `main`, push `main:release`.
 
 ## Changing the island
 
