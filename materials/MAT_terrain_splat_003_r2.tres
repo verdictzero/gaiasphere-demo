@@ -1,0 +1,132 @@
+[gd_resource type="ShaderMaterial" load_steps=17 format=3]
+;
+; ISLAND 003's GROUND (the giant foggy forest): MAT_terrain_splat_w2.tres (island
+; island 001's) with the forest floor pure and the trails in dirt. Same shader, same
+; lighting, same fog; the fog that matters here is ForestFog's, laid over it.
+;
+;   forest (the whole island) -> island 001's needle litter, with none of the grass
+;                                blended in (`forest_grass_mix` 0) and a shade
+;                                darker, under a canopy that lets little through
+;   path   (the trails)       -> TEX_dirt_01: bare brown earth, the only ground
+;                                the plants leave
+;   everything else           -> island 001's
+
+[ext_resource type="Shader" path="res://shaders/SHADER_terrain_splat_w2.gdshader" id="1_w2"]
+[ext_resource type="Texture2D" path="res://textures/TEX_idealized_grass_64px.png" id="2_grass_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_forest_ground_01_normal_64.png" id="3_grass_n"]
+[ext_resource type="Texture2D" path="res://textures/TEX_lawn_striped_albedo_64.png" id="4_golf_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_dirt_01_albedo_64.png" id="5_soil_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_dirt_01_normal_64.png" id="6_soil_n"]
+[ext_resource type="Texture2D" path="res://textures/TEX_forest_ground_06_albedo_64.png" id="7_forest_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_dirt_01_albedo_64.png" id="8_path_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_dark_rock_02_albedo_256.png" id="9_rock_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_dark_rock_02_normal_256.png" id="10_rock_n"]
+[ext_resource type="Texture2D" path="res://textures/TEX_coast_sand_02_albedo_64.png" id="11_sand_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_coast_sand_02_normal_64.png" id="12_sand_n"]
+[ext_resource type="Texture2D" path="res://textures/TEX_crater_char_albedo_64.png" id="13_char_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_crater_slag_256.png" id="14_slag_a"]
+[ext_resource type="Texture2D" path="res://textures/TEX_env_ball_w2.png" id="99_envball"]
+[ext_resource type="Texture2D" path="res://textures/TEX_env_ball_w2_night.png" id="99_envballn"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_w2")
+shader_parameter/grass_albedo = ExtResource("2_grass_a")
+shader_parameter/grass_normal = ExtResource("3_grass_n")
+shader_parameter/grass_scale = 3.0
+shader_parameter/grass_tint = Color(1.886, 1.48, 0.889, 1)
+shader_parameter/golf_albedo = ExtResource("4_golf_a")
+shader_parameter/golf_scale = 3.0
+shader_parameter/golf_tint = Color(0.6, 1.7, 0.88, 1)
+shader_parameter/soil_albedo = ExtResource("5_soil_a")
+shader_parameter/soil_normal = ExtResource("6_soil_n")
+shader_parameter/soil_scale = 3.0
+shader_parameter/soil_tint = Color(1.15, 0.95, 0.72, 1)
+shader_parameter/forest_albedo = ExtResource("7_forest_a")
+shader_parameter/forest_scale = 3.0
+shader_parameter/forest_tint = Color(0.72, 0.8, 0.78, 1)
+shader_parameter/forest_grass_mix = 0.0
+shader_parameter/path_albedo = ExtResource("8_path_a")
+shader_parameter/path_scale = 3.0
+shader_parameter/path_tint = Color(0.95, 0.86, 0.74, 1)
+shader_parameter/rock_albedo = ExtResource("9_rock_a")
+shader_parameter/rock_normal = ExtResource("10_rock_n")
+shader_parameter/rock_scale = 12.0
+shader_parameter/rock_tint = Color(2.8, 2.8, 2.8, 1)
+shader_parameter/triplanar_sharpness = 4.0
+shader_parameter/sand_albedo = ExtResource("11_sand_a")
+shader_parameter/sand_normal = ExtResource("12_sand_n")
+shader_parameter/sand_scale = 3.0
+
+shader_parameter/char_albedo = ExtResource("13_char_a")
+shader_parameter/char_scale = 3.0
+shader_parameter/char_tint = Color(1.75, 1.75, 1.75, 1)
+shader_parameter/slag_albedo = ExtResource("14_slag_a")
+shader_parameter/slag_scale = 12.0
+shader_parameter/slag_tint = Color(1.80, 1.80, 1.80, 1)
+shader_parameter/crack_glow = 2.6
+shader_parameter/crack_cycle_speed = 1.1
+shader_parameter/crack_cycle_depth = 0.42
+shader_parameter/crack_cycle_scatter = 3.5
+shader_parameter/melt_gamma = 0.55
+shader_parameter/melt_glow = 0.9
+shader_parameter/melt_shade = 0.35
+shader_parameter/divot_scale = 1.7
+shader_parameter/divot_tint = Color(0.82, 0.74, 0.66, 1)
+shader_parameter/divot_break = 0.45
+shader_parameter/divot_grit = 0.3
+shader_parameter/divot_scarp_tint = Color(1.08, 1.05, 1, 1)
+shader_parameter/normal_strength = 0.6
+shader_parameter/slope_shade = 0.0
+
+shader_parameter/sun_bands = 4.0
+shader_parameter/sun_wrap = 0.45
+shader_parameter/rim_power = 3.0
+shader_parameter/rim_strength = 0.25
+
+shader_parameter/env_ball_enabled = true
+shader_parameter/env_ball = ExtResource("99_envball")
+shader_parameter/env_ball_night = ExtResource("99_envballn")
+shader_parameter/flat_shading = false
+shader_parameter/fog_enabled = true
+shader_parameter/fog_color = Color(0.3, 0.3, 0.3, 1)
+shader_parameter/fog_top = -170.0
+shader_parameter/fog_bottom = -320.0
+shader_parameter/fog_curve = 2.2
+shader_parameter/fog_opacity_gain = 1.6
+shader_parameter/fog_distance_start = 850.0
+shader_parameter/fog_distance_density = 0.0012
+shader_parameter/fog_distance_power = 2.0
+; ISLAND 003 R2 (docs/DOC_island_003_r2.md): island 003's ground, and the beds of
+; its DARK WATER. The rivers, creeks and the mere are carved under a water mesh
+; (`river_water_mesh`); what lies under it is the sand plate stained to black
+; peat mud (`river_bed_tint`), with no caustics: no light gets down through this
+; water. The scour either side is the crater's char and the banks its slag, which
+; island 003 already carries: dark, wet stone and leaf mould.
+shader_parameter/flow_rivers = true
+shader_parameter/river_across_offset = 100.0
+shader_parameter/river_scale = 12.0
+shader_parameter/river_speed = 0.5
+shader_parameter/river_edge_speed = 0.3
+shader_parameter/river_period = 8.0
+shader_parameter/river_melt = 1.0
+shader_parameter/river_glow = 0.0
+shader_parameter/river_heat = Vector2(0, 0)
+shader_parameter/river_stretch = 1.8
+shader_parameter/river_crust_tint = Color(0.5, 0.52, 0.44, 1)
+shader_parameter/river_still_scale = 12.0
+shader_parameter/river_still_tint = Color(0.3, 0.36, 0.28, 1)
+shader_parameter/river_still_cell = -1
+shader_parameter/river_levee_cell = 0
+shader_parameter/river_levee_tint = Color(0.55, 0.56, 0.48, 1)
+shader_parameter/river_scour_tint = Color(0.6, 0.62, 0.52, 1)
+shader_parameter/river_water_mesh = true
+shader_parameter/river_bed_tint = Color(0.16, 0.17, 0.12, 1)
+shader_parameter/river_caustics = 0.0
+; The falls off the island's edge: dull pewter at the lip, falling to black-green.
+shader_parameter/edge_fall_reach = 320.0
+shader_parameter/edge_fall_speed = 7.0
+shader_parameter/edge_fall_glow = 0.2
+shader_parameter/edge_fall_spread = 1.4
+shader_parameter/edge_fall_hot = Color(0.42, 0.5, 0.44, 1)
+shader_parameter/edge_fall_cool = Color(0.03, 0.08, 0.05, 1)

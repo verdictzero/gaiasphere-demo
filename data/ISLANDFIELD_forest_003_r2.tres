@@ -1,0 +1,227 @@
+[gd_resource type="Resource" script_class="IslandField" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_island_field.gd" id="1_field"]
+
+; ISLAND 003 R2'S FIELD: THE FOGGY FOREST WITH DARK WATER (SCENE_island_003_r2.tscn,
+; docs/DOC_island_003_r2.md). The user: "can you make an Island 003 R2, with
+; water features? make the water dark, forboding, maybe dark green tinted,
+; different from the tropical water", then "no golf, no ruins, no obelisk --- make
+; me an island 003 R2 without any of that". Island 003's field
+; (ISLANDFIELD_forest_003.tres), the same seed, coast, hills, forest and trails,
+; changed only here:
+;   * NO GOLF: `golf_min_radius` past any island's size, so the one-hole course is
+;     never laid. The safe zone at the middle still is: it is the islet the mere
+;     lies round.
+;   * NO RUINS: `ruin_enabled` off, so no ring of entrances and nothing under it.
+;   * NO OBELISK: `safe_pad_radius` 0, so no pad is levelled for one (and the scene
+;     has no Obelisk node).
+;   * WATER, by island 006's construction (`FlowTerrain`, docs/DOC_island_006_
+;     tropical.md): two low wooded hills and eight springs sending out rivers and
+;     creeks on splines, carved to beds under a water surface (`flow_river_spline`,
+;     `flow_water_mesh`), running to the coast and over it as falls, or ending in
+;     pools; and THE MERE, a ring of still water round the middle's islet
+;     (`flow_lagoon_*`), wider and deeper than the tropics' lagoon, its beaches
+;     narrow. The hills are lower and fewer than 006's, the springs more: this is
+;     a wet wood, not a volcanic island. What makes the water dark is the
+;     materials', not the field's (MAT_river_water_003_r2.tres).
+
+[resource]
+script = ExtResource("1_field")
+world_seed = 152
+hub_enabled = true
+hub_center = Vector2(0, 0)
+hub_lattice = 12
+hub_radius = 1250.0
+hub_base_y = 0.0
+hub_peak = 1.0
+hub_base_spread = 45.0
+hub_clearance = 240.0
+island_spacing = 900.0
+satellite_radius_near = 250.0
+satellite_radius_far = 85.0
+satellite_density_near = 0.0
+satellite_density_far = 0.0
+satellite_reach = 4500.0
+coast_irregularity = 0.14
+coast_noise_scale = 130.0
+coast_jagged = true
+coast_jag_scale = 120.0
+coast_octaves = 1
+vertical_spread = 90.0
+shore_width = 0.22
+hill_height = 24.0
+hill_scale = 640.0
+hill_octaves = 2
+hill_sparsity = 0.32
+hill_ramp = 0.62
+ridge_height = 5.0
+ridge_scale = 700.0
+ridge_octaves = 2
+ridge_on_hills = 0.85
+micro_height = 0.6
+micro_scale = 34.0
+zone_enabled = true
+golf_hub_only = true
+golf_min_radius = 100000.0
+holes_max = 9
+hole_length_min = 180.0
+hole_length_max = 450.0
+hole_length_floor = 70.0
+hole_width_ratio = 0.11
+hole_width_min = 14.0
+hole_width_max = 40.0
+dogleg_angle_min = 45.0
+dogleg_angle_max = 75.0
+dogleg_split_min = 0.35
+dogleg_split_max = 0.6
+dogleg_leg_min = 20.0
+golf_area_fraction = 0.3
+par3_max = 230.0
+par4_max = 400.0
+build_pads_max = 6
+build_pad_radius_min = 30.0
+build_pad_radius_max = 140.0
+build_pad_radius_ratio = 0.45
+build_area_fraction = 0.12
+zone_irregularity = 0.25
+zone_noise_scale = 70.0
+zone_apron = 55.0
+zone_apron_ratio = 2.0
+zone_apron_min = 34.0
+zone_skirt = 40.0
+zone_separation = 165.0
+zone_separation_ratio = 0.4
+zone_coast_margin = 0.25
+zone_lift_spread = 9.0
+golf_inset = 7.0
+golf_groom_lo = 0.72
+golf_groom_hi = 0.94
+green_undulation = 0.55
+green_scale = 42.0
+green_micro = 0.5
+fairway_grooming = 0.85
+pad_grooming = 0.9
+zone_label_min = 0.88
+buildable_flatten = 0.96
+zone_place_attempts = 40
+path_enabled = false
+path_width = 3.5
+path_apron = 9.0
+path_waypoint_tries = 4
+path_waypoint_spread = 0.32
+path_grade_samples = 5
+path_grooming = 0.85
+forest_enabled = true
+forest_scale = 520.0
+forest_coverage = 1.0
+forest_edge = 0.06
+forest_max_slope = 0.6
+forest_coast_margin = 0.02
+forest_litter = 0.6
+sand_enabled = true
+sand_spacing = 108.0
+sand_radius = 13.0
+sand_jitter = 0.7
+sand_wobble = 3.5
+sand_wobble_scale = 26.0
+sand_edge_m = 5.0
+sand_depth = 1.4
+sand_rim = 0.7
+sand_max_slope = 0.28
+sand_coast_margin = 0.18
+sand_end_clear = 20.0
+sand_rough_gain = 0.0
+rock_follows_veg = true
+rock_slope_lo = 0.42
+rock_slope_hi = 0.68
+curvature_radius = 4.0
+soil_concavity = 0.9
+rock_convexity = 1.2
+rock_convex_gain = 0.5
+coast_rock_width = 0.1
+chunk_skirt_depth = 3.0
+cliff_depth_ratio = 4.0
+cliff_depth_min = 600.0
+cliff_cutoff_y = -600.0
+cliff_terraces = 5
+cliff_rings_per_terrace = 4
+cliff_taper = 3.4
+cliff_ring_bias = 2.4
+cliff_depth_variance = 0.1
+cliff_noise_scale = 90.0
+ruin_enabled = false
+ruin_ring_count = 7
+ruin_ring_radius = 0.624
+ruin_ring_spin = 44.0
+ruin_ring_slide = 80.0
+ruin_ring_earthwork_max = 7.0
+crater_enabled = false
+divot_enabled = false
+trail_enabled = true
+trail_knots = 70
+trail_spacing = 110.0
+trail_width = 1.6
+trail_apron = 3.5
+trail_segment = 16.0
+trail_wander = 26.0
+trail_loops = 0.5
+trail_ruin_gap = 14.0
+trail_zone_gap = 6.0
+trail_coast_margin = 0.06
+one_hole = true
+course_hole = 3
+par_extra_step = 300.0
+safe_pad_radius = 0.0
+flow_enabled = true
+flow_cones = 2
+flow_cone_radius = Vector2(190, 250)
+flow_cone_height = Vector2(0.1, 0.15)
+flow_cone_crater = Vector2(0.1, 0.14)
+flow_cone_depth = Vector2(0.03, 0.06)
+flow_gully_density = 0.06
+flow_gully_ease = 1.5
+flow_cone_ground = 0
+flow_lakes = 0
+flow_lake_fill = 0.55
+flow_flank_flows = Vector2i(1, 2)
+flow_flank_moving = 1.0
+flow_breach_moving = 1.0
+flow_vents = 8
+flow_vent_moving = 0.35
+flow_vent_radius = Vector2(20, 34)
+flow_vent_height = Vector2(0.12, 0.2)
+flow_vent_moving_width = Vector2(5, 7)
+flow_vent_still_width = Vector2(3.5, 5.5)
+flow_moving_width = Vector2(6, 10)
+flow_still_width = Vector2(3.5, 6)
+flow_moving_depth = 1.6
+flow_still_depth = 1.0
+flow_moving_levee = 0.4
+flow_still_levee = 0.3
+flow_wall_soften = 2.0
+flow_toe_height = 0.0
+flow_toe_length = 40.0
+flow_river_step = 10.0
+flow_river_max = 1500.0
+flow_river_min = 90.0
+flow_river_seaward = 0.45
+flow_terrace_height = 0.0
+flow_terrace_steps = 0
+flow_terrace_scale = 200.0
+flow_terrace_front = 0.7
+flow_terrace_floor = 0.45
+flow_moving_blocks_trails = false
+flow_zone_gap = 30.0
+flow_ruin_gap = 30.0
+flow_cone_inland = 0.08
+flow_shore = 0.05
+flow_river_spline = true
+flow_spline_step = 4.0
+flow_water_mesh = true
+flow_water_depth = 1.8
+flow_lagoon_radius = 330.0
+flow_lagoon_islet = 150.0
+flow_lagoon_depth = 3.0
+flow_lagoon_shelf = 30.0
+flow_lagoon_beach = 8.0
+flow_lagoon_wobble = 0.11

@@ -1,0 +1,40 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/SHADER_veg_billboard.gdshader" id="1_veg"]
+
+; ISLAND 003's BUSHES: MAT_veg_understory_w3.tres (island 001's) with two changes.
+;
+; THE NEAR FADE CLEARS A BIG SPACE ROUND YOU: a bush is gone whole inside 10 m
+; and solid past 16 m (island 001's: 2 and 3.5), at the user's asking, on foot
+; ("make trees and other large veg disappear much much farther away from player",
+; "much bigger space"). The giant firs clear with them, whole too
+; (MAT_veg_giant_003_forest); the ferns, the floor, do not.
+;
+; AND THE FAR BAND is three times as far out (the user: "increase the distance at
+; which bushes and trees are culled by like 3x"), 990..1350 for its 330..450. `SCRIPT_veg_scatter.gd`
+; reads `far_end` off this material as the bushes' cull, and the scene's
+; `VegScatter.view_distance` (1400) lets it reach that far. Everything else is
+; island 001's; if you change one of those there, change it here.
+;
+; At the ground the forest's fog has everything long before this (ForestFog, about
+; 200 m to nothing); the reach is for the air, where the fog thins with height
+; and a wood that stopped 450 m out showed as a bald island below the VTOL.
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_veg")
+shader_parameter/alpha_scissor = 0.4
+shader_parameter/tint = Color(0.62, 0.62, 0.62, 1)
+shader_parameter/flip_variants = true
+shader_parameter/wind_strength = 0.06
+shader_parameter/wind_speed = 0.55
+shader_parameter/wind_scale = 17.0
+shader_parameter/near_gone = 10.0
+shader_parameter/near_solid = 16.0
+shader_parameter/far_start = 990.0
+shader_parameter/far_end = 1350.0
+shader_parameter/fog_enabled = true
+shader_parameter/fog_color = Color(0.3, 0.3, 0.3, 1)
+shader_parameter/fog_distance_start = 850.0
+shader_parameter/fog_distance_density = 0.0012
+shader_parameter/fog_distance_power = 2.0
