@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="SkyCyclePreset" load_steps=2 format=3]
+;
+; ISLAND 003's SKY (the giant foggy forest): SKYCYCLE_w2_blood_night.tres (island
+; island 001's), its day turned dark and neutral, as the user asked: "if sky becomes a
+; dark neutral color accompanying / complimenting the fog so the fog fades into
+; it ... think dark, foggy, ancient, huge forest". The nightmare night is island
+; island 001's, unchanged.
+;
+;   * THE HAZE is grey and dark (`day_haze_tint` 0.62): every fog here is the
+;     neutral 0.30 times it, ForestFog's among them, so the fog is a dark grey —
+;     and the sky's horizon, which is the haze, is the same grey, so they meet
+;     without a line.
+;   * THE DOME is darker still (`day_sky_top`), so the fog lightens upward into
+;     nothing where island 001's sky would brighten.
+;   * THE LIGHT is little and cold: a weak sun through the canopy and the fog, a
+;     grey ambient, the bounce off a dark floor.
+
+[ext_resource type="Script" path="res://scripts/SCRIPT_sky_cycle_preset.gd" id="1_preset"]
+
+[resource]
+script = ExtResource("1_preset")
+
+day_start = 0.10
+day_end = 0.60
+night_start = 0.72
+night_end = 0.98
+
+day_sun_color = Color(0.86, 0.9, 0.95, 1)
+day_sun_energy = 0.55
+day_ambient_color = Color(0.46, 0.48, 0.5, 1)
+day_bounce_color = Color(0.24, 0.24, 0.23, 1)
+day_ambient_energy = 0.55
+day_sky_contribution = 1.0
+day_sky_brightness = 1.0
+day_shadow_opacity = 1.0
+day_sun_rotation_degrees = Vector3(-60, -30, 0)
+
+trans_sun_color = Color(1, 0.44, 0.16, 1)
+trans_sun_energy = 0.55
+trans_ambient_color = Color(0.82, 0.36, 0.28, 1)
+trans_bounce_color = Color(0.6, 0.24, 0.16, 1)
+trans_ambient_energy = 0.28
+trans_sky_contribution = 0.6
+trans_sky_brightness = 1.0
+trans_shadow_opacity = 0.7
+trans_sun_rotation_degrees = Vector3(-5, 30, 0)
+
+night_sun_color = Color(1, 0.085, 0.055, 1)
+night_sun_energy = 0.21
+night_ambient_color = Color(1, 0.075, 0.055, 1)
+night_bounce_color = Color(0.92, 0.085, 0.065, 1)
+night_ambient_energy = 0.32
+night_sky_contribution = 0.2
+night_sky_brightness = 1.0
+night_shadow_opacity = 0.0
+night_sun_rotation_degrees = Vector3(60, 150, 0)
+
+day_haze_tint = Color(0.62, 0.63, 0.66, 1)
+trans_haze_tint = Color(0.88, 0.48, 0.38, 1)
+night_haze_tint = Color(0.82, 0.135, 0.1, 1)
+day_art_tint = Color(0.8, 0.84, 0.86, 1)
+trans_art_tint = Color(1.05, 0.6, 0.46, 1)
+night_art_tint = Color(1.4, 0.17, 0.13, 1)
+
+day_sky_top = Color(0.17, 0.175, 0.185, 1)
+trans_sky_top = Color(0.3, 0.15, 0.12, 1)
+night_sky_top = Color(0.01, 0.001, 0.001, 1)

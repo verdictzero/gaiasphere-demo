@@ -1,0 +1,66 @@
+# Builds the Windows and Linux executables and attaches them to a release.
+#
+#   push a tag v<something>   -> a release of that name with both zips
+#   run it by hand (Actions)  -> the zips as a workflow artifact, no release
+name: Build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # The engine the project is made with, as godotengine/godot-builds tags it.
+  GODOT_VERSION: "4.7-dev5"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot, cached
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot-bin
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-desktop-v1
+
+      - name: Godot
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/$GODOT_VERSION"
+          zip="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          if [ ! -x ~/godot-bin/godot ]; then
+            mkdir -p ~/godot-bin
+            curl -fsSL -o "$RUNNER_TEMP/$zip" "$base/$zip"
+            curl -fsSL -o "$RUNNER_TEMP/SHA512-SUMS.txt" "$base/SHA512-SUMS.txt"
+            ( cd "$RUNNER_TEMP" && grep " $zip\$" SHA512-SUMS.txt | sha512sum -c - )
+            unzip -q -o "$RUNNER_TEMP/$zip" -d "$RUNNER_TEMP/godot"
+            mv "$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}_linux.x86_64" ~/godot-bin/godot
+          fi
+          sudo ln -sf ~/godot-bin/godot /usr/local/bin/godot
+          godot --version
+
+      - name: Build
+        run: tools/build.sh both
+
+      - name: Keep the zips
+        uses: actions/upload-artifact@v4
+        with:
+          name: WestVirginia
+          path: build/WestVirginia_*.zip
+
+      - name: Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/WestVirginia_windows.zip build/WestVirginia_linux.zip \
+            --title "West Virginia $GITHUB_REF_NAME" \
+            --notes "Unzip and run. The first launch builds the island and takes a while; later ones are quick. Controls are in the README."

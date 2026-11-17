@@ -1,0 +1,43 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/SHADER_underwater.gdshader" id="1_uw"]
+
+; UNDER ISLAND 006's WATER (the user: "Add underwater shader with waterline half in
+; half out effect"): SHADER_underwater.gdshader on UnderwaterView's quad
+; (SCRIPT_underwater_view.gd), shown while the eye is in a river, a crater lake or
+; the lagoon and some of the picture is under. The water's colours are
+; MAT_river_water_006_tropical.tres's jade and turquoise, a shade darker as light
+; is under the surface; clear for about 9 m, taking the red first. Drawn after
+; everything in the world (`render_priority` 127), the water's surface included.
+
+; UNDER ISLAND 003 R2'S WATER (docs/DOC_island_003_r2.md): the tropics' view
+; (MAT_underwater_006_tropical.tres) gone murky. A couple of metres of sight
+; where the tropics have nine (`clarity`), green-black, dark almost at once
+; (`depth_dark`), no shafts of sun, and little of the sky through the surface.
+[resource]
+render_priority = 127
+shader = ExtResource("1_uw")
+shader_parameter/water_y = 0.0
+shader_parameter/lens = 0.45
+shader_parameter/step_rate = 12.0
+shader_parameter/shallow_color = Color(0.1, 0.22, 0.11, 1)
+shader_parameter/deep_color = Color(0.012, 0.05, 0.025, 1)
+shader_parameter/clarity = 4.0
+shader_parameter/absorb = Vector3(0.6, 0.22, 0.42)
+shader_parameter/depth_dark = 3.0
+shader_parameter/magnify = 1.2
+shader_parameter/wobble = 0.005
+shader_parameter/wobble_cells = 5.0
+shader_parameter/wobble_speed = 1.2
+shader_parameter/aberration = 0.006
+shader_parameter/snell_cos = 0.66
+shader_parameter/window_gain = 0.5
+shader_parameter/rim_gain = 0.25
+shader_parameter/line_px = 3.0
+shader_parameter/line_color = Color(0.3, 0.38, 0.3, 1)
+shader_parameter/line_split = 7.0
+shader_parameter/wave_height = 0.03
+shader_parameter/wave_cells = 2.0
+shader_parameter/wave_speed = 2.4
+shader_parameter/shafts = 0.1
+shader_parameter/shaft_bars = 16.0
