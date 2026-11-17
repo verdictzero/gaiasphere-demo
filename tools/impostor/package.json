@@ -1,0 +1,6 @@
+{
+  "name": "fir-impostor-bake",
+  "private": true,
+  "description": "Bakes impostor atlases for the fir trees (needs a Playwright Chromium on the machine).",
+  "dependencies": { "three": "0.170.0" }
+}

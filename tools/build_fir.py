@@ -1,30 +1,52 @@
 #!/usr/bin/env python3
-"""Procedural tall fir tree -> glTF 2.0 (three LODs sharing one texture set).
+"""Procedural fir trees -> glTF 2.0: several sizes / variants, three mesh LODs each.
 
-    python3 tools/build_fir.py assets/fir_tall
+    python3 tools/build_fir.py assets/fir
+
+Writes assets/fir/<tree>/<tree>_lod{0,1,2}.gltf (+ .bin) and assets/fir/manifest.json.
+Impostor LODs (cross planes, billboard) are added by tools/build_impostors.py.
 
 Y-up, metres, origin at the base of the trunk.
 Materials: `fir_bark` (opaque, tiling Poly Haven pine_bark) and
-`fir_foliage` (alpha-masked, double-sided cards cut from the branch photo).
+`fir_foliage` (alpha-masked cards cut from the branch photo).
 Vertex streams: POSITION, NORMAL, TEXCOORD_0, TEXCOORD_1 (wind: weight, phase)
 and COLOR_0 on foliage (baked crown-interior darkening).
 """
 import json
 import math
-import struct
 import sys
 from pathlib import Path
 
 import numpy as np
+
+# name, seed, height, trunk radius, crown start (fraction of height), longest limb,
+# trunk bend phase
+TREES = [
+    dict(name="fir_small_a",  seed=11, H=11.0, base_r=0.13, crown=0.10, l_max=2.3, bend=1.0),
+    dict(name="fir_small_b",  seed=23, H=14.0, base_r=0.17, crown=0.14, l_max=2.6, bend=2.3),
+    dict(name="fir_medium_a", seed=31, H=20.0, base_r=0.26, crown=0.18, l_max=3.5, bend=4.1),
+    dict(name="fir_medium_b", seed=47, H=23.0, base_r=0.30, crown=0.24, l_max=3.3, bend=5.2),
+    dict(name="fir_tall_a",   seed=7,  H=30.0, base_r=0.42, crown=0.27, l_max=4.6, bend=0.0),
+    dict(name="fir_tall_b",   seed=59, H=33.0, base_r=0.46, crown=0.34, l_max=4.3, bend=3.0),
+    dict(name="fir_giant_a",  seed=71, H=40.0, base_r=0.62, crown=0.36, l_max=5.4, bend=1.7),
+    dict(name="fir_giant_b",  seed=83, H=44.0, base_r=0.70, crown=0.44, l_max=5.0, bend=4.6),
+]
 
 SEED = 7
 H = 30.0                 # tree height
 BASE_R = 0.42            # trunk radius just above the root flare
 CROWN_START = 0.27       # fraction of H where branches begin
 L_MAX = 4.6              # longest limb
+BEND = 0.0
 STEM_V = 0.451           # v of the stem in the foliage card (from key_branch.py)
 BARK_TILE_M = 1.6        # metres of trunk covered by one bark tile (v)
 UP = np.array([0.0, 1.0, 0.0])
+
+
+def configure(tree):
+    global SEED, H, BASE_R, CROWN_START, L_MAX, BEND
+    SEED, H, BASE_R = tree["seed"], tree["H"], tree["base_r"]
+    CROWN_START, L_MAX, BEND = tree["crown"], tree["l_max"], tree["bend"]
 
 
 def norm(v):
@@ -34,14 +56,15 @@ def norm(v):
 # ----------------------------------------------------------------- trunk ---
 def trunk_radius(y):
     t = np.clip(y / H, 0, 1)
-    return BASE_R * (1 - t) ** 0.9 + 0.015 + 0.22 * math.exp(-y / 0.45)
+    return BASE_R * (1 - t) ** 0.9 + 0.015 + 0.52 * BASE_R * math.exp(-y / (0.2 + 0.6 * BASE_R))
 
 
 def trunk_center(y):
     t = y / H
-    return np.array([0.22 * math.sin(t * 2.6 + 0.4) * t,
+    k = H / 30.0
+    return np.array([0.22 * k * math.sin(t * 2.6 + 0.4 + BEND) * t,
                      y,
-                     0.16 * math.sin(t * 3.7 + 1.9) * t])
+                     0.16 * k * math.sin(t * 3.7 + 1.9 + 1.7 * BEND) * t])
 
 
 # ------------------------------------------------------- tree description ---
@@ -87,7 +110,7 @@ def describe_tree():
                                        len=min(1.9, 0.5 * L + 0.45), yaw=0.0, droop=0.0,
                                        roll=rng.uniform(-0.3, 0.3), flip=rng.random() < 0.5))
             limbs.append(limb)
-        y += (0.60 - 0.32 * t) * rng.uniform(0.85, 1.15)
+        y += (0.60 - 0.32 * t) * (H / 30.0) ** 0.5 * rng.uniform(0.85, 1.15)
     return limbs
 
 
@@ -187,13 +210,16 @@ def rotate(v, axis, ang):
 
 
 # ------------------------------------------------------------------- LODs ---
+# frond_keep = (n, d): keep n of every d side twigs, enlarged by frond_scale to hold the
+# silhouette.  All LODs are cut from the same tree description so they pop as little
+# as possible.
 LODS = [
     dict(name="lod0", trunk_sides=12, trunk_rings=18, limb_sides=3, limb_segs=3, card_segs=2,
-         frond_keep=1, limb_keep=1, frond_scale=1.0, drapes=True, limb_min=0.8),
+         frond_keep=(1, 1), frond_scale=1.0, tip_scale=1.0, drapes=3, limb_min=0.8),
     dict(name="lod1", trunk_sides=8, trunk_rings=10, limb_sides=3, limb_segs=2, card_segs=1,
-         frond_keep=2, limb_keep=1, frond_scale=1.5, drapes=False, limb_min=1.6),
-    dict(name="lod2", trunk_sides=5, trunk_rings=6, limb_sides=0, limb_segs=0, card_segs=1,
-         frond_keep=0, limb_keep=2, frond_scale=1.0, drapes=False, limb_min=99),
+         frond_keep=(1, 2), frond_scale=1.45, tip_scale=1.15, drapes=1, limb_min=2.2),
+    dict(name="lod2", trunk_sides=6, trunk_rings=7, limb_sides=0, limb_segs=0, card_segs=1,
+         frond_keep=(1, 4), frond_scale=2.1, tip_scale=1.5, drapes=0, limb_min=99),
 ]
 
 
@@ -209,8 +235,6 @@ def build(limbs, lod):
              [(0.25 * (y / H) ** 2, 0.0) for y in ys])
 
     for li, limb in enumerate(limbs):
-        if li % lod["limb_keep"]:
-            continue
         L, t = limb["L"], limb["t"]
         _phase[0] = limb["phase"]
         sway0 = 0.25 * (limb["y"] / H) ** 2
@@ -228,28 +252,15 @@ def build(limbs, lod):
                      [L * s / 0.5 for s in ss], 1.0,
                      [(sway0 + 0.5 * s * s, limb["phase"]) for s in ss])
 
-        if lod["frond_keep"] == 0:
-            # far LOD: one broad card per limb plus a drooping skirt card
-            T, S, N = limb_frame(limb, 0.5)
-            T = norm(limb_point(limb, 1.0) - limb_point(limb, 0.12))
-            S = norm(np.cross(T, UP)); N = np.cross(S, T)
-            o = limb_point(limb, 0.12)
-            ln = L * 1.25
-            add_card(leaf, o, T, S, N, ln, max(ln * 0.95, 1.3), 1, 0.05, li % 4 < 2,
-                     col(0.6), sway0, sway0 + 0.7, center)
-            if L > 1.0:
-                S2 = rotate(S, T, 1.35)
-                add_card(leaf, limb_point(limb, 0.2), T, S2, np.cross(S2, T), ln * 0.9,
-                         ln * 0.7, 1, 0.1, li % 4 >= 2, col(0.5), sway0, sway0 + 0.7, center)
-            continue
-
-        k = 0
+        k = nd = 0
         for fr in limb["fronds"]:
-            if fr["kind"] == "drape" and not lod["drapes"]:
-                continue
+            if fr["kind"] == "drape":
+                nd += 1
+                if nd > lod["drapes"]:
+                    continue
             if fr["kind"] == "side":
                 k += 1
-                if k % lod["frond_keep"]:
+                if (k + li) % lod["frond_keep"][1] >= lod["frond_keep"][0]:
                     continue
             s = fr["s"]
             T, S, N = limb_frame(limb, s)
@@ -265,28 +276,51 @@ def build(limbs, lod):
             cn = np.cross(cs, d)
             if cn[1] < 0 and fr["kind"] != "drape":
                 cn, cs = -cn, -cs
-            ln = fr["len"] * (lod["frond_scale"] if fr["kind"] == "side" else
-                              1.0 + 0.5 * (lod["frond_scale"] - 1))
+            ln = fr["len"] * (lod["frond_scale"] if fr["kind"] == "side" else lod["tip_scale"])
             add_card(leaf, limb_point(limb, s), d, cs, cn, ln, ln * 0.6,
                      lod["card_segs"] if fr["kind"] != "side" else 1,
                      0.10 + 0.5 * fr["droop"] * 0.3, fr["flip"], col(s),
                      sway0 + 0.5 * s * s, sway0 + 0.5 * s * s + 0.35, center)
 
     # leader: crossed upright cards so the top comes to a point
-    top = trunk_center(H - 1.5)
+    lead = 2.1 * min(1.0, (H / 30.0) ** 0.5)
+    top = trunk_center(H - 0.72 * lead)
     _phase[0] = 0.5
     for i in range(3 if lod["name"] != "lod2" else 2):
         a = math.pi * i / (3 if lod["name"] != "lod2" else 2)
         S = np.array([math.cos(a), 0, math.sin(a)])
-        add_card(leaf, top, UP, S, np.cross(S, UP), 2.1, 1.0, 1, 0.0, i % 2 == 0,
+        add_card(leaf, top, UP, S, np.cross(S, UP), lead, lead * 0.48, 1, 0.0, i % 2 == 0,
                  (0.95, 1.0, 0.92), 0.25, 0.4, top - UP)
     return bark, leaf
 
 
 # ------------------------------------------------------------ glTF writer ---
-def write_gltf(out_dir, name, bark, leaf):
+TEX = "../textures/"
+SAMPLER_REPEAT = dict(magFilter=9729, minFilter=9987, wrapS=10497, wrapT=10497)
+SAMPLER_CLAMP = dict(magFilter=9729, minFilter=9987, wrapS=33071, wrapT=33071)
+
+
+def material_bark():
+    return dict(name="fir_bark", sampler=SAMPLER_REPEAT,
+                base=TEX + "pine_bark_basecolor.jpg", normal=TEX + "pine_bark_normal.jpg",
+                orm=TEX + "pine_bark_orm.jpg", extra=dict(), pbr=dict(roughnessFactor=1.0))
+
+
+def material_foliage():
+    # single-sided on purpose, see Mesh.quad
+    return dict(name="fir_foliage", sampler=SAMPLER_CLAMP,
+                base=TEX + "fir_branch_basecolor.png", normal=None, orm=None,
+                extra=dict(alphaMode="MASK", alphaCutoff=0.38, doubleSided=False),
+                pbr=dict(roughnessFactor=0.62, baseColorFactor=[0.84, 0.96, 0.86, 1.0]))
+
+
+def write_gltf(path_stem, node_name, parts):
+    """parts: list of (Mesh, material description)."""
+    path_stem = Path(path_stem)
+    path_stem.parent.mkdir(parents=True, exist_ok=True)
     blob = bytearray()
     views, accessors = [], []
+    samplers, images, textures, materials, prims = [], [], [], [], []
 
     def push(arr, target, ctype, atype, minmax=False, normalized=False):
         while len(blob) % 4:
@@ -303,8 +337,23 @@ def write_gltf(out_dir, name, bark, leaf):
         accessors.append(acc)
         return len(accessors) - 1
 
-    prims = []
-    for mi, m in enumerate((bark, leaf)):
+    def tex(uri, sampler):
+        if sampler not in samplers:
+            samplers.append(sampler)
+        images.append(dict(uri=uri))
+        textures.append(dict(sampler=samplers.index(sampler), source=len(images) - 1))
+        return dict(index=len(textures) - 1)
+
+    for m, md in parts:
+        pbr = dict(baseColorTexture=tex(md["base"], md["sampler"]), metallicFactor=0.0, **md["pbr"])
+        mat = dict(name=md["name"], pbrMetallicRoughness=pbr, **md["extra"])
+        if md["normal"]:
+            mat["normalTexture"] = tex(md["normal"], md["sampler"])
+        if md["orm"]:
+            orm = tex(md["orm"], md["sampler"])
+            pbr["metallicRoughnessTexture"] = orm
+            mat["occlusionTexture"] = orm
+        materials.append(mat)
         attrs = dict(
             POSITION=push(np.asarray(m.p, np.float32), 34962, 5126, "VEC3", minmax=True),
             NORMAL=push(np.asarray(m.n, np.float32), 34962, 5126, "VEC3"),
@@ -316,54 +365,48 @@ def write_gltf(out_dir, name, bark, leaf):
             rgba = np.concatenate([c, np.ones((len(c), 1))], axis=1)
             attrs["COLOR_0"] = push((rgba * 255 + 0.5).astype(np.uint8), 34962, 5121, "VEC4",
                                     normalized=True)
-        assert len(m.p) < 65536
-        idx = push(np.asarray(m.idx, np.uint16), 34963, 5123, "SCALAR")
-        prims.append(dict(attributes=attrs, indices=idx, material=mi, mode=4))
+        big = len(m.p) >= 65536
+        idx = push(np.asarray(m.idx, np.uint32 if big else np.uint16), 34963,
+                   5125 if big else 5123, "SCALAR")
+        prims.append(dict(attributes=attrs, indices=idx, material=len(materials) - 1, mode=4))
 
     gltf = dict(
         asset=dict(version="2.0", generator="tools/build_fir.py"),
         scene=0,
         scenes=[dict(nodes=[0])],
-        nodes=[dict(name=f"fir_tall_{name.upper()}", mesh=0)],
-        meshes=[dict(name=f"fir_tall_{name}", primitives=prims)],
-        materials=[
-            dict(name="fir_bark",
-                 pbrMetallicRoughness=dict(baseColorTexture=dict(index=0),
-                                           metallicRoughnessTexture=dict(index=2),
-                                           metallicFactor=0.0, roughnessFactor=1.0),
-                 normalTexture=dict(index=1, scale=1.0),
-                 occlusionTexture=dict(index=2, strength=1.0)),
-            dict(name="fir_foliage",
-                 pbrMetallicRoughness=dict(baseColorTexture=dict(index=3),
-                                           baseColorFactor=[0.84, 0.96, 0.86, 1.0],
-                                           metallicFactor=0.0, roughnessFactor=0.62),
-                 alphaMode="MASK", alphaCutoff=0.38, doubleSided=False),
-        ],
-        textures=[dict(sampler=0, source=0), dict(sampler=0, source=1),
-                  dict(sampler=0, source=2), dict(sampler=1, source=3)],
-        samplers=[dict(magFilter=9729, minFilter=9987, wrapS=10497, wrapT=10497),
-                  dict(magFilter=9729, minFilter=9987, wrapS=33071, wrapT=33071)],
-        images=[dict(uri="textures/pine_bark_basecolor.jpg"),
-                dict(uri="textures/pine_bark_normal.jpg"),
-                dict(uri="textures/pine_bark_orm.jpg"),
-                dict(uri="textures/fir_branch_basecolor.png")],
-        buffers=[dict(uri=f"fir_tall_{name}.bin", byteLength=len(blob))],
+        nodes=[dict(name=node_name, mesh=0)],
+        meshes=[dict(name=node_name, primitives=prims)],
+        materials=materials, textures=textures, samplers=samplers, images=images,
+        buffers=[dict(uri=path_stem.name + ".bin", byteLength=len(blob))],
         bufferViews=views,
         accessors=accessors,
     )
-    (out_dir / f"fir_tall_{name}.bin").write_bytes(bytes(blob))
-    (out_dir / f"fir_tall_{name}.gltf").write_text(json.dumps(gltf, indent=1))
+    path_stem.with_suffix(".bin").write_bytes(bytes(blob))
+    path_stem.with_suffix(".gltf").write_text(json.dumps(gltf, indent=1))
 
 
 def main():
     out_dir = Path(sys.argv[1])
-    limbs = describe_tree()
-    for lod in LODS:
-        bark, leaf = build(limbs, lod)
-        write_gltf(out_dir, lod["name"], bark, leaf)
-        print(f'{lod["name"]}: {bark.tris + leaf.tris:6d} tris '
-              f'(bark {bark.tris}, foliage {leaf.tris}), '
-              f'{len(bark.p) + len(leaf.p)} verts, {len(limbs)} limbs')
+    manifest = []
+    for tree in TREES:
+        configure(tree)
+        limbs = describe_tree()
+        entry = dict(name=tree["name"], height=tree["H"], lods=[])
+        for lod in LODS:
+            bark, leaf = build(limbs, lod)
+            stem = f'{tree["name"]}_{lod["name"]}'
+            write_gltf(out_dir / tree["name"] / stem, stem.replace("_lod", "_LOD"),
+                       [(bark, material_bark()), (leaf, material_foliage())])
+            p = np.asarray(bark.p + leaf.p)
+            if lod["name"] == "lod0":
+                entry["radius"] = float(np.abs(p[:, [0, 2]]).max())
+                entry["top"] = float(p[:, 1].max())
+            entry["lods"].append(dict(file=f'{tree["name"]}/{stem}.gltf',
+                                      triangles=bark.tris + leaf.tris, vertices=len(p)))
+        print(f'{tree["name"]:14s} {tree["H"]:4.0f} m  {len(limbs):3d} limbs  tris ' +
+              " / ".join(str(l["triangles"]) for l in entry["lods"]))
+        manifest.append(entry)
+    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,62 @@
+<!doctype html><html><body style="margin:0;background:#000">
+<script type="importmap">{"imports":{"three":"/tools/impostor/node_modules/three/build/three.module.js","three/addons/":"/tools/impostor/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+// Orthographic capture of one tree from two directions (camera on +Z and on +X).
+// Two passes per direction: softly lit base colour, and view-space normals.
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+
+const r = new THREE.WebGLRenderer({antialias: false, alpha: true, premultipliedAlpha: false, preserveDrawingBuffer: true});
+r.toneMapping = THREE.NoToneMapping;
+r.setClearColor(0x000000, 0);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(r.domElement);
+
+const normalMat = (src) => new THREE.ShaderMaterial({
+  uniforms: {map: {value: src.alphaTest ? src.map : null}, cut: {value: src.alphaTest || 0}},
+  vertexShader: `varying vec3 vN; varying vec2 vUv;
+    void main(){ vN = normalize(normalMatrix * normal); vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `uniform sampler2D map; uniform float cut; varying vec3 vN; varying vec2 vUv;
+    void main(){ if (cut > 0.0 && texture2D(map, vUv).a < cut) discard;
+      vec3 n = normalize(vN); n.z = max(abs(n.z), 0.25); n = normalize(n);
+      gl_FragColor = vec4(n * 0.5 + 0.5, 1.0); }`,
+});
+
+window.bake = async (url, radius, y0, y1, w, h) => {
+  const gl = await new GLTFLoader().loadAsync(url);
+  const scene = new THREE.Scene();
+  // sky/ground gradient plus a shadow-casting light from straight overhead: bakes the
+  // layered self-shadowing of the boughs without committing to a sun azimuth
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x484848, Math.PI * 0.5));
+  const top = new THREE.DirectionalLight(0xffffff, Math.PI * 0.75);
+  top.position.set(2, y1 + 40, 1.5); top.castShadow = true;
+  top.shadow.mapSize.set(4096, 4096); top.shadow.bias = -0.002; top.shadow.normalBias = 0.08;
+  Object.assign(top.shadow.camera, {left: -radius, right: radius, top: radius, bottom: -radius, near: 1, far: y1 + 60});
+  scene.add(top);
+  scene.add(gl.scene);
+  const lit = [], nrm = [];
+  gl.scene.traverse(o => { if (o.isMesh) {
+    const m = new THREE.MeshLambertMaterial({map: o.material.map, color: o.material.color,
+      vertexColors: o.material.vertexColors, alphaTest: o.material.alphaTest});
+    o.castShadow = o.receiveShadow = true;
+    if (o.material.alphaTest) o.customDepthMaterial = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking, map: o.material.map, alphaTest: o.material.alphaTest, side: THREE.DoubleSide});
+    m.shadowSide = THREE.DoubleSide;
+    lit.push([o, m]); nrm.push([o, normalMat(o.material)]);
+  }});
+  r.setSize(w, h, false);
+  const cam = new THREE.OrthographicCamera(-radius, radius, y1, y0, 0.1, 400);
+  const out = [];
+  for (const dir of [[0, 0, 1], [1, 0, 0]]) {
+    cam.position.set(dir[0] * 200, 0, dir[2] * 200); cam.up.set(0, 1, 0);
+    cam.lookAt(0, 0, 0); cam.position.y = 0; cam.updateMatrixWorld();
+    for (const set of [lit, nrm]) {
+      set.forEach(([o, m]) => o.material = m);
+      r.render(scene, cam);
+      out.push(r.domElement.toDataURL('image/png'));
+    }
+  }
+  return out;   // [colour +Z, normal +Z, colour +X, normal +X]
+};
+document.title = 'ready';
+</script></body></html>

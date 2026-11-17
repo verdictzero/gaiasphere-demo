@@ -1,0 +1,299 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "tools/build_fir.py"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "fir_tall_a_LOD1",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "fir_tall_a_LOD1",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "TEXCOORD_1": 3
+     },
+     "indices": 4,
+     "material": 0,
+     "mode": 4
+    },
+    {
+     "attributes": {
+      "POSITION": 5,
+      "NORMAL": 6,
+      "TEXCOORD_0": 7,
+      "TEXCOORD_1": 8,
+      "COLOR_0": 9
+     },
+     "indices": 10,
+     "material": 1,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "fir_bark",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "metallicRoughnessTexture": {
+     "index": 2
+    }
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  },
+  {
+   "name": "fir_foliage",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 0.62,
+    "baseColorFactor": [
+     0.84,
+     0.96,
+     0.86,
+     1.0
+    ]
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.38,
+   "doubleSided": false
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 1,
+   "source": 3
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  },
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 33071,
+   "wrapT": 33071
+  }
+ ],
+ "images": [
+  {
+   "uri": "../textures/pine_bark_basecolor.jpg"
+  },
+  {
+   "uri": "../textures/pine_bark_normal.jpg"
+  },
+  {
+   "uri": "../textures/pine_bark_orm.jpg"
+  },
+  {
+   "uri": "../textures/fir_branch_basecolor.png"
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "fir_tall_a_lod1.bin",
+   "byteLength": 349712
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 26136,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 26136,
+   "byteLength": 26136,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 52272,
+   "byteLength": 17424,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 69696,
+   "byteLength": 17424,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 87120,
+   "byteLength": 13392,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 100512,
+   "byteLength": 59808,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 160320,
+   "byteLength": 59808,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 220128,
+   "byteLength": 39872,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 260000,
+   "byteLength": 39872,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 299872,
+   "byteLength": 19936,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 319808,
+   "byteLength": 29904,
+   "target": 34963
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 2178,
+   "type": "VEC3",
+   "min": [
+    -3.745067596435547,
+    -0.003786651184782386,
+    -3.7762794494628906
+   ],
+   "max": [
+    4.059918403625488,
+    30.00005531311035,
+    4.144793510437012
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 2178,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 2178,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5126,
+   "count": 2178,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5123,
+   "count": 6696,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 4984,
+   "type": "VEC3",
+   "min": [
+    -5.914651393890381,
+    5.5922136306762695,
+    -5.860645771026611
+   ],
+   "max": [
+    6.079376697540283,
+    30.58799934387207,
+    6.233526706695557
+   ]
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 4984,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5126,
+   "count": 4984,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 4984,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5121,
+   "count": 4984,
+   "type": "VEC4",
+   "normalized": true
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5123,
+   "count": 14952,
+   "type": "SCALAR"
+  }
+ ]
+}

@@ -1,0 +1,298 @@
+[
+ {
+  "name": "fir_small_a",
+  "height": 11.0,
+  "lods": [
+   {
+    "file": "fir_small_a/fir_small_a_lod0.gltf",
+    "triangles": 9092,
+    "vertices": 7832
+   },
+   {
+    "file": "fir_small_a/fir_small_a_lod1.gltf",
+    "triangles": 2996,
+    "vertices": 2942
+   },
+   {
+    "file": "fir_small_a/fir_small_a_lod2.gltf",
+    "triangles": 1580,
+    "vertices": 1557
+   },
+   {
+    "file": "fir_small_a/fir_small_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_small_a/fir_small_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 3.8840080022849905,
+  "top": 11.40512759989849,
+  "impostor_size_m": [
+   8.079,
+   11.861
+  ]
+ },
+ {
+  "name": "fir_small_b",
+  "height": 14.0,
+  "lods": [
+   {
+    "file": "fir_small_b/fir_small_b_lod0.gltf",
+    "triangles": 10876,
+    "vertices": 9386
+   },
+   {
+    "file": "fir_small_b/fir_small_b_lod1.gltf",
+    "triangles": 3776,
+    "vertices": 3722
+   },
+   {
+    "file": "fir_small_b/fir_small_b_lod2.gltf",
+    "triangles": 1820,
+    "vertices": 1797
+   },
+   {
+    "file": "fir_small_b/fir_small_b_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_small_b/fir_small_b_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 4.372197717262231,
+  "top": 14.401680470025617,
+  "impostor_size_m": [
+   9.094,
+   14.978
+  ]
+ },
+ {
+  "name": "fir_medium_a",
+  "height": 20.0,
+  "lods": [
+   {
+    "file": "fir_medium_a/fir_medium_a_lod0.gltf",
+    "triangles": 14002,
+    "vertices": 12092
+   },
+   {
+    "file": "fir_medium_a/fir_medium_a_lod1.gltf",
+    "triangles": 5440,
+    "vertices": 5386
+   },
+   {
+    "file": "fir_medium_a/fir_medium_a_lod2.gltf",
+    "triangles": 2204,
+    "vertices": 2181
+   },
+   {
+    "file": "fir_medium_a/fir_medium_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_medium_a/fir_medium_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 5.1293780174690715,
+  "top": 20.480099989585504,
+  "impostor_size_m": [
+   10.669,
+   21.299
+  ]
+ },
+ {
+  "name": "fir_medium_b",
+  "height": 23.0,
+  "lods": [
+   {
+    "file": "fir_medium_b/fir_medium_b_lod0.gltf",
+    "triangles": 13414,
+    "vertices": 11594
+   },
+   {
+    "file": "fir_medium_b/fir_medium_b_lod1.gltf",
+    "triangles": 5112,
+    "vertices": 5058
+   },
+   {
+    "file": "fir_medium_b/fir_medium_b_lod2.gltf",
+    "triangles": 2148,
+    "vertices": 2125
+   },
+   {
+    "file": "fir_medium_b/fir_medium_b_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_medium_b/fir_medium_b_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 4.985615705518032,
+  "top": 23.514849881033296,
+  "impostor_size_m": [
+   10.37,
+   24.455
+  ]
+ },
+ {
+  "name": "fir_tall_a",
+  "height": 30.0,
+  "lods": [
+   {
+    "file": "fir_tall_a/fir_tall_a_lod0.gltf",
+    "triangles": 17570,
+    "vertices": 15184
+   },
+   {
+    "file": "fir_tall_a/fir_tall_a_lod1.gltf",
+    "triangles": 7216,
+    "vertices": 7162
+   },
+   {
+    "file": "fir_tall_a/fir_tall_a_lod2.gltf",
+    "triangles": 2672,
+    "vertices": 2649
+   },
+   {
+    "file": "fir_tall_a/fir_tall_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_tall_a/fir_tall_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 5.944094086753085,
+  "top": 30.588,
+  "impostor_size_m": [
+   12.364,
+   31.812
+  ]
+ },
+ {
+  "name": "fir_tall_b",
+  "height": 33.0,
+  "lods": [
+   {
+    "file": "fir_tall_b/fir_tall_b_lod0.gltf",
+    "triangles": 16046,
+    "vertices": 13848
+   },
+   {
+    "file": "fir_tall_b/fir_tall_b_lod1.gltf",
+    "triangles": 6516,
+    "vertices": 6462
+   },
+   {
+    "file": "fir_tall_b/fir_tall_b_lod2.gltf",
+    "triangles": 2428,
+    "vertices": 2405
+   },
+   {
+    "file": "fir_tall_b/fir_tall_b_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_tall_b/fir_tall_b_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 5.8346235467342025,
+  "top": 33.588,
+  "impostor_size_m": [
+   12.136,
+   34.932
+  ]
+ },
+ {
+  "name": "fir_giant_a",
+  "height": 40.0,
+  "lods": [
+   {
+    "file": "fir_giant_a/fir_giant_a_lod0.gltf",
+    "triangles": 18798,
+    "vertices": 16260
+   },
+   {
+    "file": "fir_giant_a/fir_giant_a_lod1.gltf",
+    "triangles": 7852,
+    "vertices": 7798
+   },
+   {
+    "file": "fir_giant_a/fir_giant_a_lod2.gltf",
+    "triangles": 2876,
+    "vertices": 2853
+   },
+   {
+    "file": "fir_giant_a/fir_giant_a_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_giant_a/fir_giant_a_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 6.960106032901474,
+  "top": 40.588,
+  "impostor_size_m": [
+   14.477,
+   42.212
+  ]
+ },
+ {
+  "name": "fir_giant_b",
+  "height": 44.0,
+  "lods": [
+   {
+    "file": "fir_giant_b/fir_giant_b_lod0.gltf",
+    "triangles": 16722,
+    "vertices": 14436
+   },
+   {
+    "file": "fir_giant_b/fir_giant_b_lod1.gltf",
+    "triangles": 6880,
+    "vertices": 6826
+   },
+   {
+    "file": "fir_giant_b/fir_giant_b_lod2.gltf",
+    "triangles": 2492,
+    "vertices": 2469
+   },
+   {
+    "file": "fir_giant_b/fir_giant_b_lod3_cross.gltf",
+    "triangles": 8,
+    "vertices": 16
+   },
+   {
+    "file": "fir_giant_b/fir_giant_b_lod4_billboard.gltf",
+    "triangles": 2,
+    "vertices": 4
+   }
+  ],
+  "radius": 6.421508870755576,
+  "top": 44.588,
+  "impostor_size_m": [
+   13.357,
+   46.372
+  ]
+ }
+]
