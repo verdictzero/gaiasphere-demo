@@ -178,10 +178,16 @@ void fragment() {
 		// A ragged edge: the stones give out into the bank unevenly.
 		float cw = 1.0 - smoothstep(causeway_half - 0.5, causeway_half + 0.9, off + (macro2 - 0.5) * 1.6);
 		if (cw > 0.0) {
-			vec2 cp = p / cobble_size;
+			// Laid ALONG the path: the texture's v runs down the causeway and its u
+			// across, so the courses of stone follow the way you walk.
+			vec2 run = normalize(ab);
+			vec2 across = vec2(-run.y, run.x);
+			vec2 rel = p - causeway.xy;
+			vec2 cp = vec2(dot(rel, across), dot(rel, run)) / cobble_size;
 			albedo = mix(albedo, textureGrad(cobble_albedo, cp, dFdx(cp), dFdy(cp)).rgb * cobble_tint, cw);
 			vec3 cn = textureGrad(cobble_normal, cp, dFdx(cp), dFdy(cp)).xyz * 2.0 - 1.0;
-			world_n = normalize(mix(world_n, normalize(geo_n + vec3(cn.x, 0.0, cn.y) * detail * 1.4), cw));
+			vec2 tilt = across * cn.x + run * cn.y;          // the normal map, turned with it
+			world_n = normalize(mix(world_n, normalize(geo_n + vec3(tilt.x, 0.0, tilt.y) * detail * 1.4), cw));
 			roughness = mix(roughness, 0.8, cw);
 		}
 	}
