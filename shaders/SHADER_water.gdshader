@@ -42,6 +42,7 @@ uniform float rapids_foam = 1.0;
 // WAVES ON THE MERE: rings running outward from the islet in its middle, with
 // peaked crests that whiten in a wind. `mere_centre` is set by SCRIPT_bridge.gd.
 uniform vec2 mere_centre = vec2(0.0);
+uniform sampler2D swell_noise : filter_linear_mipmap, repeat_enable;
 uniform float wave_height = 0.22;
 uniform float wave_length = 13.0;
 uniform float wave_pace = 2.6;
@@ -56,20 +57,28 @@ global uniform float enviro_wetness;
 varying vec3 world_pos;
 varying vec4 flow;
 
-// Height of the swell at a point, 0..1 at a crest, and never a pure sine: two
-// ring trains of different length, each sharpened so crests are narrow and
-// troughs broad, with the line of each crest broken up round the ring.
+// Height of the swell at a point, 0..1 at a peak. NOT RINGS: a field of separate,
+// irregular peaks (sharpened noise at two sizes) that is carried outward from the
+// islet. The carrying is the flow-map trick: the field slides along the outward
+// direction in two overlapping cycles, each fading out as it resets, so it moves
+// for ever without stretching. A faint ring train under it keeps the sense of
+// waves leaving the middle.
 float swell(vec2 p, float t) {
 	vec2 d = p - mere_centre;
 	float r = length(d);
-	float around = atan(d.y, d.x);
-	// Each ring is bent well out of round, and broken into arcs that come and go.
-	float wobble = (sin(around * 5.0 + r * 0.045) * 0.34 + sin(around * 11.0 - r * 0.03 - t * 0.15) * 0.2
-			+ sin(around * 23.0 + r * 0.08) * 0.1) * wave_length;
-	float arcs = smoothstep(-0.25, 0.55, sin(around * 6.0 + r * 0.09 - t * 0.21) * sin(around * 15.0 - r * 0.05 + 2.0));
-	float a = sin((r + wobble) * 6.2832 / wave_length - t * wave_pace) * 0.5 + 0.5;
-	float b = sin((r - wobble * 0.7) * 6.2832 / (wave_length * 0.37) - t * wave_pace * 1.7 + 1.3) * 0.5 + 0.5;
-	return (pow(a, 2.4) * 0.72 + pow(b, 2.0) * 0.28) * (0.3 + 0.7 * arcs);
+	vec2 dir = d / max(r, 0.001);
+	float rate = wave_pace / (wave_length * 2.2);
+	float ph0 = fract(t * rate);
+	float ph1 = fract(t * rate + 0.5);
+	float reach = wave_length * 2.2;
+	vec2 q0 = (p - dir * ph0 * reach) / wave_length;
+	vec2 q1 = (p - dir * ph1 * reach) / wave_length + vec2(0.37, 0.61);
+	float n0 = textureLod(swell_noise, q0 * 0.21, 0.0).r * 0.65 + textureLod(swell_noise, q0 * 0.57 + 0.3, 0.0).r * 0.35;
+	float n1 = textureLod(swell_noise, q1 * 0.21, 0.0).r * 0.65 + textureLod(swell_noise, q1 * 0.57 + 0.3, 0.0).r * 0.35;
+	float n = mix(n0, n1, abs(1.0 - 2.0 * ph0));
+	float peaks = pow(smoothstep(0.3, 0.85, n), 1.7);
+	float ring = pow(sin(r * 6.2832 / (wave_length * 1.9) - t * wave_pace * 0.5) * 0.5 + 0.5, 2.0);
+	return clamp(peaks * 0.85 + ring * 0.15 * (0.4 + n), 0.0, 1.0);
 }
 
 void vertex() {
@@ -115,7 +124,7 @@ void fragment() {
 	vec3 slope_v = mat3(VIEW_MATRIX) * normalize(slope_w);
 	vec3 flat_v = mat3(VIEW_MATRIX) * vec3(0.0, 1.0, 0.0);
 	vec3 lean = slope_v - flat_v;               // how the swell tips the surface, in view space
-	float crest = smoothstep(0.62, 0.95, h0) * still_w;
+	float crest = smoothstep(0.5, 0.9, h0) * still_w;
 
 	// How much water lies between the surface and what is behind it.
 	float surface_z = -VERTEX.z;
