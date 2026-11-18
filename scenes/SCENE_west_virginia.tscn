@@ -1,254 +1,58 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/SCRIPT_explorer.gd" id="wv_explorer"]
-[ext_resource type="Script" path="res://scripts/SCRIPT_loading_cover.gd" id="wv_cover"]
-[ext_resource type="Script" uid="uid://dpgliikcwmv3d" path="res://scripts/world/SCRIPT_island_world.gd" id="1_world"]
-[ext_resource type="Script" uid="uid://dsu5lph68rty8" path="res://scripts/SCRIPT_floating_origin.gd" id="3_floatorigin"]
-[ext_resource type="Material" path="res://materials/MAT_terrain_splat_003_r2.tres" id="4_terrain"]
-[ext_resource type="Material" path="res://materials/MAT_sky_w2_void.tres" id="5_sky"]
-[ext_resource type="Shader" uid="uid://bxape6ywlx1wt" path="res://shaders/SHADER_post_dither.gdshader" id="6_dither"]
-[ext_resource type="Texture2D" path="res://data/palettes/LUT_forest-003.png" id="7_lut"]
-[ext_resource type="Resource" path="res://data/ISLANDFIELD_forest_003_r2.tres" id="8_field"]
-[ext_resource type="Material" path="res://materials/MAT_cliff_wall_003_r2.tres" id="12_cliff"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_veg_scatter.gd" id="13_veg"]
-[ext_resource type="Script" uid="uid://vpq2bj3v74xw" path="res://scripts/SCRIPT_sky_cycle_controller.gd" id="14_todbus"]
-[ext_resource type="Resource" path="res://data/SKYCYCLE_003_forest.tres" id="42_skypreset"]
-[ext_resource type="Script" uid="uid://cmdi5jol20i8a" path="res://scripts/world/SCRIPT_cloud_sea.gd" id="15_cloudsea"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_cloud_sea_veil.gd" id="15_seaveil"]
-[ext_resource type="Material" path="res://materials/MAT_cloud_sea_volumetric.tres" id="16_cloudmat"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_grass_scatter.gd" id="18_grass"]
-[ext_resource type="Material" path="res://materials/MAT_grass_billboard.tres" id="19_grassmat"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_veg_burn.gd" id="20_vegburn"]
-[ext_resource type="Material" path="res://materials/MAT_veg_giant_003_forest.tres" id="27_vegmat"]
-[ext_resource type="Material" path="res://materials/MAT_veg_understory_003_forest.tres" id="28_undermat"]
-[ext_resource type="Material" path="res://materials/MAT_veg_fern.tres" id="29_fernmat"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_horizon_clouds.gd" id="25_horizonclouds"]
-[ext_resource type="Material" path="res://materials/MAT_horizon_clouds.tres" id="26_horizoncloudmat"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_nightmare_sky_director.gd" id="43_director"]
-[ext_resource type="Script" uid="uid://bijnwtrbl060d" path="res://scripts/SCRIPT_space_sun.gd" id="44_flare"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_landing_spot.gd" id="47_landing"]
-[ext_resource type="Texture2D" uid="uid://bphqurfm36ybs" path="res://sprites/vegetation/SPRITE_giant_fir_1_512.png" id="g_fir_1"]
-[ext_resource type="Texture2D" uid="uid://bhfwb6f70314u" path="res://sprites/vegetation/SPRITE_giant_fir_2_512.png" id="g_fir_2"]
-[ext_resource type="Texture2D" uid="uid://bup3i5s84gaaj" path="res://sprites/vegetation/SPRITE_giant_fir_3_512.png" id="g_fir_3"]
-[ext_resource type="Texture2D" uid="uid://dmrmlviklenpk" path="res://sprites/vegetation/SPRITE_giant_fir_4_512.png" id="g_fir_4"]
-[ext_resource type="Texture2D" uid="uid://cyy2uml71w4xm" path="res://sprites/vegetation/SPRITE_giant_fir_5_512.png" id="g_fir_5"]
-[ext_resource type="Texture2D" uid="uid://c3pil1o4a44xp" path="res://sprites/vegetation/SPRITE_large_bush_1_003_128.png" id="f_bush_l1"]
-[ext_resource type="Texture2D" uid="uid://2huk24nravd4" path="res://sprites/vegetation/SPRITE_large_bush_4_003_128.png" id="f_bush_l4"]
-[ext_resource type="Texture2D" uid="uid://1f6ibjwt35wd" path="res://sprites/vegetation/SPRITE_small_bush_1_003_128.png" id="f_bush_s1"]
-[ext_resource type="Texture2D" uid="uid://bspxdd1ngdox" path="res://sprites/vegetation/SPRITE_small_bush_2_003_128.png" id="f_bush_s2"]
-[ext_resource type="Texture2D" uid="uid://bqayso42upsjt" path="res://sprites/vegetation/SPRITE_fern_1_003_128.png" id="f_fern"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_forest_fog.gd" id="ff_fog"]
-[ext_resource type="Script" uid="uid://bovkdxr7m5kjk" path="res://scripts/world/SCRIPT_forest_mushrooms.gd" id="fm_shrooms"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_edge_falls.gd" id="ef_falls"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_river_water.gd" id="rw_water"]
-[ext_resource type="Material" path="res://materials/MAT_river_water_003_r2.tres" id="rw_mat"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_explorer.gd" id="explorer"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_loading_cover.gd" id="cover"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_island_world.gd" id="world"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_enviro.gd" id="enviro"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_flora.gd" id="flora"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_cloud_sea.gd" id="cloudsea"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_landing_spot.gd" id="landing"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_edge_falls.gd" id="falls"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_river_water.gd" id="water"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_underwater_view.gd" id="uw_view"]
+[ext_resource type="Resource" path="res://data/ISLANDFIELD_forest_003_r2.tres" id="field"]
+[ext_resource type="Material" path="res://materials/MAT_terrain.tres" id="terrain_mat"]
+[ext_resource type="Material" path="res://materials/MAT_cliff_wall.tres" id="cliff_mat"]
+[ext_resource type="Material" path="res://materials/MAT_cloud_sea.tres" id="cloud_mat"]
+[ext_resource type="Material" path="res://materials/MAT_water.tres" id="water_mat"]
 [ext_resource type="Material" path="res://materials/MAT_underwater_003_r2.tres" id="uw_mat"]
-
-[sub_resource type="Sky" id="Sky_003"]
-sky_material = ExtResource("5_sky")
-process_mode = 2
-
-[sub_resource type="Environment" id="Env_003"]
-background_mode = 2
-sky = SubResource("Sky_003")
-ambient_light_source = 2
-ambient_light_color = Color(0.36, 0.37, 0.39, 1)
-ambient_light_energy = 1.0
-reflected_light_source = 2
-tonemap_mode = 2
-glow_enabled = true
-glow_intensity = 0.5
-fog_enabled = true
-fog_light_color = Color(0.3, 0.3, 0.3, 1)
-fog_density = 0.0012
-fog_sky_affect = 0.0
-fog_height = -45.0
-fog_height_density = 2.0
-
-[sub_resource type="ShaderMaterial" id="Mat_dither_003"]
-shader = ExtResource("6_dither")
-shader_parameter/pixel_size = 2
-shader_parameter/pixel_aspect = 1.0
-shader_parameter/lut_levels = 16
-shader_parameter/dither_strength = 1.0
-shader_parameter/palette_lut = ExtResource("7_lut")
 
 [node name="WestVirginia" type="Node3D"]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Env_003")
-
-[node name="SunPivot" type="Node3D" parent="."]
-transform = Transform3D(0.4608442, 0.13379453, -0.8773372, 0.31493494, 0.89957845, 0.30261424, 0.8297219, -0.4157622, 0.3724289, 0, 800, 0)
+[node name="Enviro" type="Node3D" parent="."]
+script = ExtResource("enviro")
 
 [node name="IslandWorld" type="Node3D" parent="."]
-script = ExtResource("1_world")
+script = ExtResource("world")
 island_name = "West Virginia"
-field = ExtResource("8_field")
-terrain_material = ExtResource("4_terrain")
-cliff_material = ExtResource("12_cliff")
+field = ExtResource("field")
+terrain_material = ExtResource("terrain_mat")
+cliff_material = ExtResource("cliff_mat")
 view_distance = 3600.0
 prewarm = true
 
-[node name="VegScatter" type="Node3D" parent="."]
-script = ExtResource("13_veg")
-island_world_path = NodePath("../IslandWorld")
-material = ExtResource("27_vegmat")
-understory_material = ExtResource("28_undermat")
-fern_material = ExtResource("29_fernmat")
-tree_sprites = [ExtResource("g_fir_1"), ExtResource("g_fir_2"), ExtResource("g_fir_3"), ExtResource("g_fir_4"), ExtResource("g_fir_5")]
-bush_sprites = [ExtResource("f_bush_l1"), ExtResource("f_bush_l4"), ExtResource("f_bush_s1"), ExtResource("f_bush_s2")]
-fern_sprites = [ExtResource("f_fern")]
-tree_forest_density = 0.14
-tree_open_density = 0.14
-bush_forest_density = 0.6
-bush_open_density = 0.6
-fern_forest_density = 1.0
-fern_open_density = 1.0
-fern_per_cell = 14
-tree_height = Vector2(22, 44)
-tree_root_sink = 0.04
-view_distance = 1400.0
-prescatter = true
-keep_off_flows = true
-flow_clearance = 0.34
-
-[node name="GrassScatter" type="Node3D" parent="."]
-script = ExtResource("18_grass")
-island_world_path = NodePath("../IslandWorld")
-sprites = [ExtResource("f_fern")]
-material = ExtResource("19_grassmat")
-grass_grid = 1.3
-density = 0.75
-forest_falloff = 0.0
-open_density = 1.0
-tuft_size = Vector2(1.4, 1.2)
-keep_off_flows = true
-flow_clearance = 0.6
-
-[node name="VegBurn" type="Node3D" parent="."]
-script = ExtResource("20_vegburn")
-burn = 0.0
-advance = false
-burn_rate = 0.02
-stump = 0.0
-stump_rate = 0.0
-front_radius = 0.0
-front_speed = 0.0
+[node name="Flora" type="Node3D" parent="."]
+script = ExtResource("flora")
+world_path = NodePath("../IslandWorld")
 
 [node name="LandingSpot" type="Node3D" parent="."]
-script = ExtResource("47_landing")
+script = ExtResource("landing")
 island_world_path = NodePath("../IslandWorld")
 bearing_deg = 200.0
 
-[node name="TimeOfDay" type="Node3D" parent="." node_paths=PackedStringArray("sun_pivot", "world_environment")]
-script = ExtResource("14_todbus")
-sun_pivot = NodePath("../SunPivot")
-world_environment = NodePath("../WorldEnvironment")
-sky_material = ExtResource("5_sky")
-preset = ExtResource("42_skypreset")
-drive_sun_transform = false
-advance_with_time = false
-use_nightmare_switch = true
-nightmare = false
-nightmare_seconds = 3.0
-normal_phase = 0.45
-nightmare_phase = 0.85
-manual_time_of_day = 0.45
-fog_light_base = Color(0.3, 0.3, 0.3, 1)
-drive_void_sky = true
-sky_haze_base = Color(0.3, 0.3, 0.3, 1)
-sky_glow_base = Color(0.85, 0.85, 0.85, 1)
-sky_sun_glow_base = Color(1, 0.99, 0.95, 1)
-sky_vortex_base = Color(0.5, 0.5, 0.5, 1)
-
-[node name="NightmareSky" type="Node" parent="." node_paths=PackedStringArray("sky_cycle", "apex_flare", "flash_rect")]
-script = ExtResource("43_director")
-sky_cycle = NodePath("../TimeOfDay")
-sky_material = ExtResource("5_sky")
-apex_flare = NodePath("../ApexFlareLayer/ApexFlare")
-flash_rect = NodePath("../NightmareFlash/FlashRect")
-
-[node name="NightmareFlash" type="CanvasLayer" parent="."]
-layer = 80
-
-[node name="FlashRect" type="ColorRect" parent="NightmareFlash"]
-visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-color = Color(1, 0.16, 0.1, 0)
-
-[node name="ApexFlareLayer" type="CanvasLayer" parent="."]
-layer = 90
-
-[node name="ApexFlare" type="Control" parent="ApexFlareLayer"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-script = ExtResource("44_flare")
-distance = 9000.0
-flare_intensity = 2.4
-occlusion_fade_rate = 14.0
-override_color = Color(1, 0.13, 0.08, 1)
-rainbow_amount = 0.12
-anamorphic_color = Color(1, 0.35, 0.28, 1)
-fringe_warm = Color(1, 0.42, 0.3, 1)
-fringe_cool = Color(0.72, 0.1, 0.14, 1)
-anamorphic_length = 2.1
-direction_override = Vector3(0, 1, 0)
-master_alpha = 0.0
-flare_scale = 2.4
-core_whiteness = 0.15
-show_disc = false
-
 [node name="CloudSea" type="Node3D" parent="."]
-script = ExtResource("15_cloudsea")
-cloud_material = ExtResource("16_cloudmat")
-
-[node name="CloudSeaVeil" type="CanvasLayer" parent="."]
-script = ExtResource("15_seaveil")
-
-[node name="HorizonClouds" type="Node3D" parent="."]
-script = ExtResource("25_horizonclouds")
-material = ExtResource("26_horizoncloudmat")
-
-[node name="FloatingOrigin" type="Node" parent="."]
-script = ExtResource("3_floatorigin")
-reference_path = NodePath("../Explorer")
-threshold = 8000.0
-horizontal_only = true
-
-[node name="PostFX" type="CanvasLayer" parent="."]
-layer = 128
-
-[node name="DitherRect" type="ColorRect" parent="PostFX"]
-material = SubResource("Mat_dither_003")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="ForestFog" type="Node3D" parent="."]
-script = ExtResource("ff_fog")
-world_path = NodePath("../IslandWorld")
-
-[node name="ForestMushrooms" type="Node3D" parent="."]
-script = ExtResource("fm_shrooms")
-world_path = NodePath("../IslandWorld")
-material = ExtResource("29_fernmat")
+script = ExtResource("cloudsea")
+cloud_material = ExtResource("cloud_mat")
 
 [node name="EdgeFalls" type="Node3D" parent="."]
-script = ExtResource("ef_falls")
+script = ExtResource("falls")
 world_path = NodePath("../IslandWorld")
 
 [node name="RiverWater" type="Node3D" parent="."]
-script = ExtResource("rw_water")
+script = ExtResource("water")
 world_path = NodePath("../IslandWorld")
-material = ExtResource("rw_mat")
+material = ExtResource("water_mat")
+wakes = false
 
 [node name="Underwater" type="MeshInstance3D" parent="."]
 material_override = ExtResource("uw_mat")
@@ -256,13 +60,13 @@ script = ExtResource("uw_view")
 water_path = NodePath("../RiverWater")
 
 [node name="Explorer" type="CharacterBody3D" parent="."]
-script = ExtResource("wv_explorer")
+script = ExtResource("explorer")
 landing_spot_path = NodePath("../LandingSpot")
 river_water_path = NodePath("../RiverWater")
 cloud_sea_path = NodePath("../CloudSea")
 
 [node name="LoadingCover" type="CanvasLayer" parent="."]
-script = ExtResource("wv_cover")
+script = ExtResource("cover")
 world_path = NodePath("../IslandWorld")
 explorer_path = NodePath("../Explorer")
-scatter_paths = [NodePath("../VegScatter"), NodePath("../GrassScatter")]
+scatter_paths = [NodePath("../Flora")]

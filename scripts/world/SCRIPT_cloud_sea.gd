@@ -25,6 +25,11 @@ extends Node3D
 ## Edge length of the quad in metres. The material's `rim_fade_end` must stay under
 ## half of this or the geometric edge shows.
 @export var deck_size := 12000.0
+## How far the sea climbs the island's wall, metres above `sea_altitude`.
+@export var rise := 38.0
+@export var world_path: NodePath = ^"../IslandWorld"
+
+var _prox_thread: Thread
 
 var _mi: MeshInstance3D
 var _offset := Vector3.ZERO
@@ -57,6 +62,8 @@ func _ready() -> void:
 	add_child(_mi)
 
 	cloud_material.set_shader_parameter("sea_top", sea_altitude)
+	cloud_material.set_shader_parameter("rise", rise)
+	_start_proximity()
 	_broadcast()
 
 
@@ -111,7 +118,8 @@ func _process(_dt: float) -> void:
 	if cam == null or _mi == null:
 		return
 	var c := cam.global_position
-	_mi.global_position = Vector3(c.x, sea_altitude, c.z)
+	# The quad rides at the highest the cloud can stand: the march begins on it.
+	_mi.global_position = Vector3(c.x, sea_altitude + rise + 12.0, c.z)
 
 
 # Rendered world rebased: fold the shift into the logical offset so the noise field
@@ -121,3 +129,77 @@ func apply_origin_shift(shift: Vector3) -> void:
 	_offset -= shift
 	if cloud_material != null:
 		cloud_material.set_shader_parameter("world_offset", Vector2(_offset.x, _offset.z))
+
+
+# ------------------------------------------------------------ the island's shape
+# WHERE THE LAND IS, as a soft map the shader banks the cloud against: the field
+# is asked "land?" on a coarse grid and the answer blurred, so the map reads 0.5
+# along the coast and falls away to nothing some 150 m out. Built once, on a
+# thread, from a private copy of the field.
+
+const PROX_CELLS := 192
+const PROX_BLUR := 8
+
+
+func _start_proximity() -> void:
+	var world := get_node_or_null(world_path)
+	if world == null or not world.has_method(&"get_field"):
+		return
+	var field: IslandField = world.call(&"get_field")
+	if not field._ready:
+		field.prepare()
+	var extent := 1800.0
+	var isl: Variant = field.island_in_cell(field.hub_cell())
+	if isl != null:
+		extent = float(field.island_extent(isl)) + 350.0
+	cloud_material.set_shader_parameter("prox_extent", extent)
+	_prox_thread = Thread.new()
+	_prox_thread.start(_build_proximity.bind(field.clone(), extent))
+
+
+func _build_proximity(field: IslandField, extent: float) -> void:
+	var n := PROX_CELLS
+	var land := PackedFloat32Array()
+	land.resize(n * n)
+	for z in n:
+		for x in n:
+			var wx := (float(x) + 0.5) / float(n) * 2.0 * extent - extent
+			var wz := (float(z) + 0.5) / float(n) * 2.0 * extent - extent
+			land[z * n + x] = 1.0 if field.is_land(wx, wz) else 0.0
+	# Two box blurs, across then down.
+	var tmp := PackedFloat32Array()
+	tmp.resize(n * n)
+	for pass_i in 2:
+		var src := land if pass_i == 0 else tmp
+		var dst := tmp if pass_i == 0 else land
+		var step := 1 if pass_i == 0 else n
+		for z in n:
+			for x in n:
+				var sum := 0.0
+				var along := x if pass_i == 0 else z
+				for k in range(-PROX_BLUR, PROX_BLUR + 1):
+					var a := clampi(along + k, 0, n - 1)
+					sum += src[z * n + a] if pass_i == 0 else src[a * n + x]
+				dst[z * n + x] = sum / float(2 * PROX_BLUR + 1)
+		if pass_i == 0:
+			tmp = dst
+		else:
+			land = dst
+	var bytes := PackedByteArray()
+	bytes.resize(n * n)
+	for i in n * n:
+		bytes[i] = int(clampf(land[i], 0.0, 1.0) * 255.0)
+	var img := Image.create_from_data(n, n, false, Image.FORMAT_R8, bytes)
+	_install_proximity.call_deferred(img)
+
+
+func _install_proximity(img: Image) -> void:
+	cloud_material.set_shader_parameter("island_prox", ImageTexture.create_from_image(img))
+	if _prox_thread != null:
+		_prox_thread.wait_to_finish()
+		_prox_thread = null
+
+
+func _exit_tree() -> void:
+	if _prox_thread != null:
+		_prox_thread.wait_to_finish()

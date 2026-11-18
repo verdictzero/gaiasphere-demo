@@ -25,7 +25,11 @@ for g in GLOBS:
             continue
         s = old = imp.read_text()
         normal = tex.stem.endswith("_normal")
-        want = {"compress/mode": "2", "mipmaps/generate": "true", "detect_3d/compress_to": "0",
+        # Alpha-tested cut-outs stay lossless: block compression of their colour under a
+        # hard alpha edge came out black on a software Vulkan driver, and they are few.
+        cutout = tex.suffix == ".png" and not normal
+        want = {"compress/mode": "0" if cutout else "2", "mipmaps/generate": "true",
+                "detect_3d/compress_to": "0",
                 "compress/normal_map": "1" if normal else "0",
                 # alpha-tested foliage: keep coverage from thinning out in the mipmaps
                 "process/fix_alpha_border": "true"}

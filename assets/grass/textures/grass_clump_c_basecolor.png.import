@@ -3,20 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ydgy3q6vouw1"
-path.s3tc="res://.godot/imported/grass_clump_c_basecolor.png-f3ee51e3f01837d7027210fcd6565cca.s3tc.ctex"
+path="res://.godot/imported/grass_clump_c_basecolor.png-f3ee51e3f01837d7027210fcd6565cca.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/grass/textures/grass_clump_c_basecolor.png"
-dest_files=["res://.godot/imported/grass_clump_c_basecolor.png-f3ee51e3f01837d7027210fcd6565cca.s3tc.ctex"]
+dest_files=["res://.godot/imported/grass_clump_c_basecolor.png-f3ee51e3f01837d7027210fcd6565cca.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

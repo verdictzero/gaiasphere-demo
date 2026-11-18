@@ -175,7 +175,7 @@ def add_tube(mesh, pts, radii, sides, v_coords, u_rep, winds):
 
 
 def add_card(mesh, origin, T, S, N, length, width, segs, bend, flip, color, wind0, wind1,
-             center, u0=0.0, u1=1.0):
+             center, u0=0.0, u1=1.0, bough=None):
     """Foliage card. Stem runs along T from origin; `bend` curls the tip along -N.
     Normals are biased outward from the crown axis for soft, volume-like shading."""
     va, vb = (0.0, 1.0) if not flip else (1.0, 0.0)
@@ -190,11 +190,79 @@ def add_card(mesh, origin, T, S, N, length, width, segs, bend, flip, color, wind
         w = (wind0 + (wind1 - wind0) * f, wind_phase(mesh))
         c = tuple(np.asarray(color) * (0.82 + 0.18 * f))
         u = u0 + (u1 - u0) * f
-        a = mesh.vert(p + S * (width * wa), n, (u, va), w, c)
-        b = mesh.vert(p - S * (width * (1 - wa)), n, (u, vb), w, c)
+        if bough is not None:        # a strip of one bough picture: (column, v at root, v at tip)
+            col_i, v_root, v_tip = bough
+            vv = v_root + (v_tip - v_root) * f
+            a = mesh.vert(p + S * (width * 0.5), n, ((col_i + 0.22) / 4.0, vv), w, c)
+            b = mesh.vert(p - S * (width * 0.5), n, ((col_i + 0.78) / 4.0, vv), w, c)
+        else:
+            a = mesh.vert(p + S * (width * wa), n, (u, va), w, c)
+            b = mesh.vert(p - S * (width * (1 - wa)), n, (u, vb), w, c)
         rows.append((a, b))
     for i in range(segs):
         mesh.quad(rows[i][0], rows[i][1], rows[i + 1][1], rows[i + 1][0])
+
+
+BOUGHS = []          # textures/fir_bough_atlas.json, read in main()
+BOUGH_S0, BOUGH_S1 = 0.12, 0.9
+
+
+def add_bough(mesh, limb, segs, fold, col, sway0, center, li, drape=False):
+    """One card carrying the picture of a whole bough.
+
+    The main card runs along the limb, rolled a little so the tree is not a stack of
+    level plates.  A `drape` is a shorter one hanging under the limb, standing in for
+    the twigs that droop from the real bough: it is what gives the crown thickness
+    when a limb is seen edge-on."""
+    L = limb["L"]
+    Lv = L * 0.55 if drape else L                            # the limb this card pictures
+    c = min(range(len(BOUGHS)), key=lambda i: abs(BOUGHS[i]["limb_length"] - Lv))
+    b = BOUGHS[c]
+    fl = min(1.9, 0.5 * Lv + 0.4)
+    length = (BOUGH_S1 - BOUGH_S0) * Lv + min(1.9, 0.5 * Lv + 0.45)
+    pic_len = (BOUGH_S1 - BOUGH_S0) * b["limb_length"] + min(1.9, 0.5 * b["limb_length"] + 0.45)
+    v_tip = 1.0 - pic_len / b["length_m"]                    # the picture's root is at v = 1
+    width = b["width_m"] * fl / b["frond_len"] * (1.0 if fold else 1.08)
+    flip = (li % 2) == 1
+    jit = ((li * 7919) % 1000) / 1000.0
+    roll = (1.15 + 0.5 * jit) * (1 if li % 2 else -1) if drape else (jit - 0.5) * 0.8
+    T0, S0v, _ = limb_frame(limb, 0.42)
+    hang = norm(T0 * 0.78 - UP * 0.62)
+    rows = []
+    for i in range(segs + 1):
+        f = i / segs
+        d = f * length                                       # metres from the card's root
+        if drape:
+            s = 0.42 + 0.4 * f
+            p, T, S = limb_point(limb, 0.42) + hang * d, hang, S0v
+        else:
+            s = BOUGH_S0 + d / L
+            if s <= BOUGH_S1:
+                p = limb_point(limb, s)
+                T, S, _ = limb_frame(limb, s)
+            else:                                            # past the limb: straight on, as the tip twig is
+                T, S, _ = limb_frame(limb, BOUGH_S1)
+                p = limb_point(limb, BOUGH_S1) + T * (d - (BOUGH_S1 - BOUGH_S0) * L)
+        S = rotate(S, T, roll)
+        N = np.cross(S, T)
+        if N[1] < 0:
+            N = -N
+        outward = p - center
+        outward[1] *= 0.35
+        n = norm(norm(outward) * 0.8 + UP * 0.6)
+        w = (sway0 + 0.5 * min(s, 1.0) ** 2 + 0.2 * f, _phase[0])
+        cc = tuple(np.asarray(col(min(s, 1.0))) * (0.9 + 0.1 * f) * (0.82 if drape else 1.0))
+        v = 1.0 + (v_tip - 1.0) * f
+        u0, u1 = (c + (1.0 if flip else 0.0)) / 4.0, (c + (0.0 if flip else 1.0)) / 4.0
+        droop = N * (0.2 * width * (0.4 + 0.6 * f)) if fold else N * 0.0
+        row = [mesh.vert(p + S * (width * 0.5) - droop, n, (u0, v), w, cc)]
+        if fold:
+            row.append(mesh.vert(p, n, ((u0 + u1) * 0.5, v), w, cc))
+        row.append(mesh.vert(p - S * (width * 0.5) - droop, n, (u1, v), w, cc))
+        rows.append(row)
+    for a, bb in zip(rows, rows[1:]):
+        for j in range(len(a) - 1):
+            mesh.quad(a[j], a[j + 1], bb[j + 1], bb[j])
 
 
 _phase = [0.0]
@@ -210,16 +278,17 @@ def rotate(v, axis, ang):
 
 
 # ------------------------------------------------------------------- LODs ---
-# frond_keep = (n, d): keep n of every d side twigs, enlarged by frond_scale to hold the
-# silhouette.  All LODs are cut from the same tree description so they pop as little
-# as possible.
+# All LODs are cut from the same tree description so they pop as little as possible.
 LODS = [
     dict(name="lod0", trunk_sides=12, trunk_rings=18, limb_sides=3, limb_segs=3, card_segs=2,
-         frond_keep=(1, 1), frond_scale=1.0, tip_scale=1.0, drapes=3, limb_min=0.8),
-    dict(name="lod1", trunk_sides=8, trunk_rings=10, limb_sides=3, limb_segs=2, card_segs=1,
-         frond_keep=(1, 2), frond_scale=1.45, tip_scale=1.15, drapes=1, limb_min=2.2),
-    dict(name="lod2", trunk_sides=6, trunk_rings=7, limb_sides=0, limb_segs=0, card_segs=1,
-         frond_keep=(1, 4), frond_scale=2.1, tip_scale=1.5, drapes=0, limb_min=99),
+         drapes=3, limb_min=0.8),
+    # The mid LODs draw one card per limb with a picture of the whole bough on it
+    # (tools/build_bough_atlas.py), folded into a shallow V at LOD1 and flat at LOD2:
+    # every limb is still there with its needles at their true size.
+    dict(name="lod1", trunk_sides=8, trunk_rings=10, limb_sides=3, limb_segs=2, bough_segs=2,
+         bough_fold=True, drape_min=1.5, limb_min=2.2),
+    dict(name="lod2", trunk_sides=6, trunk_rings=7, limb_sides=0, limb_segs=0, bough_segs=1,
+         bough_fold=False, drape_min=2.4, limb_min=99),
 ]
 
 
@@ -252,6 +321,12 @@ def build(limbs, lod):
                      [L * s / 0.5 for s in ss], 1.0,
                      [(sway0 + 0.5 * s * s, limb["phase"]) for s in ss])
 
+        if "bough_segs" in lod:
+            add_bough(leaf, limb, lod["bough_segs"], lod["bough_fold"], col, sway0, center, li)
+            if L > lod["drape_min"]:
+                add_bough(leaf, limb, 1, False, col, sway0, center, li, drape=True)
+            continue
+
         k = nd = 0
         for fr in limb["fronds"]:
             if fr["kind"] == "drape":
@@ -260,8 +335,7 @@ def build(limbs, lod):
                     continue
             if fr["kind"] == "side":
                 k += 1
-                if (k + li) % lod["frond_keep"][1] >= lod["frond_keep"][0]:
-                    continue
+                pass
             s = fr["s"]
             T, S, N = limb_frame(limb, s)
             if fr["kind"] == "side":
@@ -276,7 +350,7 @@ def build(limbs, lod):
             cn = np.cross(cs, d)
             if cn[1] < 0 and fr["kind"] != "drape":
                 cn, cs = -cn, -cs
-            ln = fr["len"] * (lod["frond_scale"] if fr["kind"] == "side" else lod["tip_scale"])
+            ln = fr["len"]
             add_card(leaf, limb_point(limb, s), d, cs, cn, ln, ln * 0.6,
                      lod["card_segs"] if fr["kind"] != "side" else 1,
                      0.10 + 0.5 * fr["droop"] * 0.3, fr["flip"], col(s),
@@ -289,8 +363,14 @@ def build(limbs, lod):
     for i in range(3 if lod["name"] != "lod2" else 2):
         a = math.pi * i / (3 if lod["name"] != "lod2" else 2)
         S = np.array([math.cos(a), 0, math.sin(a)])
-        add_card(leaf, top, UP, S, np.cross(S, UP), lead, lead * 0.48, 1, 0.0, i % 2 == 0,
-                 (0.95, 1.0, 0.92), 0.25, 0.4, top - UP)
+        if "bough_segs" in lod:
+            # the twig-only top third of the smallest bough picture
+            b = BOUGHS[0]
+            add_card(leaf, top, UP, S, np.cross(S, UP), lead, lead * 0.6, 1, 0.0, False,
+                     (0.95, 1.0, 0.92), 0.25, 0.4, top - UP, u0=0.0, u1=0.0, bough=(0, 0.69, 0.36))
+        else:
+            add_card(leaf, top, UP, S, np.cross(S, UP), lead, lead * 0.48, 1, 0.0, i % 2 == 0,
+                     (0.95, 1.0, 0.92), 0.25, 0.4, top - UP)
     return bark, leaf
 
 
@@ -304,6 +384,13 @@ def material_bark():
     return dict(name="fir_bark", sampler=SAMPLER_REPEAT,
                 base=TEX + "pine_bark_basecolor.jpg", normal=TEX + "pine_bark_normal.jpg",
                 orm=TEX + "pine_bark_orm.jpg", extra=dict(), pbr=dict(roughnessFactor=1.0))
+
+
+def material_bough():
+    return dict(name="fir_bough", sampler=SAMPLER_CLAMP,
+                base=TEX + "fir_bough_atlas_basecolor.png", normal=None, orm=None,
+                extra=dict(alphaMode="MASK", alphaCutoff=0.38, doubleSided=False),
+                pbr=dict(roughnessFactor=0.62, baseColorFactor=[0.84, 0.96, 0.86, 1.0]))
 
 
 def material_foliage():
@@ -387,6 +474,7 @@ def write_gltf(path_stem, node_name, parts):
 
 def main():
     out_dir = Path(sys.argv[1])
+    BOUGHS.extend(json.loads((out_dir / "textures" / "fir_bough_atlas.json").read_text()))
     manifest = []
     for tree in TREES:
         configure(tree)
@@ -396,7 +484,8 @@ def main():
             bark, leaf = build(limbs, lod)
             stem = f'{tree["name"]}_{lod["name"]}'
             write_gltf(out_dir / tree["name"] / stem, stem.replace("_lod", "_LOD"),
-                       [(bark, material_bark()), (leaf, material_foliage())])
+                       [(bark, material_bark()),
+                        (leaf, material_bough() if "bough_segs" in lod else material_foliage())])
             p = np.asarray(bark.p + leaf.p)
             if lod["name"] == "lod0":
                 entry["radius"] = float(np.abs(p[:, [0, 2]]).max())

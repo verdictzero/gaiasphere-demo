@@ -16,16 +16,32 @@ var _frames := 0
 var _step := -1
 var _wait := 0
 var _fail := false
+var _fast := false
+var _hour := -1.0
+var _weather := ""
 
 
 func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			_out = a.substr(6)
+		elif a == "--fast":
+			_fast = true		# a software renderer: wait a sixth as many frames
+		elif a.begins_with("--hour="):
+			_hour = float(a.substr(7))
+		elif a.begins_with("--weather="):
+			_weather = a.substr(10)
 	DirAccess.make_dir_recursive_absolute(_out)
 	_scene = (load("res://scenes/SCENE_west_virginia.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
 	_explorer = _scene.get_node("Explorer")
+	var enviro := _scene.get_node_or_null("Enviro")
+	if enviro != null:
+		enviro.advance = false
+		if _hour >= 0.0:
+			enviro.hour = _hour
+		if _weather != "":
+			enviro.set_weather(_weather, 0.01)
 
 
 func _process(_delta: float) -> bool:
@@ -34,7 +50,7 @@ func _process(_delta: float) -> bool:
 		if _explorer.arrived and not _scene.has_node("LoadingCover"):
 			print("tour: arrived after %d frames at %s" % [_frames, _explorer.global_position])
 			_step = 0
-			_wait = 90
+			_wait = _frames_for(90)
 		elif _frames > 60 * 60 * 20:
 			push_error("tour: the explorer never arrived")
 			return true
@@ -56,7 +72,7 @@ func _process(_delta: float) -> bool:
 			_explorer.flying = true
 			_explorer.global_position += Vector3.UP * 120.0
 			_look_at(Vector3.ZERO)
-			_wait = 60
+			_wait = _frames_for(60)
 		1:
 			_shot("1_from_the_air")
 			# The mere's shore: walk in from the middle's islet until there is water.
@@ -72,19 +88,19 @@ func _process(_delta: float) -> bool:
 				_fail = true
 			_explorer.global_position = Vector3(at.x - 6.0, maxf(world.height_at(at), level) + 3.0, 0.0)
 			_look_at(Vector3(at.x + 60.0, level, 30.0))
-			_wait = 120
+			_wait = _frames_for(120)
 		2:
 			_shot("2_mere")
 			var p := _explorer.global_position + Vector3(14.0, 0.0, 0.0)
 			var level := float(water.world_level_at(p))
 			_explorer.global_position = Vector3(p.x, level - 0.02 - cam.position.y, p.z)
 			_look_at(_explorer.global_position + Vector3(40.0, cam.position.y, 10.0))
-			_wait = 60
+			_wait = _frames_for(60)
 		3:
 			_shot("3_waterline")
 			_explorer.global_position = Vector3(1900.0, 650.0, 1200.0)
 			_look_at(Vector3.ZERO)
-			_wait = 240
+			_wait = _frames_for(240)
 		4:
 			_shot("4_island")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
@@ -92,6 +108,10 @@ func _process(_delta: float) -> bool:
 			return true
 	_step += 1
 	return false
+
+
+func _frames_for(n: int) -> int:
+	return maxi(14, n / 4) if _fast else n
 
 
 func _look_at(target: Vector3) -> void:

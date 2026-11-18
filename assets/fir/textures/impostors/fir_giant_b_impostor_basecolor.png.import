@@ -3,20 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://btxl78ho1rr1b"
-path.s3tc="res://.godot/imported/fir_giant_b_impostor_basecolor.png-66b4a9dcfab192ea5954649a41b582a4.s3tc.ctex"
+path="res://.godot/imported/fir_giant_b_impostor_basecolor.png-66b4a9dcfab192ea5954649a41b582a4.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fir/textures/impostors/fir_giant_b_impostor_basecolor.png"
-dest_files=["res://.godot/imported/fir_giant_b_impostor_basecolor.png-66b4a9dcfab192ea5954649a41b582a4.s3tc.ctex"]
+dest_files=["res://.godot/imported/fir_giant_b_impostor_basecolor.png-66b4a9dcfab192ea5954649a41b582a4.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

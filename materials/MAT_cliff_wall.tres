@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" load_steps=7 format=3]
+
+[ext_resource type="Shader" path="res://shaders/SHADER_cliff_wall_lit.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/dark_rock_02_basecolor.jpg" id="2"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/dark_rock_02_normal.jpg" id="3"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/dark_rock_02_orm.jpg" id="4"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/forrest_ground_01_basecolor.jpg" id="5"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/forrest_ground_01_normal.jpg" id="6"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/rock_albedo = ExtResource("2")
+shader_parameter/rock_normal = ExtResource("3")
+shader_parameter/rock_orm = ExtResource("4")
+shader_parameter/rock_scale = 0.11
+shader_parameter/moss_albedo = ExtResource("5")
+shader_parameter/moss_normal = ExtResource("6")
+shader_parameter/moss_amount = 0.42
+shader_parameter/moss_scale = 0.3
+shader_parameter/ground_occlusion_height = 0.0
+shader_parameter/triplanar_sharpness = 8.0

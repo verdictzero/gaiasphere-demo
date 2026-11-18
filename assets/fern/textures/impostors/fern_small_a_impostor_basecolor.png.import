@@ -3,20 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dwg6vlx8bmi78"
-path.s3tc="res://.godot/imported/fern_small_a_impostor_basecolor.png-d25cbe3c7c9dc83714674705015ae124.s3tc.ctex"
+path="res://.godot/imported/fern_small_a_impostor_basecolor.png-d25cbe3c7c9dc83714674705015ae124.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fern/textures/impostors/fern_small_a_impostor_basecolor.png"
-dest_files=["res://.godot/imported/fern_small_a_impostor_basecolor.png-d25cbe3c7c9dc83714674705015ae124.s3tc.ctex"]
+dest_files=["res://.godot/imported/fern_small_a_impostor_basecolor.png-d25cbe3c7c9dc83714674705015ae124.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

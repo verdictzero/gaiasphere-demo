@@ -68,7 +68,7 @@
    }
   },
   {
-   "name": "fir_foliage",
+   "name": "fir_bough",
    "pbrMetallicRoughness": {
     "baseColorTexture": {
      "index": 3
@@ -130,13 +130,13 @@
    "uri": "../textures/pine_bark_orm.jpg"
   },
   {
-   "uri": "../textures/fir_branch_basecolor.png"
+   "uri": "../textures/fir_bough_atlas_basecolor.png"
   }
  ],
  "buffers": [
   {
    "uri": "fir_medium_a_lod1.bin",
-   "byteLength": 264176
+   "byteLength": 235660
   }
  ],
  "bufferViews": [
@@ -173,37 +173,37 @@
   {
    "buffer": 0,
    "byteOffset": 62976,
-   "byteLength": 48288,
+   "byteLength": 38652,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 111264,
-   "byteLength": 48288,
+   "byteOffset": 101628,
+   "byteLength": 38652,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 159552,
-   "byteLength": 32192,
+   "byteOffset": 140280,
+   "byteLength": 25768,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 191744,
-   "byteLength": 32192,
+   "byteOffset": 166048,
+   "byteLength": 25768,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 223936,
-   "byteLength": 16096,
+   "byteOffset": 191816,
+   "byteLength": 12884,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 240032,
-   "byteLength": 24144,
+   "byteOffset": 204700,
+   "byteLength": 30960,
    "target": 34963
   }
  ],
@@ -251,48 +251,48 @@
   {
    "bufferView": 5,
    "componentType": 5126,
-   "count": 4024,
+   "count": 3221,
    "type": "VEC3",
    "min": [
-    -5.424666881561279,
-    1.4993762969970703,
-    -5.322714805603027
+    -5.410943984985352,
+    1.0578835010528564,
+    -5.288312911987305
    ],
    "max": [
-    5.200876235961914,
+    5.286868095397949,
     20.480100631713867,
-    5.076248645782471
+    5.114701747894287
    ]
   },
   {
    "bufferView": 6,
    "componentType": 5126,
-   "count": 4024,
+   "count": 3221,
    "type": "VEC3"
   },
   {
    "bufferView": 7,
    "componentType": 5126,
-   "count": 4024,
+   "count": 3221,
    "type": "VEC2"
   },
   {
    "bufferView": 8,
    "componentType": 5126,
-   "count": 4024,
+   "count": 3221,
    "type": "VEC2"
   },
   {
    "bufferView": 9,
    "componentType": 5121,
-   "count": 4024,
+   "count": 3221,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 10,
    "componentType": 5123,
-   "count": 12072,
+   "count": 15480,
    "type": "SCALAR"
   }
  ]

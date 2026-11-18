@@ -10,13 +10,13 @@
    },
    {
     "file": "fir_small_a/fir_small_a_lod1.gltf",
-    "triangles": 2996,
-    "vertices": 2942
+    "triangles": 4196,
+    "vertices": 2609
    },
    {
     "file": "fir_small_a/fir_small_a_lod2.gltf",
-    "triangles": 1580,
-    "vertices": 1557
+    "triangles": 980,
+    "vertices": 957
    },
    {
     "file": "fir_small_a/fir_small_a_lod3_cross.gltf",
@@ -47,13 +47,13 @@
    },
    {
     "file": "fir_small_b/fir_small_b_lod1.gltf",
-    "triangles": 3776,
-    "vertices": 3722
+    "triangles": 5048,
+    "vertices": 3258
    },
    {
     "file": "fir_small_b/fir_small_b_lod2.gltf",
-    "triangles": 1820,
-    "vertices": 1797
+    "triangles": 1172,
+    "vertices": 1149
    },
    {
     "file": "fir_small_b/fir_small_b_lod3_cross.gltf",
@@ -84,13 +84,13 @@
    },
    {
     "file": "fir_medium_a/fir_medium_a_lod1.gltf",
-    "triangles": 5440,
-    "vertices": 5386
+    "triangles": 6576,
+    "vertices": 4583
    },
    {
     "file": "fir_medium_a/fir_medium_a_lod2.gltf",
-    "triangles": 2204,
-    "vertices": 2181
+    "triangles": 1524,
+    "vertices": 1501
    },
    {
     "file": "fir_medium_a/fir_medium_a_lod3_cross.gltf",
@@ -121,13 +121,13 @@
    },
    {
     "file": "fir_medium_b/fir_medium_b_lod1.gltf",
-    "triangles": 5112,
-    "vertices": 5058
+    "triangles": 6380,
+    "vertices": 4387
    },
    {
     "file": "fir_medium_b/fir_medium_b_lod2.gltf",
-    "triangles": 2148,
-    "vertices": 2125
+    "triangles": 1480,
+    "vertices": 1457
    },
    {
     "file": "fir_medium_b/fir_medium_b_lod3_cross.gltf",
@@ -158,13 +158,13 @@
    },
    {
     "file": "fir_tall_a/fir_tall_a_lod1.gltf",
-    "triangles": 7216,
-    "vertices": 7162
+    "triangles": 8116,
+    "vertices": 5892
    },
    {
     "file": "fir_tall_a/fir_tall_a_lod2.gltf",
-    "triangles": 2672,
-    "vertices": 2649
+    "triangles": 1904,
+    "vertices": 1881
    },
    {
     "file": "fir_tall_a/fir_tall_a_lod3_cross.gltf",
@@ -195,13 +195,13 @@
    },
    {
     "file": "fir_tall_b/fir_tall_b_lod1.gltf",
-    "triangles": 6516,
-    "vertices": 6462
+    "triangles": 7444,
+    "vertices": 5374
    },
    {
     "file": "fir_tall_b/fir_tall_b_lod2.gltf",
-    "triangles": 2428,
-    "vertices": 2405
+    "triangles": 1756,
+    "vertices": 1733
    },
    {
     "file": "fir_tall_b/fir_tall_b_lod3_cross.gltf",
@@ -232,13 +232,13 @@
    },
    {
     "file": "fir_giant_a/fir_giant_a_lod1.gltf",
-    "triangles": 7852,
-    "vertices": 7798
+    "triangles": 8540,
+    "vertices": 6274
    },
    {
     "file": "fir_giant_a/fir_giant_a_lod2.gltf",
-    "triangles": 2876,
-    "vertices": 2853
+    "triangles": 2064,
+    "vertices": 2041
    },
    {
     "file": "fir_giant_a/fir_giant_a_lod3_cross.gltf",
@@ -269,13 +269,13 @@
    },
    {
     "file": "fir_giant_b/fir_giant_b_lod1.gltf",
-    "triangles": 6880,
-    "vertices": 6826
+    "triangles": 7572,
+    "vertices": 5551
    },
    {
     "file": "fir_giant_b/fir_giant_b_lod2.gltf",
-    "triangles": 2492,
-    "vertices": 2469
+    "triangles": 1816,
+    "vertices": 1793
    },
    {
     "file": "fir_giant_b/fir_giant_b_lod3_cross.gltf",

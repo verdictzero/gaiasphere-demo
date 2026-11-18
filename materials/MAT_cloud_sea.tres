@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/SHADER_cloud_sea.gdshader" id="sh"]
+
+[sub_resource type="FastNoiseLite" id="noise"]
+frequency = 0.005
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="tex"]
+width = 256
+height = 256
+seamless = true
+noise = SubResource("noise")
+
+[resource]
+shader = ExtResource("sh")
+shader_parameter/cloud_noise = SubResource("tex")
