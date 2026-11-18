@@ -478,6 +478,13 @@ func _prefill_one(i: int) -> void:
 	_work(0, _prefill_keys[i])
 
 
+# Leaving while the trees are still being placed: let the workers finish first, or
+# they run on into a node that is gone.
+func _exit_tree() -> void:
+	if _prefill_group >= 0 and not _prefilled:
+		WorkerThreadPool.wait_for_group_task_completion(_prefill_group)
+
+
 # The loading cover's hooks: place every tree on the island before the first frame.
 func prefill_covered() -> void:
 	pass
