@@ -1,0 +1,172 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "tools/build_fir.py"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "boulder_a_LOD0",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "boulder_a_LOD0",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "TEXCOORD_1": 3
+     },
+     "indices": 4,
+     "material": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "boulder_rock",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "metallicRoughnessTexture": {
+     "index": 2
+    }
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ],
+ "images": [
+  {
+   "uri": "../../../textures/polyhaven/mossy_rock_basecolor.jpg"
+  },
+  {
+   "uri": "../../../textures/polyhaven/mossy_rock_normal.jpg"
+  },
+  {
+   "uri": "../../../textures/polyhaven/mossy_rock_orm.jpg"
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "boulder_a_lod0.bin",
+   "byteLength": 33360
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 7704,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 7704,
+   "byteLength": 7704,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 15408,
+   "byteLength": 5136,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 20544,
+   "byteLength": 5136,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 25680,
+   "byteLength": 7680,
+   "target": 34963
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 642,
+   "type": "VEC3",
+   "min": [
+    -0.8069625496864319,
+    -0.197237029671669,
+    -0.7714212536811829
+   ],
+   "max": [
+    0.9410142302513123,
+    1.2115989923477173,
+    1.0
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 642,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 642,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5126,
+   "count": 642,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5123,
+   "count": 3840,
+   "type": "SCALAR"
+  }
+ ]
+}
