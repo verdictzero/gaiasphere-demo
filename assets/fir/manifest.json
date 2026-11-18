@@ -20,8 +20,8 @@
    },
    {
     "file": "fir_small_a/fir_small_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_small_a/fir_small_a_lod4_billboard.gltf",
@@ -57,8 +57,8 @@
    },
    {
     "file": "fir_small_b/fir_small_b_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_small_b/fir_small_b_lod4_billboard.gltf",
@@ -94,8 +94,8 @@
    },
    {
     "file": "fir_medium_a/fir_medium_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_medium_a/fir_medium_a_lod4_billboard.gltf",
@@ -131,8 +131,8 @@
    },
    {
     "file": "fir_medium_b/fir_medium_b_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_medium_b/fir_medium_b_lod4_billboard.gltf",
@@ -168,8 +168,8 @@
    },
    {
     "file": "fir_tall_a/fir_tall_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_tall_a/fir_tall_a_lod4_billboard.gltf",
@@ -205,8 +205,8 @@
    },
    {
     "file": "fir_tall_b/fir_tall_b_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_tall_b/fir_tall_b_lod4_billboard.gltf",
@@ -242,8 +242,8 @@
    },
    {
     "file": "fir_giant_a/fir_giant_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_giant_a/fir_giant_a_lod4_billboard.gltf",
@@ -279,8 +279,8 @@
    },
    {
     "file": "fir_giant_b/fir_giant_b_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fir_giant_b/fir_giant_b_lod4_billboard.gltf",

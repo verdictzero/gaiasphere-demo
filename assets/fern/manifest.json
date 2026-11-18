@@ -19,8 +19,8 @@
    },
    {
     "file": "fern_small_a/fern_small_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fern_small_a/fern_small_a_lod4_billboard.gltf",
@@ -60,8 +60,8 @@
    },
    {
     "file": "fern_medium_a/fern_medium_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fern_medium_a/fern_medium_a_lod4_billboard.gltf",
@@ -101,8 +101,8 @@
    },
    {
     "file": "fern_medium_b/fern_medium_b_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fern_medium_b/fern_medium_b_lod4_billboard.gltf",
@@ -142,8 +142,8 @@
    },
    {
     "file": "fern_large_a/fern_large_a_lod3_cross.gltf",
-    "triangles": 8,
-    "vertices": 16
+    "triangles": 16,
+    "vertices": 32
    },
    {
     "file": "fern_large_a/fern_large_a_lod4_billboard.gltf",
