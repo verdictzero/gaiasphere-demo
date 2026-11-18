@@ -143,7 +143,7 @@ func _process(_delta: float) -> bool:
 		7:
 			_shot("7_sword")
 			# The bridge, from the outer shore beside it.
-			var bridge := _scene.get_node_or_null("StoneBridge")
+			var bridge := _scene.get_node_or_null("Causeway")
 			if bridge != null and bridge.start != Vector3.ZERO:
 				var run: Vector3 = (bridge.finish - bridge.start).normalized()
 				_explorer.flying = true
@@ -151,8 +151,9 @@ func _process(_delta: float) -> bool:
 				var off: Vector3 = run.cross(Vector3.UP)
 				if off.dot(_scene.get_node("Enviro").light_dir) < 0.0:
 					off = -off
-				_explorer.global_position = bridge.start.lerp(bridge.finish, 0.3) + off * 34.0 + Vector3(0, 3.0, 0)
-				_look_at(bridge.start.lerp(bridge.finish, 0.5) + Vector3(0, 2.0, 0))
+				# From the shore end, a little to one side and above, looking along it.
+				_explorer.global_position = bridge.start - run * 10.0 + off * 9.0 + Vector3(0, 7.0, 0)
+				_look_at(bridge.start.lerp(bridge.finish, 0.55))
 			_wait = _frames_for(240)
 		8:
 			_shot("8_bridge")

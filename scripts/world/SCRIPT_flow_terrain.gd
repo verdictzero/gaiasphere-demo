@@ -305,6 +305,53 @@ func lagoon_at(x: float, z: float) -> Vector3:
 	return Vector3(minf(r - sh.x, sh.y - r), th, r)
 
 
+# ------------------------------------------------------------- the causeway
+# A LAND BRIDGE TO THE ISLET: a bank of ground left standing across the mere
+# where it is narrowest, a little above the water, cobbled by the terrain shader
+# (SCRIPT_causeway.gd hands it the line). It is terrain: the mesher, the
+# collision and the bake all get it from `lagoon` below.
+
+const CAUSEWAY_HALF := 3.6        ## half the width of its flat top, metres
+const CAUSEWAY_BANK := 7.0        ## metres its sides take to fall to the bed
+const CAUSEWAY_RISE := 1.1        ## its top, metres over the water
+
+var _cw_dir := Vector2.ZERO
+var _cw_in := 0.0
+var _cw_out := 0.0
+
+
+func _place_causeway() -> void:
+	var best := 1e9
+	for i in 96:
+		var th := TAU * float(i) / 96.0
+		var sh := lagoon_shores(th)
+		if sh.y - sh.x < best:
+			best = sh.y - sh.x
+			_cw_dir = Vector2(cos(th), sin(th))
+			_cw_in = sh.x
+			_cw_out = sh.y
+
+
+## The causeway's two ends (on the islet, on the outer shore) in world metres.
+func causeway_ends() -> PackedVector2Array:
+	return PackedVector2Array([_lag_c + _cw_dir * (_cw_in - 6.0), _lag_c + _cw_dir * (_cw_out + 6.0)])
+
+
+## How much of the causeway stands at a point: 1 on its top, falling to 0 down its banks.
+func causeway_weight(x: float, z: float) -> float:
+	if _cw_dir == Vector2.ZERO:
+		return 0.0
+	var d := Vector2(x, z) - _lag_c
+	var along := d.dot(_cw_dir)
+	if along < _cw_in - 14.0 or along > _cw_out + 14.0:
+		return 0.0
+	var off := absf(d.dot(Vector2(-_cw_dir.y, _cw_dir.x)))
+	# A little wander in its edge, so it is a bank and not a ruled strip.
+	off -= 0.8 * sin(along * 0.21) + 0.5 * sin(along * 0.53 + 1.3)
+	var ends := smoothstep(_cw_in - 14.0, _cw_in - 4.0, along) * (1.0 - smoothstep(_cw_out + 4.0, _cw_out + 14.0, along))
+	return (1.0 - smoothstep(CAUSEWAY_HALF, CAUSEWAY_HALF + CAUSEWAY_BANK, off)) * ends
+
+
 ## THE LAGOON CARVED into the ground `g` (metres over the base, the zones'
 ## shelves already in it): the bed under the water, shelving to the shores; the
 ## beaches rising gently from the water on both sides, and past them the banks,
@@ -313,6 +360,14 @@ func lagoon_at(x: float, z: float) -> Vector3:
 func lagoon(x: float, z: float, g: float) -> float:
 	if not _lagoon:
 		return g
+	var carved := _lagoon_carve(x, z, g)
+	var cw := causeway_weight(x, z)
+	if cw <= 0.0:
+		return carved
+	return lerpf(carved, maxf(carved, _lag_level + CAUSEWAY_RISE), cw)
+
+
+func _lagoon_carve(x: float, z: float, g: float) -> float:
 	var dx := x - _lag_c.x
 	var dz := z - _lag_c.y
 	if dx * dx + dz * dz > _lag_reach * _lag_reach:
@@ -763,6 +818,7 @@ func _place_lagoon(field: IslandField, isl, zones: Array) -> void:
 			field.zone_at(q.x, q.y, zones, zi)
 			low = minf(low, field.base_height(q.x, q.y, m, isl, zi[4], zi[1], false) - isl.base_y)
 	_lag_level = low - 0.6
+	_place_causeway()
 
 
 # Clear of every hole and pad by `gap` past its reach, and of every ruin line?

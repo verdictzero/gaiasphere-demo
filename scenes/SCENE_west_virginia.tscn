@@ -52,7 +52,7 @@ script = ExtResource("sword")
 [node name="TerrainOccluders" type="Node3D" parent="."]
 script = ExtResource("occl")
 
-[node name="StoneBridge" type="Node3D" parent="."]
+[node name="Causeway" type="Node3D" parent="."]
 script = ExtResource("bridge")
 
 [node name="LandingSpot" type="Node3D" parent="."]

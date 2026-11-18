@@ -51,6 +51,14 @@ uniform float macro_strength : hint_range(0.0, 1.0) = 0.45;
 // Detail normals fade out by this distance: they are noise beyond it.
 uniform float detail_distance = 140.0;
 
+// The causeway across the mere: a line (xz to xz) and half its cobbled width.
+uniform sampler2D cobble_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D cobble_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec4 causeway = vec4(0.0);
+uniform float causeway_half = 0.0;
+uniform float cobble_size = 3.0;
+uniform vec3 cobble_tint : source_color = vec3(1.25, 1.2, 1.1);
+
 global uniform float enviro_wetness;
 
 vec3 udn(sampler2D tex, vec2 uv) {
@@ -151,6 +159,20 @@ void fragment() {
 	vec3 world_n = normalize(geo_n + vec3(flat_n.x, 0.0, flat_n.y) * detail * keep);
 	world_n = normalize(mix(world_n, rock_world_n, max(w.b, bank_w)));
 
+	if (causeway_half > 0.0) {
+		vec2 ab = causeway.zw - causeway.xy;
+		float t = clamp(dot(p - causeway.xy, ab) / dot(ab, ab), 0.0, 1.0);
+		float off = length(p - causeway.xy - ab * t);
+		// A ragged edge: the stones give out into the bank unevenly.
+		float cw = 1.0 - smoothstep(causeway_half - 0.5, causeway_half + 0.9, off + (macro2 - 0.5) * 1.6);
+		if (cw > 0.0) {
+			vec2 cp = p / cobble_size;
+			albedo = mix(albedo, textureGrad(cobble_albedo, cp, dFdx(cp), dFdy(cp)).rgb * cobble_tint, cw);
+			vec3 cn = textureGrad(cobble_normal, cp, dFdx(cp), dFdy(cp)).xyz * 2.0 - 1.0;
+			world_n = normalize(mix(world_n, normalize(geo_n + vec3(cn.x, 0.0, cn.y) * detail * 1.4), cw));
+			roughness = mix(roughness, 0.8, cw);
+		}
+	}
 	albedo *= mix(1.0, 0.62 + macro * 0.5 + macro2 * 0.26, macro_strength);
 	// Wet ground is darker and shinier; rain soaks the hollows of the noise first.
 	float wet = clamp(max(damp, enviro_wetness * (0.55 + macro2 * 0.9)), 0.0, 1.0);
