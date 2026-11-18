@@ -50,7 +50,7 @@ var _scale := 1.0
 # sword in the stone.
 var _islet := Vector2.ZERO
 var _islet_radius := 0.0
-var _clearing := 7.0
+var _clearing := SwordStone.MEADOW
 
 
 func _ready() -> void:
@@ -328,7 +328,8 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				continue
 			var x := x0 + (float(ix) + _hash(cx, cz, 26)) * grid
 			var z := z0 + (float(iz) + _hash(cx, cz, 27)) * grid
-			if Vector2(x, z).distance_to(_islet) < 1.8:
+			# A few ferns stray into the meadow's edge; none in its middle.
+			if Vector2(x, z).distance_to(_islet) < _clearing * (0.55 + 0.45 * _hash(cx, cz, 32)):
 				continue
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)):
@@ -361,6 +362,8 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var z := (float(cz) + _hash(cx, cz, 42)) * grid
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)) or float(s.get("flatten", 0.0)) > 0.2:
+				continue
+			if Vector2(x, z).distance_to(_islet) < _clearing:
 				continue
 			var w: Color = s.get("weights", Color(1, 0, 0, 0))
 			var flow := float(s.get("flow_weight", 0.0))
@@ -405,9 +408,19 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				continue
 			var w: Color = s.get("weights", Color(1, 0, 0, 0))
 			var want := clampf(w.r * 1.5, 0.0, 1.0) * (1.0 - 0.45 * float(s.get("forest", 0.0)))
-			if float(s.get("flow_weight", 0.0)) > 0.5 or float(s.get("flatten", 0.0)) > 0.3:
+			if (float(s.get("flow_weight", 0.0)) > 0.5 or float(s.get("flatten", 0.0)) > 0.3) \
+					and Vector2(x0 + (float(ix) + 0.5) * grid, z0 + (float(iz) + 0.5) * grid).distance_to(_islet) > _clearing * 1.15:
 				continue
 			var patch := 0.35 + 0.65 * _hash(cx >> 3, cz >> 3, 51)
+			var px := x0 + (float(ix) + 0.5) * grid
+			var pz := z0 + (float(iz) + 0.5) * grid
+			var meadow := 1.0 - smoothstep(_clearing * 0.8, _clearing * 1.15, Vector2(px, pz).distance_to(_islet))
+			if meadow > 0.0:
+				# The meadow round the stone is all grass, thick and even.
+				want = maxf(want, meadow * 1.3)
+				patch = maxf(patch, meadow)
+			if Vector2(px, pz).distance_to(_islet) < 1.3:
+				continue
 			if _hash(cx, cz, 52) > want * patch * 0.8 * density:
 				continue
 			var x := x0 + (float(ix) + _hash(cx, cz, 53)) * grid

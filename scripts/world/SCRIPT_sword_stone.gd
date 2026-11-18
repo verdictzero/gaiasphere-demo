@@ -2,13 +2,17 @@ class_name SwordStone
 extends Node3D
 
 # THE SWORD IN THE STONE, at the heart of the island: on the islet in the middle of
-# the mere, in a small clearing the forest leaves round it (SCRIPT_flora.gd keeps
-# trees `clearing` metres back). The model is assets/sword_in_stone, at the size it
+# the mere, in a meadow the forest leaves round it (SCRIPT_flora.gd reads `MEADOW`),
+# under a single shaft of pale light that comes straight down from nowhere: a
+# cone of light with no top (SHADER_light_beam) and a spotlight inside it that
+# does the actual lighting. The model is assets/sword_in_stone, at the size it
 # was made: the stone stands 1.4 m, the pommel a little under 3 m.
 
 @export var world_path: NodePath = ^"../IslandWorld"
-## Metres round the stone that are kept free of trees.
-@export var clearing := 7.0
+## Radius of the meadow round the stone, metres: grass, no trees.
+const MEADOW := 21.0
+@export var beam_height := 85.0
+@export var beam_color := Color(0.72, 0.85, 1.0)
 @export var yaw_degrees := 205.0
 
 
@@ -47,4 +51,46 @@ func _ready() -> void:
 	shape.position.y = 0.7
 	body.add_child(shape)
 	model.add_child(body)
+	_build_beam(model.position)
 	print("[sword] in the stone at %s" % model.position)
+
+
+func _build_beam(at: Vector3) -> void:
+	var cone := CylinderMesh.new()
+	cone.top_radius = 1.1
+	cone.bottom_radius = 4.2
+	cone.height = beam_height
+	cone.radial_segments = 24
+	cone.rings = 1
+	cone.cap_top = false
+	cone.cap_bottom = false
+	var noise := NoiseTexture2D.new()
+	noise.width = 128
+	noise.height = 256
+	noise.seamless = true
+	var fn := FastNoiseLite.new()
+	fn.frequency = 0.03
+	noise.noise = fn
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/SHADER_light_beam.gdshader")
+	mat.set_shader_parameter("beam_color", beam_color)
+	mat.set_shader_parameter("dust", noise)
+	var shaft := MeshInstance3D.new()
+	shaft.name = "Beam"
+	shaft.mesh = cone
+	shaft.material_override = mat
+	shaft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shaft.position = at + Vector3(0, beam_height * 0.5 - 0.3, 0)
+	add_child(shaft)
+	var lamp := SpotLight3D.new()
+	lamp.name = "BeamLight"
+	lamp.light_color = beam_color
+	lamp.light_energy = 14.0
+	lamp.spot_range = 46.0
+	lamp.spot_angle = 9.0
+	lamp.spot_angle_attenuation = 0.6
+	lamp.spot_attenuation = 0.35
+	lamp.shadow_enabled = true
+	lamp.position = at + Vector3(0, 40.0, 0)
+	lamp.rotation_degrees = Vector3(-90, 0, 0)
+	add_child(lamp)
