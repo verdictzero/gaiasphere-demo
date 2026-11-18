@@ -3,7 +3,8 @@
 #   push to the release branch -> a release v<config/version> (project.godot's)
 #                                 with both zips; bump the version to make another
 #   push a tag v<something>    -> a release of that name
-#   run it by hand (Actions)   -> the zips as a workflow artifact, no release
+#   run it by hand (Actions)   -> the builds as a workflow artifact; tick `release`
+#                                 to publish v<config/version> from that branch too
 name: Build
 
 on:
@@ -11,6 +12,11 @@ on:
     branches: [release]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Also publish a release named v<config/version>"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -62,7 +68,7 @@ jobs:
             build/WestVirginia_android.apk
 
       - name: Release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || inputs.release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
