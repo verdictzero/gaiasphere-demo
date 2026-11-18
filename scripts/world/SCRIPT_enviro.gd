@@ -46,6 +46,8 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 ## Cold, slightly drained colour: the look of the place. 0 turns the grade off.
 @export_range(0.0, 1.0) var spooky := 0.5
 @export var god_rays := true
+## How far the fog turns gold when the sun is low (0 leaves it grey).
+@export_range(0.0, 1.0) var fog_warmth := 0.8
 
 var sun_dir := Vector3.UP
 var moon_dir := Vector3.DOWN
@@ -330,6 +332,11 @@ func _apply(dt: float) -> void:
 	var ambient_energy := lerpf(0.75, 1.9, day) * lerpf(1.0, 1.2, overcast)
 	fog_color = horizon.lerp(ambient, 0.35)
 	fog_color += Color(tint.r, tint.g, tint.b) * energy * (0.05 + 0.06 * dusk)
+	# Golden hour: the air itself goes gold. Fog keeps its brightness and takes the
+	# low sun's colour, more the lower the sun and the more of it gets through.
+	var gold := clampf(dusk * direct * fog_warmth, 0.0, 1.0)
+	var fog_lum := (fog_color.r + fog_color.g + fog_color.b) / 3.0
+	fog_color = fog_color.lerp(Color(1.0, 0.68, 0.36) * fog_lum * 1.5, gold)
 
 	_env.ambient_light_color = ambient + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
 	_env.ambient_light_energy = ambient_energy
