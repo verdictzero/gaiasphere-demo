@@ -84,7 +84,7 @@
    },
    "alphaMode": "MASK",
    "alphaCutoff": 0.38,
-   "doubleSided": false
+   "doubleSided": true
   }
  ],
  "textures": [
@@ -136,7 +136,7 @@
  "buffers": [
   {
    "uri": "fir_giant_a_lod1.bin",
-   "byteLength": 317480
+   "byteLength": 299384
   }
  ],
  "bufferViews": [
@@ -203,7 +203,7 @@
   {
    "buffer": 0,
    "byteOffset": 281288,
-   "byteLength": 36192,
+   "byteLength": 18096,
    "target": 34963
   }
  ],
@@ -292,7 +292,7 @@
   {
    "bufferView": 10,
    "componentType": 5123,
-   "count": 18096,
+   "count": 9048,
    "type": "SCALAR"
   }
  ]

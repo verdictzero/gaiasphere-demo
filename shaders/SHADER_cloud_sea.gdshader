@@ -14,7 +14,7 @@ const int MAX_STEPS = 40;
 
 uniform float sea_top = -45.0;
 uniform float thickness = 175.0;
-uniform float rise = 38.0;
+uniform float rise = 16.0;
 uniform float max_march = 6000.0;
 uniform int steps : hint_range(4, 40) = 20;
 
@@ -55,7 +55,7 @@ float density_at(vec3 wp) {
 	float bank = smoothstep(0.02, 0.5, prox);
 	// Against the island the sea stands higher and its top is ragged with wisps.
 	float surface_y = sea_top - (1.0 - f) * bump_amp * (1.0 - 0.6 * bank) + rise * bank
-			+ (tb - 0.5) * 22.0 * bank;
+			+ (tb - 0.5) * 12.0 * bank;
 	if (wp.y > surface_y) {
 		return 0.0;
 	}

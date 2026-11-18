@@ -84,7 +84,7 @@
    },
    "alphaMode": "MASK",
    "alphaCutoff": 0.38,
-   "doubleSided": false
+   "doubleSided": true
   }
  ],
  "textures": [
@@ -136,7 +136,7 @@
  "buffers": [
   {
    "uri": "fir_medium_b_lod2.bin",
-   "byteLength": 72792
+   "byteLength": 68568
   }
  ],
  "bufferViews": [
@@ -203,7 +203,7 @@
   {
    "buffer": 0,
    "byteOffset": 64344,
-   "byteLength": 8448,
+   "byteLength": 4224,
    "target": 34963
   }
  ],
@@ -292,7 +292,7 @@
   {
    "bufferView": 10,
    "componentType": 5123,
-   "count": 4224,
+   "count": 2112,
    "type": "SCALAR"
   }
  ]

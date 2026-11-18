@@ -48,7 +48,7 @@
    },
    "alphaMode": "MASK",
    "alphaCutoff": 0.4,
-   "doubleSided": false
+   "doubleSided": true
   }
  ],
  "textures": [
@@ -73,7 +73,7 @@
  "buffers": [
   {
    "uri": "fern_medium_b_lod1.bin",
-   "byteLength": 4664
+   "byteLength": 4268
   }
  ],
  "bufferViews": [
@@ -110,7 +110,7 @@
   {
    "buffer": 0,
    "byteOffset": 3872,
-   "byteLength": 792,
+   "byteLength": 396,
    "target": 34963
   }
  ],
@@ -159,7 +159,7 @@
   {
    "bufferView": 5,
    "componentType": 5123,
-   "count": 396,
+   "count": 198,
    "type": "SCALAR"
   }
  ]

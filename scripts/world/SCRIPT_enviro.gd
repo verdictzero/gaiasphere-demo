@@ -416,4 +416,4 @@ func _apply(dt: float) -> void:
 			uv = Vector2(sp.x / size.x, sp.y / size.y)
 		_rays_mat.set_shader_parameter("light_uv", uv)
 		_rays_mat.set_shader_parameter("ray_color", Color(tint.r, tint.g, tint.b))
-		_rays_mat.set_shader_parameter("intensity", strength * (0.55 if use_sun else 0.25) * minf(energy + 0.15, 1.0))
+		_rays_mat.set_shader_parameter("intensity", strength * (0.3 if use_sun else 0.16) * lerpf(1.0, 0.2, smoothstep(40.0, 300.0, cam.global_position.y)) * minf(energy + 0.15, 1.0))

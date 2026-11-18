@@ -40,5 +40,5 @@ void fragment() {
 	}
 	// Squared: the shafts stand out from the general glow instead of washing the frame.
 	float shaft = lit / float(samples);
-	ALBEDO = ray_color * (shaft * shaft * 1.6 + shaft * 0.25) * intensity;
+	ALBEDO = ray_color * (shaft * shaft * 1.6 + shaft * 0.1) * intensity;
 }

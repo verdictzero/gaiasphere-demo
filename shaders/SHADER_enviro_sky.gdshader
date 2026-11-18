@@ -116,7 +116,7 @@ vec4 clouds(vec3 origin, vec3 dir, float jitter) {
 	float n = float(cloud_steps);
 	float dt = (t1 - t0) / n;
 	// A little jitter hides the slices; a lot of it is the speckle.
-	float t = t0 + dt * (0.35 + 0.3 * jitter);
+	float t = t0 + dt * (0.44 + 0.12 * jitter);
 	float trans = 1.0;
 	vec3 light = vec3(0.0);
 	float cosang = dot(dir, cloud_light_dir);

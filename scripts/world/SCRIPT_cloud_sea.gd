@@ -26,7 +26,7 @@ extends Node3D
 ## half of this or the geometric edge shows.
 @export var deck_size := 12000.0
 ## How far the sea climbs the island's wall, metres above `sea_altitude`.
-@export var rise := 38.0
+@export var rise := 16.0
 @export var world_path: NodePath = ^"../IslandWorld"
 
 var _prox_thread: Thread
