@@ -118,8 +118,8 @@ func _process(_delta: float) -> bool:
 			while coast > 200.0 and not world.is_land(Vector3(coast, 0.0, 0.0)):
 				coast -= 10.0
 			_explorer.flying = true
-			_explorer.global_position = Vector3(coast + 150.0, 30.0, 260.0)
-			_look_at(Vector3(coast - 40.0, -25.0, -80.0))
+			_explorer.global_position = Vector3(coast + 75.0, 6.0, 170.0)
+			_look_at(Vector3(coast - 5.0, -14.0, -60.0))
 			_wait = _frames_for(240)
 		6:
 			_shot("6_edge")
