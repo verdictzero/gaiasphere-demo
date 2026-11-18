@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://de28ccvg6784l"
-path="res://.godot/imported/mossy_cobblestone_orm.jpg-071ad908bfd4ae358af31cc8190aaaf2.ctex"
+path.s3tc="res://.godot/imported/mossy_cobblestone_orm.jpg-071ad908bfd4ae358af31cc8190aaaf2.s3tc.ctex"
+path.etc2="res://.godot/imported/mossy_cobblestone_orm.jpg-071ad908bfd4ae358af31cc8190aaaf2.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/mossy_cobblestone_orm.jpg"
-dest_files=["res://.godot/imported/mossy_cobblestone_orm.jpg-071ad908bfd4ae358af31cc8190aaaf2.ctex"]
+dest_files=["res://.godot/imported/mossy_cobblestone_orm.jpg-071ad908bfd4ae358af31cc8190aaaf2.s3tc.ctex", "res://.godot/imported/mossy_cobblestone_orm.jpg-071ad908bfd4ae358af31cc8190aaaf2.etc2.ctex"]
 
 [params]
 
