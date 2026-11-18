@@ -36,7 +36,7 @@ const server = http.createServer((req, res) => {
     const W = vw * SS, H = vh * SS;
     const url = `${base}/${path.relative(repo, assets)}/${t.lods[0].file}`;
     const imgs = await page.evaluate(a => window.bake(...a), [url, radius, y0, y1, W, H]);
-    ['color_z', 'normal_z', 'color_x', 'normal_x'].forEach((n, i) =>
+    ['color_z', 'normal_z', 'color_x', 'normal_x', 'color_a', 'normal_a', 'color_b', 'normal_b'].forEach((n, i) =>
       fs.writeFileSync(path.join(outDir, `${t.name}_${n}.png`), Buffer.from(imgs[i].split(',')[1], 'base64')));
     frames[t.name] = {radius, y0, y1};
     console.log('baked', t.name);

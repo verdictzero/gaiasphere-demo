@@ -6,14 +6,15 @@
     python3 tools/build_impostors.py assets/fir
 
 Per tree:
-  textures/impostors/<tree>_impostor_basecolor.png   RGBA atlas, left half = view
-  textures/impostors/<tree>_impostor_normal.png      from +Z, right half = view from +X
-  <tree>/<tree>_lod3_cross.gltf      two crossed planes, each as a front and a back quad
-                                     (8 triangles, single-sided)
+  textures/impostors/<tree>_impostor_basecolor.png   RGBA atlas, four views side by side:
+  textures/impostors/<tree>_impostor_normal.png      from +Z, +X and the two diagonals
+  <tree>/<tree>_lod3_cross.gltf      a double cross: four planes 45 degrees apart, each
+                                     a front and a back quad (16 triangles, single-sided)
   <tree>/<tree>_lod4_billboard.gltf  one quad facing +Z (2 triangles); rotate it about Y
                                      toward the camera in the engine
 """
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -87,20 +88,30 @@ def main():
     for entry in manifest:
         name, f = entry["name"], frames[entry["name"]]
         view = entry.get("impostor_view", DEFAULT_VIEW)
-        cz, nz = load_view(bake / f"{name}_color_z.png", bake / f"{name}_normal_z.png", *view)
-        cx, nx = load_view(bake / f"{name}_color_x.png", bake / f"{name}_normal_x.png", *view)
-        to_img(np.hstack([cz, cx]), "RGBA").save(tex_dir / f"{name}_impostor_basecolor.png", optimize=True)
-        to_img(np.hstack([nz, nx]), "RGB").save(tex_dir / f"{name}_impostor_normal.png", optimize=True)
+        # Four views side by side: from +Z, from +X, and from the two diagonals.
+        cols, nrms = [], []
+        for tag in ("z", "x", "a", "b"):
+            c, n = load_view(bake / f"{name}_color_{tag}.png", bake / f"{name}_normal_{tag}.png", *view)
+            cols.append(c)
+            nrms.append(n)
+        to_img(np.hstack(cols), "RGBA").save(tex_dir / f"{name}_impostor_basecolor.png", optimize=True)
+        to_img(np.hstack(nrms), "RGB").save(tex_dir / f"{name}_impostor_normal.png", optimize=True)
 
         r, y0, y1 = f["radius"], f["y0"], f["y1"]
         mat = impostor_material(name)
+        k = math.sqrt(0.5)
+        dirs = [(0.0, 1.0), (1.0, 0.0), (k, k), (k, -k)]          # (x, z) the view was taken from
+        # A DOUBLE CROSS: the first pair of planes at right angles, the second pair the
+        # same, turned 45 degrees. Each plane is a front and a back quad.
         cross = bf.Mesh()
         for back in (False, True):
-            plane(cross, (-r, 0), (r, 0), y0, y1, (0, 0, 1), 0.0, 0.5, entry["top"], back)  # +Z view
-            plane(cross, (0, r), (0, -r), y0, y1, (1, 0, 0), 0.5, 1.0, entry["top"], back)  # +X view
+            for i, (dx, dz) in enumerate(dirs):
+                right = (dz, -dx)                                 # the camera's right, in (x, z)
+                plane(cross, (-r * right[0], -r * right[1]), (r * right[0], r * right[1]), y0, y1,
+                      (dx, 0, dz), i / 4.0, (i + 1) / 4.0, entry["top"], back)
         bf.write_gltf(out / name / f"{name}_lod3_cross", f"{name}_LOD3", [(cross, mat)])
         bill = bf.Mesh()
-        plane(bill, (-r, 0), (r, 0), y0, y1, (0, 0, 1), 0.0, 0.5, entry["top"])
+        plane(bill, (-r, 0), (r, 0), y0, y1, (0, 0, 1), 0.0, 0.25, entry["top"])
         bf.write_gltf(out / name / f"{name}_lod4_billboard", f"{name}_LOD4", [(bill, mat)])
 
         entry["lods"] = entry["lods"][:3] + [

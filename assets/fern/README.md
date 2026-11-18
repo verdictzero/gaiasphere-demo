@@ -13,7 +13,7 @@ Triangle counts per LOD:
 | `fern_large_a` | 0.78 m | 2.41 m | 816 | 204 | 96 | 8 | 2 |
 
 Files per fern, in `<fern>/`: `_lod0/1/2.gltf` (meshes; LOD2 keeps two of every three
-fronds, widened), `_lod3_cross.gltf` (two crossed upright planes) and
+fronds, widened), `_lod3_cross.gltf` (four upright planes 45° apart) and
 `_lod4_billboard.gltf` (one quad facing +Z; rotate it about Y toward the camera in the
 engine, it is single-sided). `manifest.json` lists every file and the impostor plane size.
 
@@ -21,7 +21,7 @@ engine, it is single-sided). `manifest.json` lists every file and the impostor p
   keyed from `source/fern_frond_magenta.jpg`. Single-sided on purpose: back faces are
   extra indices on the same vertices. Leave two-sided rendering off. One draw call.
 - `<fern>_impostor` – `textures/impostors/<fern>_impostor_basecolor.png` and `_normal.png`,
-  512×128 atlases (left half: view from +Z, right half: from +X), cutoff 0.33.
+  1024×128 atlases (four views side by side: from +Z, +X and the two diagonals), cutoff 0.33.
 
 Vertex data: `TEXCOORD_1` = wind (x: sway weight, 0 at the root to 1 at the frond tip;
 y: per-frond phase). `COLOR_0` = baked darkening toward the root.

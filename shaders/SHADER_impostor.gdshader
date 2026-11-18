@@ -5,7 +5,9 @@
 // already holds the crown's own shading, and a normal map on two crossed planes
 // lights one of them and blacks out the other.
 shader_type spatial;
-render_mode cull_back, skip_vertex_transform;
+// They neither cast shadows (SCRIPT_flora.gd) nor take them: a shadow falling
+// across flat planes draws the planes.
+render_mode cull_back, skip_vertex_transform, shadows_disabled;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_disable;
 uniform vec3 tint : source_color = vec3(1.0);

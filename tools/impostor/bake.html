@@ -1,7 +1,8 @@
 <!doctype html><html><body style="margin:0;background:#000">
 <script type="importmap">{"imports":{"three":"/tools/impostor/node_modules/three/build/three.module.js","three/addons/":"/tools/impostor/node_modules/three/examples/jsm/"}}</script>
 <script type="module">
-// Orthographic capture of one tree from two directions (camera on +Z and on +X).
+// Orthographic capture of one tree from four directions: camera on +Z, on +X, and
+// on the two diagonals between them (the second, 45-degree pair of planes).
 // Two passes per direction: softly lit base colour, and view-space normals.
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -47,7 +48,8 @@ window.bake = async (url, radius, y0, y1, w, h) => {
   r.setSize(w, h, false);
   const cam = new THREE.OrthographicCamera(-radius, radius, y1, y0, 0.1, 400);
   const out = [];
-  for (const dir of [[0, 0, 1], [1, 0, 0]]) {
+  const s = Math.SQRT1_2;
+  for (const dir of [[0, 0, 1], [1, 0, 0], [s, 0, s], [s, 0, -s]]) {
     cam.position.set(dir[0] * 200, 0, dir[2] * 200); cam.up.set(0, 1, 0);
     cam.lookAt(0, 0, 0); cam.position.y = 0; cam.updateMatrixWorld();
     for (const set of [lit, nrm]) {
@@ -56,7 +58,7 @@ window.bake = async (url, radius, y0, y1, w, h) => {
       out.push(r.domElement.toDataURL('image/png'));
     }
   }
-  return out;   // [colour +Z, normal +Z, colour +X, normal +X]
+  return out;   // colour then normal, for each of the four directions
 };
 document.title = 'ready';
 </script></body></html>
