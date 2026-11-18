@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cjcx35fos6dvu"
 path.s3tc="res://.godot/imported/forrest_ground_01_orm.jpg-d490790fa00cd94348e2c9ce21e1b042.s3tc.ctex"
+path.etc2="res://.godot/imported/forrest_ground_01_orm.jpg-d490790fa00cd94348e2c9ce21e1b042.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/forrest_ground_01_orm.jpg"
-dest_files=["res://.godot/imported/forrest_ground_01_orm.jpg-d490790fa00cd94348e2c9ce21e1b042.s3tc.ctex"]
+dest_files=["res://.godot/imported/forrest_ground_01_orm.jpg-d490790fa00cd94348e2c9ce21e1b042.s3tc.ctex", "res://.godot/imported/forrest_ground_01_orm.jpg-d490790fa00cd94348e2c9ce21e1b042.etc2.ctex"]
 
 [params]
 

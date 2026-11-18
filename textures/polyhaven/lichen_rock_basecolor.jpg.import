@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bbmlo2vh5bxpt"
 path.s3tc="res://.godot/imported/lichen_rock_basecolor.jpg-1e43ab8380bec1b752bf21d9a8d35da2.s3tc.ctex"
+path.etc2="res://.godot/imported/lichen_rock_basecolor.jpg-1e43ab8380bec1b752bf21d9a8d35da2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/lichen_rock_basecolor.jpg"
-dest_files=["res://.godot/imported/lichen_rock_basecolor.jpg-1e43ab8380bec1b752bf21d9a8d35da2.s3tc.ctex"]
+dest_files=["res://.godot/imported/lichen_rock_basecolor.jpg-1e43ab8380bec1b752bf21d9a8d35da2.s3tc.ctex", "res://.godot/imported/lichen_rock_basecolor.jpg-1e43ab8380bec1b752bf21d9a8d35da2.etc2.ctex"]
 
 [params]
 

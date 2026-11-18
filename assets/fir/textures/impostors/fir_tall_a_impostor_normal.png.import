@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2cqg6d6mgw33"
 path.s3tc="res://.godot/imported/fir_tall_a_impostor_normal.png-a3d64b7ab3d4838bb8ebc4283aed76ac.s3tc.ctex"
+path.etc2="res://.godot/imported/fir_tall_a_impostor_normal.png-a3d64b7ab3d4838bb8ebc4283aed76ac.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/fir/textures/impostors/fir_tall_a_impostor_normal.png"
-dest_files=["res://.godot/imported/fir_tall_a_impostor_normal.png-a3d64b7ab3d4838bb8ebc4283aed76ac.s3tc.ctex"]
+dest_files=["res://.godot/imported/fir_tall_a_impostor_normal.png-a3d64b7ab3d4838bb8ebc4283aed76ac.s3tc.ctex", "res://.godot/imported/fir_tall_a_impostor_normal.png-a3d64b7ab3d4838bb8ebc4283aed76ac.etc2.ctex"]
 
 [params]
 

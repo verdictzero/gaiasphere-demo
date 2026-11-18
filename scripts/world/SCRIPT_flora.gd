@@ -64,6 +64,8 @@ func _ready() -> void:
 	var isl: Variant = _field.island_in_cell(_field.hub_cell())
 	if isl != null:
 		_extent = float(_field.island_extent(isl)) + 40.0
+	if OS.has_feature("mobile"):
+		quality = 0
 	_scale = [0.7, 1.0, 1.35][quality]
 	_islet = SwordStone.site(_field)
 	_islet_radius = float(_field.get("flow_lagoon_islet")) * 0.86 if _field.get("flow_lagoon_islet") != null else 0.0

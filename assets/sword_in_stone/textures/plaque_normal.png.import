@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://44kyhqxxuhy"
 path.s3tc="res://.godot/imported/plaque_normal.png-4c198f40c6835407672feab8d0c4fdf3.s3tc.ctex"
+path.etc2="res://.godot/imported/plaque_normal.png-4c198f40c6835407672feab8d0c4fdf3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/sword_in_stone/textures/plaque_normal.png"
-dest_files=["res://.godot/imported/plaque_normal.png-4c198f40c6835407672feab8d0c4fdf3.s3tc.ctex"]
+dest_files=["res://.godot/imported/plaque_normal.png-4c198f40c6835407672feab8d0c4fdf3.s3tc.ctex", "res://.godot/imported/plaque_normal.png-4c198f40c6835407672feab8d0c4fdf3.etc2.ctex"]
 
 [params]
 

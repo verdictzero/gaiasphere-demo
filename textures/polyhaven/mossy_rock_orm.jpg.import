@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0cw5ewfaglie"
 path.s3tc="res://.godot/imported/mossy_rock_orm.jpg-88df95de6a1ff31d9604048abc1589de.s3tc.ctex"
+path.etc2="res://.godot/imported/mossy_rock_orm.jpg-88df95de6a1ff31d9604048abc1589de.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/mossy_rock_orm.jpg"
-dest_files=["res://.godot/imported/mossy_rock_orm.jpg-88df95de6a1ff31d9604048abc1589de.s3tc.ctex"]
+dest_files=["res://.godot/imported/mossy_rock_orm.jpg-88df95de6a1ff31d9604048abc1589de.s3tc.ctex", "res://.godot/imported/mossy_rock_orm.jpg-88df95de6a1ff31d9604048abc1589de.etc2.ctex"]
 
 [params]
 

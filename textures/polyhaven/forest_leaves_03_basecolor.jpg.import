@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5e5kwewpoa38"
 path.s3tc="res://.godot/imported/forest_leaves_03_basecolor.jpg-e2b2c702d4af6f578004ff316c120a37.s3tc.ctex"
+path.etc2="res://.godot/imported/forest_leaves_03_basecolor.jpg-e2b2c702d4af6f578004ff316c120a37.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/forest_leaves_03_basecolor.jpg"
-dest_files=["res://.godot/imported/forest_leaves_03_basecolor.jpg-e2b2c702d4af6f578004ff316c120a37.s3tc.ctex"]
+dest_files=["res://.godot/imported/forest_leaves_03_basecolor.jpg-e2b2c702d4af6f578004ff316c120a37.s3tc.ctex", "res://.godot/imported/forest_leaves_03_basecolor.jpg-e2b2c702d4af6f578004ff316c120a37.etc2.ctex"]
 
 [params]
 

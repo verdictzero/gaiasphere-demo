@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2vgtvtyuj1wu"
 path.s3tc="res://.godot/imported/mud_forest_basecolor.jpg-e877e3119730bf230324a21646671c97.s3tc.ctex"
+path.etc2="res://.godot/imported/mud_forest_basecolor.jpg-e877e3119730bf230324a21646671c97.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/mud_forest_basecolor.jpg"
-dest_files=["res://.godot/imported/mud_forest_basecolor.jpg-e877e3119730bf230324a21646671c97.s3tc.ctex"]
+dest_files=["res://.godot/imported/mud_forest_basecolor.jpg-e877e3119730bf230324a21646671c97.s3tc.ctex", "res://.godot/imported/mud_forest_basecolor.jpg-e877e3119730bf230324a21646671c97.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5gf0q2qrj5u4"
 path.s3tc="res://.godot/imported/seaside_rock_nor_gl_4k.jpg-add5b93d84cb210260191e434aba738e.s3tc.ctex"
+path.etc2="res://.godot/imported/seaside_rock_nor_gl_4k.jpg-add5b93d84cb210260191e434aba738e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/sword_in_stone/textures/seaside_rock_nor_gl_4k.jpg"
-dest_files=["res://.godot/imported/seaside_rock_nor_gl_4k.jpg-add5b93d84cb210260191e434aba738e.s3tc.ctex"]
+dest_files=["res://.godot/imported/seaside_rock_nor_gl_4k.jpg-add5b93d84cb210260191e434aba738e.s3tc.ctex", "res://.godot/imported/seaside_rock_nor_gl_4k.jpg-add5b93d84cb210260191e434aba738e.etc2.ctex"]
 
 [params]
 

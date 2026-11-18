@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cyk7ad4dxkbkm"
 path.s3tc="res://.godot/imported/forest_leaves_03_normal.jpg-3085bfcc7093ad804e1df02828e15b70.s3tc.ctex"
+path.etc2="res://.godot/imported/forest_leaves_03_normal.jpg-3085bfcc7093ad804e1df02828e15b70.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/forest_leaves_03_normal.jpg"
-dest_files=["res://.godot/imported/forest_leaves_03_normal.jpg-3085bfcc7093ad804e1df02828e15b70.s3tc.ctex"]
+dest_files=["res://.godot/imported/forest_leaves_03_normal.jpg-3085bfcc7093ad804e1df02828e15b70.s3tc.ctex", "res://.godot/imported/forest_leaves_03_normal.jpg-3085bfcc7093ad804e1df02828e15b70.etc2.ctex"]
 
 [params]
 

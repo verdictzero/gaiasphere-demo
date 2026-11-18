@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cge8n8bpf882y"
 path.s3tc="res://.godot/imported/fir_giant_b_impostor_normal.png-024d91e64c7529c76e72f27e675660c4.s3tc.ctex"
+path.etc2="res://.godot/imported/fir_giant_b_impostor_normal.png-024d91e64c7529c76e72f27e675660c4.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/fir/textures/impostors/fir_giant_b_impostor_normal.png"
-dest_files=["res://.godot/imported/fir_giant_b_impostor_normal.png-024d91e64c7529c76e72f27e675660c4.s3tc.ctex"]
+dest_files=["res://.godot/imported/fir_giant_b_impostor_normal.png-024d91e64c7529c76e72f27e675660c4.s3tc.ctex", "res://.godot/imported/fir_giant_b_impostor_normal.png-024d91e64c7529c76e72f27e675660c4.etc2.ctex"]
 
 [params]
 

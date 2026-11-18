@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7khikeas2siv"
 path.s3tc="res://.godot/imported/dark_rock_02_basecolor.jpg-16471c690b6affb62115674e83e89c4f.s3tc.ctex"
+path.etc2="res://.godot/imported/dark_rock_02_basecolor.jpg-16471c690b6affb62115674e83e89c4f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://textures/polyhaven/dark_rock_02_basecolor.jpg"
-dest_files=["res://.godot/imported/dark_rock_02_basecolor.jpg-16471c690b6affb62115674e83e89c4f.s3tc.ctex"]
+dest_files=["res://.godot/imported/dark_rock_02_basecolor.jpg-16471c690b6affb62115674e83e89c4f.s3tc.ctex", "res://.godot/imported/dark_rock_02_basecolor.jpg-16471c690b6affb62115674e83e89c4f.etc2.ctex"]
 
 [params]
 

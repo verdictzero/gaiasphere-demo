@@ -83,7 +83,8 @@ func _ready() -> void:
 	# (and lays its collision) round where the body is about to stand.
 	global_position = _home() + Vector3.UP * 3.0
 	_face(_home_facing())
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if not DisplayServer.is_touchscreen_available():
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 ## Put the body down at the start. The loading cover calls this once there is
@@ -125,7 +126,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_fly_step(1.25)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_fly_step(0.8)
-		elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not DisplayServer.is_touchscreen_available():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed(&"wv_release"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

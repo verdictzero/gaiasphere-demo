@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cpcqoay5h7hm6"
 path.s3tc="res://.godot/imported/fern_medium_a_impostor_normal.png-dcf3ee753c901fa81494524d54c5e538.s3tc.ctex"
+path.etc2="res://.godot/imported/fern_medium_a_impostor_normal.png-dcf3ee753c901fa81494524d54c5e538.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/fern/textures/impostors/fern_medium_a_impostor_normal.png"
-dest_files=["res://.godot/imported/fern_medium_a_impostor_normal.png-dcf3ee753c901fa81494524d54c5e538.s3tc.ctex"]
+dest_files=["res://.godot/imported/fern_medium_a_impostor_normal.png-dcf3ee753c901fa81494524d54c5e538.s3tc.ctex", "res://.godot/imported/fern_medium_a_impostor_normal.png-dcf3ee753c901fa81494524d54c5e538.etc2.ctex"]
 
 [params]
 

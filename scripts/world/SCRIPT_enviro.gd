@@ -77,6 +77,8 @@ var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	if OS.has_feature("mobile"):
+		quality = 0
 	_rng.seed = 152
 	_to = WEATHERS.get(weather, WEATHERS["clear"]).duplicate()
 	_from = _to.duplicate()

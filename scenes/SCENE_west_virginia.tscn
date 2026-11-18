@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/SCRIPT_explorer.gd" id="explorer"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_touch_controls.gd" id="touch"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_loading_cover.gd" id="cover"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_island_world.gd" id="world"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_enviro.gd" id="enviro"]
@@ -75,6 +76,12 @@ script = ExtResource("explorer")
 landing_spot_path = NodePath("../LandingSpot")
 river_water_path = NodePath("../RiverWater")
 cloud_sea_path = NodePath("../CloudSea")
+
+[node name="TouchLayer" type="CanvasLayer" parent="."]
+layer = 50
+
+[node name="TouchControls" type="Control" parent="TouchLayer"]
+script = ExtResource("touch")
 
 [node name="LoadingCover" type="CanvasLayer" parent="."]
 script = ExtResource("cover")
