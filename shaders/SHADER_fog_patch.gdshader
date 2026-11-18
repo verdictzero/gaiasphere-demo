@@ -58,8 +58,14 @@ void fragment() {
 	// Fog between the eye and the sun glows; fog with the sun behind the eye is flat.
 	vec3 view = normalize((INV_VIEW_MATRIX * vec4(normalize(VERTEX), 0.0)).xyz);
 	float toward = max(dot(view, normalize(enviro_light_dir)), 0.0);
-	vec3 col = enviro_fog_color.rgb * 0.9 + enviro_ambient.rgb * 0.2
-			+ enviro_light_color.rgb * (0.1 + 0.6 * pow(toward, 4.0));
+	// THE SUN ON IT. The top of a bank stands in the light and its foot in the shade
+	// of the trees and of itself; thin wisps let more through than the dense middle;
+	// and all of it takes the sun's colour, so at golden hour the fog is gold.
+	float height = 1.0 - UV.y;
+	float thin = 1.0 - smoothstep(0.35, 0.8, n) * body;
+	float sunlit = (0.25 + 0.75 * smoothstep(0.1, 0.85, height)) * (0.55 + 0.45 * thin);
+	vec3 shade = enviro_fog_color.rgb * 0.55 + enviro_ambient.rgb * 0.25;
+	vec3 col = shade + enviro_light_color.rgb * sunlit * (0.2 + 0.85 * pow(toward, 3.0));
 	ALBEDO = col;
 	ALPHA = a;
 }

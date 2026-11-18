@@ -24,8 +24,8 @@ uniform sampler3D cloud_shape : repeat_enable, filter_linear;
 uniform sampler2D cloud_weather : repeat_enable, filter_linear;
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.45;
 uniform float cloud_density = 0.035;
-uniform float cloud_base = 900.0;
-uniform float cloud_top = 2300.0;
+uniform float cloud_base = 850.0;
+uniform float cloud_top = 3000.0;
 uniform vec3 cloud_wind = vec3(0.0);      // metres the field has drifted
 uniform vec3 cloud_light_dir = vec3(0.0, 1.0, 0.0);
 uniform vec3 cloud_light_color : source_color = vec3(1.0);

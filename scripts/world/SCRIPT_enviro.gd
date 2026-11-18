@@ -25,7 +25,7 @@ const WEATHERS := {
 	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.01, "wind": 0.70, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
 	# The island as it is meant to be seen: broken cloud that lets a low sun through,
 	# fog thick enough to carry its shafts.
-	"golden_fog": {"coverage": 0.46, "density": 0.034, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
+	"golden_fog": {"coverage": 0.66, "density": 0.06, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
 	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.008, "wind": 1.00, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
 }
 const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "rain", "storm"]
