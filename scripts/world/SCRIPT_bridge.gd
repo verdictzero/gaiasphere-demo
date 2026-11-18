@@ -29,8 +29,8 @@ func _ready() -> void:
 	start = Vector3(ends[1].x, field.height_at(ends[1].x, ends[1].y, 0.0), ends[1].y)
 	var ground := world.get(&"terrain_material") as ShaderMaterial
 	if ground != null:
-		ground.set_shader_parameter("cobble_albedo", load("res://textures/polyhaven/mossy_cobblestone_basecolor.jpg"))
-		ground.set_shader_parameter("cobble_normal", load("res://textures/polyhaven/mossy_cobblestone_normal.jpg"))
+		ground.set_shader_parameter("cobble_albedo", load("res://textures/polyhaven/cobblestone_floor_04_basecolor.jpg"))
+		ground.set_shader_parameter("cobble_normal", load("res://textures/polyhaven/cobblestone_floor_04_normal.jpg"))
 		ground.set_shader_parameter("causeway", Vector4(ends[0].x, ends[0].y, ends[1].x, ends[1].y))
 		ground.set_shader_parameter("causeway_half", flows.CAUSEWAY_HALF)
 	var water := get_node_or_null(water_path)

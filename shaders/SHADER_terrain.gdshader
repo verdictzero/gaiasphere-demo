@@ -56,8 +56,8 @@ uniform sampler2D cobble_albedo : source_color, filter_linear_mipmap_anisotropic
 uniform sampler2D cobble_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 causeway = vec4(0.0);
 uniform float causeway_half = 0.0;
-uniform float cobble_size = 3.0;
-uniform vec3 cobble_tint : source_color = vec3(1.25, 1.2, 1.1);
+uniform float cobble_size = 2.2;
+uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
 global uniform float enviro_wetness;
 
