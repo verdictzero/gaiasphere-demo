@@ -9,9 +9,9 @@ extends Node3D
 
 @export var world_path: NodePath = ^"../IslandWorld"
 @export var deck_width := 4.6
-@export var arch := 2.4
+@export var arch := 6.5
 @export var parapet := Vector2(0.45, 0.8)     # thickness, height
-@export var pier_spacing := 15.0
+@export var pier_spacing := 18.0
 @export var inland := 9.0
 
 var start := Vector3.ZERO       # on the outer shore
@@ -54,7 +54,7 @@ func _ready() -> void:
 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var segs := maxi(8, int(length / 3.0))
+	var segs := maxi(8, int(length / 0.9))
 	var line: Array[Vector3] = []
 	for i in segs + 1:
 		var t := float(i) / float(segs)
@@ -63,15 +63,27 @@ func _ready() -> void:
 		y = maxf(y, lerpf(ha, hb, t))
 		line.append(Vector3(lerpf(a.x, b.x, t), y, lerpf(a.y, b.y, t)))
 	var half := deck_width * 0.5
-	_ribbon(st, line, side, -half, half, -0.9, 0.0)                               # the deck
+	# THE ARCHES. Under the deck the stone comes down to the water at each pier and
+	# rises to a thin crown between them: a row of round arches, not a slab.
+	var piers := maxi(1, int((length - 2.0 * inland) / pier_spacing))
+	var span := (length - 2.0 * inland) / float(piers)
+	var lows := PackedFloat32Array()
+	for i in line.size():
+		var d := float(i) / float(segs) * length - inland
+		var top := line[i].y - 0.7
+		if d <= 0.0 or d >= length - 2.0 * inland:
+			lows.append(line[i].y - 3.0)                    # on the bank: down into the ground
+		else:
+			var f := fposmod(d, span) / span
+			lows.append(lerpf(level - 0.5, top, pow(sin(f * PI), 0.6)))
+	_ribbon(st, line, side, -half, half, -0.9, 0.0, lows)                         # the deck and arches
 	_ribbon(st, line, side, -half - parapet.x, -half, -0.9, parapet.y)           # parapets
 	_ribbon(st, line, side, half, half + parapet.x, -0.9, parapet.y)
-	var piers := maxi(1, int((length - 2.0 * inland) / pier_spacing))
 	for k in piers + 1:
 		var t := (inland + (length - 2.0 * inland) * float(k) / float(piers)) / length
 		var p := line[clampi(int(round(t * segs)), 0, segs)]
 		var bed := field.height_at(p.x, p.z, level - 12.0) - 1.5
-		_box(st, Vector3(p.x, (p.y - 0.9 + bed) * 0.5, p.z), along * 1.3, side * (half + parapet.x + 0.35),
+		_box(st, Vector3(p.x, (p.y - 0.9 + bed) * 0.5, p.z), along * 1.5, side * (half + parapet.x + 0.35),
 				Vector3.UP * ((p.y - 0.9 - bed) * 0.5))
 		# A cutwater's worth of extra stone at the waterline.
 		_box(st, Vector3(p.x, level - 0.2, p.z), along * 1.7, side * (half + parapet.x + 0.75), Vector3.UP * 0.9)
@@ -85,9 +97,12 @@ func _ready() -> void:
 	mat.orm_texture = load("res://textures/polyhaven/mossy_cobblestone_orm.jpg")
 	mat.uv1_triplanar = true
 	mat.uv1_world_triplanar = true
-	mat.uv1_scale = Vector3.ONE * 0.4
+	mat.uv1_scale = Vector3.ONE * 0.2          # a 5 m tile: stones a hand or two across
 	mat.uv1_triplanar_sharpness = 4.0
-	mat.albedo_color = Color(0.85, 0.85, 0.82)
+	# The scan is dark; lifted so the stones and their joints read from the shore.
+	mat.albedo_color = Color(2.1, 2.05, 1.95)
+	mat.normal_scale = 1.6
+	mat.roughness = 0.9
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var mi := MeshInstance3D.new()
 	mi.name = "Bridge"
@@ -99,13 +114,16 @@ func _ready() -> void:
 
 
 ## A box-section strip along `line`: from `s0` to `s1` across, `y0` to `y1` about the line.
-func _ribbon(st: SurfaceTool, line: Array[Vector3], side: Vector3, s0: float, s1: float, y0: float, y1: float) -> void:
+func _ribbon(st: SurfaceTool, line: Array[Vector3], side: Vector3, s0: float, s1: float, y0: float, y1: float,
+		lows := PackedFloat32Array()) -> void:
 	for i in line.size() - 1:
 		var p := line[i]
 		var q := line[i + 1]
-		var c := [p + side * s0 + Vector3.UP * y0, p + side * s1 + Vector3.UP * y0,
+		var py := y0 if lows.is_empty() else lows[i] - p.y          # the underside, where given
+		var qy := y0 if lows.is_empty() else lows[i + 1] - q.y
+		var c := [p + side * s0 + Vector3.UP * py, p + side * s1 + Vector3.UP * py,
 				p + side * s1 + Vector3.UP * y1, p + side * s0 + Vector3.UP * y1,
-				q + side * s0 + Vector3.UP * y0, q + side * s1 + Vector3.UP * y0,
+				q + side * s0 + Vector3.UP * qy, q + side * s1 + Vector3.UP * qy,
 				q + side * s1 + Vector3.UP * y1, q + side * s0 + Vector3.UP * y1]
 		for f in [[3, 2, 6, 7], [1, 0, 4, 5], [0, 3, 7, 4], [2, 1, 5, 6]]:
 			_quad(st, c[f[0]], c[f[1]], c[f[2]], c[f[3]])

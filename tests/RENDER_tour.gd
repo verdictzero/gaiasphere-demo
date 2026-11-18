@@ -147,8 +147,12 @@ func _process(_delta: float) -> bool:
 			if bridge != null and bridge.start != Vector3.ZERO:
 				var run: Vector3 = (bridge.finish - bridge.start).normalized()
 				_explorer.flying = true
-				_explorer.global_position = bridge.start - run * 16.0 + run.cross(Vector3.UP) * 13.0 + Vector3(0, 4.5, 0)
-				_look_at(bridge.start.lerp(bridge.finish, 0.45))
+				# Side-on from over the water, sun behind the camera, to see the arches.
+				var off: Vector3 = run.cross(Vector3.UP)
+				if off.dot(_scene.get_node("Enviro").light_dir) < 0.0:
+					off = -off
+				_explorer.global_position = bridge.start.lerp(bridge.finish, 0.3) + off * 34.0 + Vector3(0, 3.0, 0)
+				_look_at(bridge.start.lerp(bridge.finish, 0.5) + Vector3(0, 2.0, 0))
 			_wait = _frames_for(240)
 		8:
 			_shot("8_bridge")
