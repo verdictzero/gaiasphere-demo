@@ -98,4 +98,7 @@ func _ready() -> void:
 					else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 			holder.add_child(mi)
 		placed += 1
+		if placed == 1:
+			print("[cliffs] first: ", kind[0], " at ", holder.global_position, " scale ", holder.scale,
+					" mesh ", lods[0], " aabb ", (lods[0] as Mesh).get_aabb())
 	print("[cliffs] %d rock masses along the edge" % placed)

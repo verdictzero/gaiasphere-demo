@@ -64,8 +64,8 @@ void fragment() {
 	float height = 1.0 - UV.y;
 	float thin = 1.0 - smoothstep(0.35, 0.8, n) * body;
 	float sunlit = (0.25 + 0.75 * smoothstep(0.1, 0.85, height)) * (0.55 + 0.45 * thin);
-	vec3 shade = enviro_fog_color.rgb * 0.55 + enviro_ambient.rgb * 0.25;
-	vec3 col = shade + enviro_light_color.rgb * sunlit * (0.2 + 0.85 * pow(toward, 3.0));
+	vec3 shade = enviro_fog_color.rgb * 0.4 + enviro_ambient.rgb * 0.15;
+	vec3 col = shade + enviro_light_color.rgb * sunlit * (0.3 + 0.9 * pow(toward, 3.0));
 	ALBEDO = col;
 	ALPHA = a;
 }

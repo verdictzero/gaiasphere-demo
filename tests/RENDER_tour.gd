@@ -118,8 +118,12 @@ func _process(_delta: float) -> bool:
 			while coast > 200.0 and not world.is_land(Vector3(coast, 0.0, 0.0)):
 				coast -= 10.0
 			_explorer.flying = true
-			_explorer.global_position = Vector3(coast + 75.0, 6.0, 170.0)
-			_look_at(Vector3(coast - 5.0, -14.0, -60.0))
+			# Looking at one of the rock masses set into the wall, from just off it.
+			var rock := _scene.get_node("CliffDressing").get_child(0) as Node3D
+			var out := Vector3(rock.global_position.x, 0.0, rock.global_position.z).normalized()
+			_explorer.global_position = rock.global_position + out * 70.0 + out.cross(Vector3.UP) * 45.0 + Vector3(0, 8, 0)
+			_look_at(rock.global_position + Vector3(0, -12, 0))
+			print("tour: rock at %s, children %d, visible %s" % [rock.global_position, rock.get_child_count(), rock.is_visible_in_tree()])
 			_wait = _frames_for(240)
 		6:
 			_shot("6_edge")

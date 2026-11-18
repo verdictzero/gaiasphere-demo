@@ -32,7 +32,9 @@ uniform vec3 cloud_light_color : source_color = vec3(1.0);
 uniform vec3 cloud_ambient : source_color = vec3(0.4, 0.45, 0.55);
 uniform int cloud_steps = 28;
 uniform int cloud_light_steps = 3;
-uniform float flash = 0.0;                // lightning
+uniform float flash = 0.0;
+// How much the cloud opens toward the sun (0 none): set when the sun is low.
+uniform float sun_gap = 0.0;                // lightning
 
 float hash13(vec3 p) {
 	p = fract(p * 0.1031);
@@ -51,12 +53,15 @@ float cloud_at(vec3 p, bool cheap) {
 	float shape = texture(cloud_shape, q / 3100.0).r;
 	// Flat bases, rounded tops.
 	float profile = smoothstep(0.0, 0.1, h) * smoothstep(1.0, 0.35, h);
-	float d = (weather * 0.62 + shape * 0.38) - (1.0 - cloud_coverage * 1.08);
-	d = clamp(d * 1.5, 0.0, 1.0);
+	// The deck breaks toward the low sun, far out, so it shines in under the cloud.
+	float toward = dot(normalize(p.xz), normalize(sun_dir.xz + vec2(1e-4)));
+	float gap = smoothstep(0.55, 0.97, toward) * smoothstep(2500.0, 9000.0, length(p.xz)) * sun_gap;
+	float d = (weather * 0.62 + shape * 0.38) - (1.0 - (cloud_coverage - gap * 0.5) * 1.08);
+	d = clamp(d * 1.15, 0.0, 1.0);
 	d = d * d * (3.0 - 2.0 * d) * profile;
 	if (!cheap && d > 0.0) {
 		float detail = texture(cloud_shape, q / 620.0 + cloud_wind / 2600.0).r;
-		d = clamp(d - detail * 0.34 * (1.0 - d), 0.0, 1.0);
+		d = clamp(d - detail * 0.5 * (1.0 - d), 0.0, 1.0);
 	}
 	return d * cloud_density;
 }

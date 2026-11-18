@@ -25,7 +25,7 @@ const WEATHERS := {
 	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.01, "wind": 0.70, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
 	# The island as it is meant to be seen: broken cloud that lets a low sun through,
 	# fog thick enough to carry its shafts.
-	"golden_fog": {"coverage": 0.66, "density": 0.06, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
+	"golden_fog": {"coverage": 0.62, "density": 0.06, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
 	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.008, "wind": 1.00, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
 }
 const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "rain", "storm"]
@@ -329,7 +329,7 @@ func _apply(dt: float) -> void:
 	ambient = ambient.lerp(Color(ambient_grey, ambient_grey, ambient_grey), 0.55)
 	var ambient_energy := lerpf(0.75, 1.9, day) * lerpf(1.0, 1.2, overcast)
 	fog_color = horizon.lerp(ambient, 0.35)
-	fog_color += Color(tint.r, tint.g, tint.b) * energy * 0.05
+	fog_color += Color(tint.r, tint.g, tint.b) * energy * (0.05 + 0.06 * dusk)
 
 	_env.ambient_light_color = ambient + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
 	_env.ambient_light_energy = ambient_energy
@@ -380,6 +380,7 @@ func _apply(dt: float) -> void:
 	_sky_mat.set_shader_parameter("cloud_light_color", cloud_light)
 	_sky_mat.set_shader_parameter("cloud_ambient", ambient * ambient_energy * lerpf(1.0, 0.55, overcast))
 	_sky_mat.set_shader_parameter("flash", flicker)
+	_sky_mat.set_shader_parameter("sun_gap", dusk * (1.0 - smoothstep(0.8, 1.0, coverage)))
 
 	# What every other lit shader reads.
 	var wv := wind_vector()

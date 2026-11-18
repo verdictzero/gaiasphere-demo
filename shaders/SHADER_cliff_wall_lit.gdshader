@@ -60,6 +60,11 @@ void fragment() {
 
 	float macro = texture(rock_albedo, (w_pos.xy + w_pos.zy * 0.83) * rock_scale * 0.11).g
 			+ texture(rock_albedo, (w_pos.zx + w_pos.yx * 0.71) * rock_scale * 0.037).g;
+	// The same rock again at a third the scale, mixed in: no single tile repeats.
+	vec3 q = w_pos * rock_scale * 0.31 + 0.37;
+	vec3 wide = texture(rock_albedo, q.zy).rgb * w.x + texture(rock_albedo, q.xz).rgb * w.y
+			+ texture(rock_albedo, q.xy).rgb * w.z;
+	albedo = mix(albedo, wide, 0.55);
 	albedo *= rock_tint * mix(1.0, 0.45 + macro * 1.1, macro_variation);
 	float roughness = orm.g;
 	float ao = orm.r;

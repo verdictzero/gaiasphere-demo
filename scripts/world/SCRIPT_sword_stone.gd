@@ -57,8 +57,8 @@ func _ready() -> void:
 
 func _build_beam(at: Vector3) -> void:
 	var cone := CylinderMesh.new()
-	cone.top_radius = 1.1
-	cone.bottom_radius = 4.2
+	cone.top_radius = 0.45
+	cone.bottom_radius = 2.1
 	cone.height = beam_height
 	cone.radial_segments = 24
 	cone.rings = 1
@@ -87,7 +87,7 @@ func _build_beam(at: Vector3) -> void:
 	lamp.light_color = beam_color
 	lamp.light_energy = 14.0
 	lamp.spot_range = 46.0
-	lamp.spot_angle = 9.0
+	lamp.spot_angle = 5.5
 	lamp.spot_angle_attenuation = 0.6
 	lamp.spot_attenuation = 0.35
 	lamp.shadow_enabled = true
