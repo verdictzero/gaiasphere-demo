@@ -157,6 +157,17 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		8:
 			_shot("8_bridge")
+			# Down into the shallows beside the causeway: the bed through the water.
+			var cw := _scene.get_node_or_null("Causeway")
+			if cw != null and cw.start != Vector3.ZERO:
+				var along: Vector3 = (cw.finish - cw.start).normalized()
+				var at: Vector3 = cw.start.lerp(cw.finish, 0.12)
+				_explorer.flying = true
+				_explorer.global_position = at + Vector3(0, 1.2, 0)
+				_look_at(at + along.cross(Vector3.UP) * 9.0 + along * 5.0 + Vector3(0, -2.5, 0))
+			_wait = _frames_for(240)
+		9:
+			_shot("9_shallows")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true
