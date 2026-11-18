@@ -42,10 +42,9 @@ LODS = [
 
 
 def material_frond():
-    # single-sided on purpose: back faces are extra indices on the same vertices
     return dict(name="fern_frond", sampler=bf.SAMPLER_CLAMP,
                 base=bf.TEX + "fern_frond_basecolor.png", normal=None, orm=None,
-                extra=dict(alphaMode="MASK", alphaCutoff=0.4, doubleSided=False),
+                extra=dict(alphaMode="MASK", alphaCutoff=0.4, doubleSided=True),
                 pbr=dict(roughnessFactor=0.7))
 
 

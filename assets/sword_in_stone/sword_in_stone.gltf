@@ -1,0 +1,445 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v5.2.40",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1,
+    2
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "plaque",
+   "scale": [
+    0.21000000834465027,
+    0.21000000834465027,
+    0.21000000834465027
+   ],
+   "translation": [
+    0,
+    1.2000000476837158,
+    0
+   ]
+  },
+  {
+   "mesh": 1,
+   "name": "stone"
+  },
+  {
+   "mesh": 2,
+   "name": "sword",
+   "rotation": [
+    -1,
+    0,
+    0,
+    4.371138828673793e-08
+   ],
+   "scale": [
+    0.19999998807907104,
+    0.19999998807907104,
+    0.19999998807907104
+   ],
+   "translation": [
+    0,
+    1.9275028705596924,
+    0
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "plaque",
+   "normalTexture": {
+    "index": 0
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0,
+    "roughnessFactor": 0.5
+   }
+  },
+  {
+   "doubleSided": true,
+   "name": "Material",
+   "normalTexture": {
+    "index": 2
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicFactor": 0,
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
+  },
+  {
+   "doubleSided": true,
+   "name": "sword",
+   "normalTexture": {
+    "index": 5
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 6
+    },
+    "metallicRoughnessTexture": {
+     "index": 7
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "Cube.004",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "Cube",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6,
+      "TEXCOORD_1": 7
+     },
+     "indices": 8,
+     "material": 1
+    }
+   ]
+  },
+  {
+   "name": "Cylinder.001",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 9,
+      "NORMAL": 10,
+      "TEXCOORD_0": 11,
+      "TEXCOORD_1": 12,
+      "TEXCOORD_2": 13
+     },
+     "indices": 14,
+     "material": 2
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  },
+  {
+   "sampler": 0,
+   "source": 6
+  },
+  {
+   "sampler": 0,
+   "source": 7
+  }
+ ],
+ "images": [
+  {
+   "uri": "textures/plaque_normal.png",
+   "name": "plaque_normal"
+  },
+  {
+   "uri": "textures/plaque_albedo.png",
+   "name": "plaque_albedo"
+  },
+  {
+   "uri": "textures/seaside_rock_nor_gl_4k.jpg",
+   "name": "seaside_rock_nor_gl_4k"
+  },
+  {
+   "uri": "textures/seaside_rock_diff_4k.jpg",
+   "name": "seaside_rock_diff_4k"
+  },
+  {
+   "uri": "textures/seaside_rock_rough_4k.jpg",
+   "name": "seaside_rock_rough_4k"
+  },
+  {
+   "uri": "textures/Cylinder_001_Normal.png",
+   "name": "Cylinder_001_Normal"
+  },
+  {
+   "uri": "textures/Cylinder_001_BaseColor.png",
+   "name": "Cylinder_001_BaseColor"
+  },
+  {
+   "uri": "textures/Cylinder_001_Metallic-Cylinder_001_Roughness.png",
+   "name": "Cylinder_001_Metallic-Cylinder_001_Roughness"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 4,
+   "max": [
+    -0.8120334148406982,
+    0.4319286346435547,
+    0.9319286346435547
+   ],
+   "min": [
+    -0.8120334148406982,
+    -1.4319286346435547,
+    -0.9319286346435547
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 6,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 912,
+   "max": [
+    1.1036702394485474,
+    1.4100000858306885,
+    1.1036702394485474
+   ],
+   "min": [
+    -1.1036702394485474,
+    -0.215154230594635,
+    -1.1036702394485474
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 912,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 912,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5126,
+   "count": 912,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5123,
+   "count": 1428,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 12334,
+   "max": [
+    0.13148510456085205,
+    5.281115531921387,
+    0.6467045545578003
+   ],
+   "min": [
+    -0.13148486614227295,
+    -2.3964734077453613,
+    -0.6467045545578003
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 12334,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5126,
+   "count": 12334,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 12,
+   "componentType": 5126,
+   "count": 12334,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 13,
+   "componentType": 5126,
+   "count": 12334,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 14,
+   "componentType": 5123,
+   "count": 29406,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 48,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 48,
+   "byteOffset": 48,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 32,
+   "byteOffset": 96,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 12,
+   "byteOffset": 128,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 10944,
+   "byteOffset": 140,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 10944,
+   "byteOffset": 11084,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 7296,
+   "byteOffset": 22028,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 7296,
+   "byteOffset": 29324,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2856,
+   "byteOffset": 36620,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 148008,
+   "byteOffset": 39476,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 148008,
+   "byteOffset": 187484,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 98672,
+   "byteOffset": 335492,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 98672,
+   "byteOffset": 434164,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 98672,
+   "byteOffset": 532836,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 58812,
+   "byteOffset": 631508,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "sword_in_stone.bin",
+   "byteLength": 690320
+  }
+ ]
+}

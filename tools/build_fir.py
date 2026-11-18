@@ -143,12 +143,9 @@ class Mesh:
         return len(self.p) - 1
 
     def quad(self, a, b, c, d):
+        # One winding only. Foliage is drawn double-sided by its material; the game's
+        # shader (SHADER_foliage) keeps the card's outward "volume" normal on both faces.
         self.idx += [a, b, c, a, c, d]
-        if self.color:
-            # foliage: back faces reuse the same vertices (and therefore the same
-            # outward "volume" normals) so the underside of a bough is not shaded black
-            # the way an engine-flipped double-sided normal would make it
-            self.idx += [c, b, a, d, c, a]
 
     @property
     def tris(self):
@@ -389,15 +386,14 @@ def material_bark():
 def material_bough():
     return dict(name="fir_bough", sampler=SAMPLER_CLAMP,
                 base=TEX + "fir_bough_atlas_basecolor.png", normal=None, orm=None,
-                extra=dict(alphaMode="MASK", alphaCutoff=0.38, doubleSided=False),
+                extra=dict(alphaMode="MASK", alphaCutoff=0.38, doubleSided=True),
                 pbr=dict(roughnessFactor=0.62, baseColorFactor=[0.84, 0.96, 0.86, 1.0]))
 
 
 def material_foliage():
-    # single-sided on purpose, see Mesh.quad
     return dict(name="fir_foliage", sampler=SAMPLER_CLAMP,
                 base=TEX + "fir_branch_basecolor.png", normal=None, orm=None,
-                extra=dict(alphaMode="MASK", alphaCutoff=0.38, doubleSided=False),
+                extra=dict(alphaMode="MASK", alphaCutoff=0.38, doubleSided=True),
                 pbr=dict(roughnessFactor=0.62, baseColorFactor=[0.84, 0.96, 0.86, 1.0]))
 
 

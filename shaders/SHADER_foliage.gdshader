@@ -1,9 +1,10 @@
 // FOLIAGE: fir needles, fern fronds and grass. Lit, alpha-tested cards that sway.
-// The cards are single-sided on purpose: their back faces are extra triangles on
-// the same vertices, so both sides share one outward normal and the underside of
-// a bough is never shaded black.
+// DOUBLE-SIDED: every card is drawn from both faces. The engine turns the normal
+// round on a back face, which would shade the underside of a bough black; the
+// fragment shader turns it back, so both faces are lit by the card's one outward
+// normal.
 shader_type spatial;
-render_mode cull_back, world_vertex_coords;
+render_mode cull_disabled, world_vertex_coords;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform vec3 tint : source_color = vec3(1.0);
@@ -73,4 +74,7 @@ void fragment() {
 	ROUGHNESS = mix(roughness, 0.3, enviro_wetness * 0.7);
 	SPECULAR = 0.35;
 	BACKLIGHT = backlight;
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
 }

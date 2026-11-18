@@ -123,6 +123,18 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		6:
 			_shot("6_edge")
+			# The sword in the stone, in its clearing on the islet.
+			var stone := _scene.get_node_or_null("SwordStone/SwordInStone") as Node3D
+			if stone == null:
+				push_error("tour: no sword in the stone")
+				_fail = true
+			else:
+				_explorer.flying = false
+				_explorer.global_position = stone.global_position + Vector3(4.2, 0.4, 3.4)
+				_look_at(stone.global_position + Vector3(0.0, 1.5, 0.0))
+			_wait = _frames_for(240)
+		7:
+			_shot("7_sword")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true

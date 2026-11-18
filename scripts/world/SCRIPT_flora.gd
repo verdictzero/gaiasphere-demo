@@ -46,6 +46,11 @@ var _prefill_group := -1
 var _prefill_keys: Array[Vector2i] = []
 var _prefilled := false
 var _scale := 1.0
+# The islet in the mere: wooded to its shore, with a clearing in the middle for the
+# sword in the stone.
+var _islet := Vector2.ZERO
+var _islet_radius := 0.0
+var _clearing := 7.0
 
 
 func _ready() -> void:
@@ -60,6 +65,8 @@ func _ready() -> void:
 	if isl != null:
 		_extent = float(_field.island_extent(isl)) + 40.0
 	_scale = [0.7, 1.0, 1.35][quality]
+	_islet = SwordStone.site(_field)
+	_islet_radius = float(_field.get("flow_lagoon_islet")) * 0.86 if _field.get("flow_lagoon_islet") != null else 0.0
 	_build_layers()
 
 
@@ -197,8 +204,7 @@ func _build_layers() -> void:
 
 
 ## Two quads crossed at right angles, a metre tall and a metre wide, rooted at the
-## origin. Both windings are emitted so the single-sided foliage shader shows them
-## from every side with one upward normal.
+## origin, with one upward normal. The foliage shader draws both faces of each.
 static func _grass_mesh(mat: Material) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -207,7 +213,7 @@ static func _grass_mesh(mat: Material) -> ArrayMesh:
 		var dx := Vector3(cos(a), 0, sin(a)) * 0.5
 		var corners := [[-dx, Vector2(0, 1)], [dx, Vector2(1, 1)],
 				[dx + Vector3.UP, Vector2(1, 0)], [-dx + Vector3.UP, Vector2(0, 0)]]
-		for order in [[0, 1, 2, 0, 2, 3], [2, 1, 0, 3, 2, 0]]:
+		for order in [[0, 1, 2, 0, 2, 3]]:
 			for i in order:
 				var uv: Vector2 = corners[i][1]
 				st.set_normal(Vector3(0, 1, 0))
@@ -282,12 +288,18 @@ func _place_trees(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			if not bool(s.get("on_land", false)):
 				continue
 			var surface := String(s.get("surface", ""))
-			if surface == "rock" or surface == "sand":
-				continue
-			if float(s.get("slope", 0.0)) > 0.4 or float(s.get("flow_weight", 0.0)) > 0.3 \
-					or float(s.get("flatten", 0.0)) > 0.3:
-				continue
+			var from_stone := Vector2(x, z).distance_to(_islet)
 			var want := lerpf(0.16, 0.9, float(s.get("forest", 0.0))) * density
+			if from_stone < _islet_radius:
+				# The islet is deep wood whatever the field makes of its ground.
+				if from_stone < _clearing:
+					continue
+				want = 0.95 * density
+			elif surface == "rock" or surface == "sand" or float(s.get("flatten", 0.0)) > 0.3 \
+					or float(s.get("flow_weight", 0.0)) > 0.3:
+				continue
+			if float(s.get("slope", 0.0)) > 0.4:
+				continue
 			if _hash(cx, cz, 3) > want:
 				continue
 			var kind: int = pair[0] if _hash(cx, cz, 4) < 0.65 else pair[1]
@@ -316,6 +328,8 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				continue
 			var x := x0 + (float(ix) + _hash(cx, cz, 26)) * grid
 			var z := z0 + (float(iz) + _hash(cx, cz, 27)) * grid
+			if Vector2(x, z).distance_to(_islet) < 1.8:
+				continue
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)):
 				continue
