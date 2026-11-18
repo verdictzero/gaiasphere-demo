@@ -100,7 +100,7 @@ func _ready() -> void:
 	mat.uv1_scale = Vector3.ONE * 0.2          # a 5 m tile: stones a hand or two across
 	mat.uv1_triplanar_sharpness = 4.0
 	# The scan is dark; lifted so the stones and their joints read from the shore.
-	mat.albedo_color = Color(2.1, 2.05, 1.95)
+	mat.albedo_color = Color(1.45, 1.4, 1.3)
 	mat.normal_scale = 1.6
 	mat.roughness = 0.9
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
