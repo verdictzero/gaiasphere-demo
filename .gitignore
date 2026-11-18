@@ -4,3 +4,4 @@ __pycache__/
 .godot/
 build/
 *.tmp
+data/bake/*.bake

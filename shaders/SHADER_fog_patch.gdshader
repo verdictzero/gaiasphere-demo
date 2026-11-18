@@ -10,6 +10,8 @@ uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable
 uniform float opacity : hint_range(0.0, 1.0) = 0.5;
 uniform float soft_depth = 9.0;      // metres over which it fades into what it touches
 uniform float near_fade = 26.0;
+// How strongly the wisps take the sun's hue (1 = exactly its colour).
+uniform float sun_colour = 1.35;
 uniform float far_start = 260.0;
 uniform float far_end = 360.0;
 
@@ -67,8 +69,14 @@ void fragment() {
 	float height = 1.0 - UV.y;
 	float thin = 1.0 - smoothstep(0.35, 0.8, n) * body;
 	float sunlit = (0.25 + 0.75 * smoothstep(0.1, 0.85, height)) * (0.55 + 0.45 * thin);
-	vec3 shade = enviro_fog_color.rgb * 0.4 + enviro_ambient.rgb * 0.15;
-	vec3 col = shade + enviro_light_color.rgb * sunlit * (0.3 + 0.9 * pow(toward, 3.0));
+	// The wisps take the SUN'S OWN COLOUR, whatever the hour makes it: its hue at
+	// full strength, so they are gold at golden hour, white at noon, blue by moonlight.
+	vec3 sun = enviro_light_color.rgb;
+	float sun_lum = max(max(sun.r, sun.g), sun.b);
+	vec3 hue = sun / max(sun_lum, 1e-4);
+	hue = mix(vec3(dot(hue, vec3(0.333))), hue, sun_colour);       // > 1 deepens it
+	vec3 shade = (enviro_fog_color.rgb * 0.3 + enviro_ambient.rgb * 0.1) * mix(vec3(1.0), hue, 0.6);
+	vec3 col = shade + hue * min(sun_lum, 3.0) * sunlit * (0.4 + 1.0 * pow(toward, 3.0));
 	ALBEDO = col;
 	ALPHA = a;
 }

@@ -31,6 +31,8 @@ build() {
 
 # The import has to exist before an export can read it.
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
+# Bake the island, so the build reads it instead of generating it at every launch.
+"$GODOT" --headless --path . --script res://tests/BAKE_island.gd | grep "^bake:" || echo "no bake: the build will generate the island at start-up" >&2
 case "$WHAT" in
 	windows) build "Windows" windows WestVirginia.exe windows_release_x86_64.exe ;;
 	linux)   build "Linux" linux WestVirginia.x86_64 linux_release.x86_64 ;;
