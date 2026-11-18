@@ -9,7 +9,7 @@ extends Node3D
 @export var world_path: NodePath = ^"../IslandWorld"
 @export var water_path: NodePath = ^"../RiverWater"
 ## Half the width of the cobbled strip, metres. The bank it runs on is wider.
-@export var cobble_half_width := 1.7
+@export var cobble_half_width := 1.25
 
 var start := Vector3.ZERO       # on the outer shore
 var finish := Vector3.ZERO      # on the islet
