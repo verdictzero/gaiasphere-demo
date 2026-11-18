@@ -1,0 +1,250 @@
+[
+ {
+  "name": "cliff_buttress_a",
+  "size_m": [
+   16,
+   26,
+   11
+  ],
+  "above_origin_m": 2.6,
+  "lods": [
+   {
+    "file": "cliff_buttress_a/cliff_buttress_a_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_buttress_a/cliff_buttress_a_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_buttress_a/cliff_buttress_a_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_buttress_a/cliff_buttress_a_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_buttress_b",
+  "size_m": [
+   22,
+   20,
+   12
+  ],
+  "above_origin_m": 1.6,
+  "lods": [
+   {
+    "file": "cliff_buttress_b/cliff_buttress_b_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_buttress_b/cliff_buttress_b_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_buttress_b/cliff_buttress_b_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_buttress_b/cliff_buttress_b_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_pillar_a",
+  "size_m": [
+   8,
+   34,
+   7
+  ],
+  "above_origin_m": 4.08,
+  "lods": [
+   {
+    "file": "cliff_pillar_a/cliff_pillar_a_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_pillar_a/cliff_pillar_a_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_pillar_a/cliff_pillar_a_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_pillar_a/cliff_pillar_a_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_pillar_b",
+  "size_m": [
+   10,
+   44,
+   9
+  ],
+  "above_origin_m": 4.4,
+  "lods": [
+   {
+    "file": "cliff_pillar_b/cliff_pillar_b_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_pillar_b/cliff_pillar_b_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_pillar_b/cliff_pillar_b_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_pillar_b/cliff_pillar_b_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_slab_a",
+  "size_m": [
+   14,
+   22,
+   5
+  ],
+  "above_origin_m": 2.2,
+  "lods": [
+   {
+    "file": "cliff_slab_a/cliff_slab_a_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_slab_a/cliff_slab_a_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_slab_a/cliff_slab_a_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_slab_a/cliff_slab_a_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_shelf_a",
+  "size_m": [
+   18,
+   7,
+   12
+  ],
+  "above_origin_m": 2.1,
+  "lods": [
+   {
+    "file": "cliff_shelf_a/cliff_shelf_a_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_shelf_a/cliff_shelf_a_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_shelf_a/cliff_shelf_a_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_shelf_a/cliff_shelf_a_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_fang_a",
+  "size_m": [
+   9,
+   30,
+   8
+  ],
+  "above_origin_m": 0.9,
+  "lods": [
+   {
+    "file": "cliff_fang_a/cliff_fang_a_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_fang_a/cliff_fang_a_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_fang_a/cliff_fang_a_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_fang_a/cliff_fang_a_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ },
+ {
+  "name": "cliff_fang_b",
+  "size_m": [
+   13,
+   48,
+   11
+  ],
+  "above_origin_m": 1.44,
+  "lods": [
+   {
+    "file": "cliff_fang_b/cliff_fang_b_lod0.gltf",
+    "triangles": 5120,
+    "vertices": 2562
+   },
+   {
+    "file": "cliff_fang_b/cliff_fang_b_lod1.gltf",
+    "triangles": 1280,
+    "vertices": 642
+   },
+   {
+    "file": "cliff_fang_b/cliff_fang_b_lod2.gltf",
+    "triangles": 320,
+    "vertices": 162
+   },
+   {
+    "file": "cliff_fang_b/cliff_fang_b_lod3.gltf",
+    "triangles": 80,
+    "vertices": 42
+   }
+  ]
+ }
+]

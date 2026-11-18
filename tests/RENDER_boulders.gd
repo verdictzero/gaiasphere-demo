@@ -7,9 +7,13 @@ extends SceneTree
 #   godot --path . --script res://tests/RENDER_boulders.gd -- --out=/some/folder
 
 const NAMES := ["boulder_a", "boulder_b", "boulder_c", "boulder_d", "boulder_e"]
+const CLIFFS := ["cliff_buttress_a", "cliff_buttress_b", "cliff_pillar_a", "cliff_pillar_b",
+		"cliff_slab_a", "cliff_shelf_a", "cliff_fang_a", "cliff_fang_b"]
 
 var _out := "user://boulders"
 var _frames := 0
+var _cam: Camera3D
+var _cliff_span := 0.0
 
 
 static func mesh_of(path: String) -> Mesh:
@@ -47,7 +51,7 @@ func _initialize() -> void:
 
 	var ground := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(80, 80)
+	plane.size = Vector2(2000, 2000)
 	ground.mesh = plane
 	var gm := StandardMaterial3D.new()
 	gm.albedo_color = Color(0.16, 0.17, 0.12)
@@ -70,11 +74,27 @@ func _initialize() -> void:
 				mi.position.y = 0.6
 			world.add_child(mi)
 
-	var cam := Camera3D.new()
-	cam.fov = 42.0
-	world.add_child(cam)
-	cam.look_at_from_position(Vector3(0.0, 4.2, 11.5), Vector3(0.0, 0.6, -1.5))
-	cam.current = true
+	# The cliff chunks, far off to one side, stood on the ground for inspection (in
+	# the island they hang from the rim: their origin is at the top).
+	var cmat: Material = load("res://materials/MAT_cliff_chunk.tres")
+	var x := 0.0
+	for i in CLIFFS.size():
+		var mi := MeshInstance3D.new()
+		mi.mesh = mesh_of("res://assets/cliff/%s/%s_lod0.gltf" % [CLIFFS[i], CLIFFS[i]])
+		mi.material_override = cmat
+		var box := mi.mesh.get_aabb()
+		x += box.size.x * 0.5 + 3.0
+		mi.position = Vector3(x, -box.position.y, 400.0)
+		x += box.size.x * 0.5
+		world.add_child(mi)
+	_cliff_span = x
+
+	_cam = Camera3D.new()
+	_cam.fov = 42.0
+	_cam.far = 600.0
+	world.add_child(_cam)
+	_cam.look_at_from_position(Vector3(0.0, 4.2, 11.5), Vector3(0.0, 0.6, -1.5))
+	_cam.current = true
 
 
 func _process(_delta: float) -> bool:
@@ -83,5 +103,11 @@ func _process(_delta: float) -> bool:
 		var path := _out.path_join("boulders.png")
 		root.get_texture().get_image().save_png(path)
 		print("boulders: ", path)
+		_cam.look_at_from_position(Vector3(_cliff_span * 0.5, 30.0, 400.0 + 105.0),
+				Vector3(_cliff_span * 0.5, 20.0, 400.0))
+	if _frames == 24:
+		var path2 := _out.path_join("cliffs.png")
+		root.get_texture().get_image().save_png(path2)
+		print("cliffs: ", path2)
 		return true
 	return false

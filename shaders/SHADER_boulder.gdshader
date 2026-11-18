@@ -13,7 +13,10 @@ uniform float rock_scale = 0.3;
 uniform vec3 rock_tint : source_color = vec3(1.0);
 uniform float rock_normal_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float triplanar_sharpness : hint_range(1.0, 16.0) = 5.0;
+// Breaks up the tiling on big rock: light and dark patches several tiles across.
+uniform float macro_variation : hint_range(0.0, 1.0) = 0.5;
 // Darkens the foot of the boulder where it sits in the ground: metres above the origin.
+// 0 turns it off (cliff chunks, whose origin is at their top).
 uniform float ground_occlusion_height = 0.35;
 
 #include "res://shaders/SHADERINC_top_moss.gdshaderinc"
@@ -50,13 +53,17 @@ void fragment() {
 	vec3 nz = vec3(tz.xy + n.xy, abs(tz.z) * n.z);
 	vec3 world_n = normalize(nx.zyx * w.x + ny.xzy * w.y + nz.xyz * w.z);
 
-	albedo *= rock_tint;
+	float macro = texture(rock_albedo, (w_pos.xy + w_pos.zy * 0.83) * rock_scale * 0.11).g
+			+ texture(rock_albedo, (w_pos.zx + w_pos.yx * 0.71) * rock_scale * 0.037).g;
+	albedo *= rock_tint * mix(1.0, 0.45 + macro * 1.1, macro_variation);
 	float roughness = orm.g;
 	float ao = orm.r;
 	float height = dot(albedo, vec3(0.333)) * 1.6;      // pale rock stands proud, dark is crevice
 	top_moss(albedo, world_n, roughness, ao, w_pos, n, clamp(height, 0.0, 1.0));
 
-	ao *= mix(0.45, 1.0, smoothstep(0.0, ground_occlusion_height, foot));
+	if (ground_occlusion_height > 0.0) {
+		ao *= mix(0.45, 1.0, smoothstep(0.0, ground_occlusion_height, foot));
+	}
 	ALBEDO = albedo;
 	ROUGHNESS = roughness;
 	METALLIC = 0.0;
