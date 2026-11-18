@@ -35,6 +35,7 @@ func _ready() -> void:
 		ground.set_shader_parameter("cobble_normal", load("res://textures/polyhaven/cobblestone_floor_04_normal.jpg"))
 		ground.set_shader_parameter("causeway", Vector4(ends[0].x, ends[0].y, ends[1].x, ends[1].y))
 		ground.set_shader_parameter("causeway_half", cobble_half_width)
+		ground.set_shader_parameter("mere_level", float(isl.base_y) + float(flows.lagoon_level()))
 	var water := get_node_or_null(water_path)
 	if water != null and water.get(&"material") is ShaderMaterial:
 		var c: Vector2 = flows.lagoon_center()

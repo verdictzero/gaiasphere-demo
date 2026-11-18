@@ -21,10 +21,12 @@ uniform sampler2D foam_tex : filter_linear_mipmap, repeat_enable;
 uniform float ripple_scale = 12.0;
 uniform float ripple_stretch = 1.4;
 
-uniform vec3 shallow_color : source_color = vec3(0.10, 0.17, 0.13);
-uniform vec3 deep_color : source_color = vec3(0.012, 0.035, 0.032);
+uniform vec3 shallow_color : source_color = vec3(0.07, 0.19, 0.17);
+uniform vec3 deep_color : source_color = vec3(0.008, 0.045, 0.06);
 // Metres of water you can see through.
-uniform float clarity = 3.4;
+uniform float clarity = 6.5;
+// How much of the water's own colour hangs in it (0 = glass).
+uniform float murk : hint_range(0.0, 1.0) = 0.55;
 uniform float refraction = 0.05;
 uniform float wave_size = 3.2;
 uniform float wave_strength : hint_range(0.0, 2.0) = 0.55;
@@ -34,7 +36,7 @@ uniform float flow_speed = 0.9;
 uniform float far_distance = 260.0;
 uniform float far_scale = 5.0;
 uniform float far_chop = 1.6;
-uniform float surface_roughness : hint_range(0.0, 1.0) = 0.06;
+uniform float surface_roughness : hint_range(0.0, 1.0) = 0.035;
 uniform vec3 foam_color : source_color = vec3(0.82, 0.86, 0.84);
 uniform float shore_foam = 0.22;        // metres of water under the shore's foam line
 uniform float rapids_foam = 1.0;
@@ -143,7 +145,12 @@ void fragment() {
 	float daylight = clamp(enviro_light_dir.y, 0.0, 1.0);
 	vec3 light = enviro_ambient.rgb * 1.6 + enviro_light_color.rgb * daylight * 0.8;
 	vec3 body = mix(deep_color, shallow_color, exp(-thick / (clarity * 0.7))) * light;
-	vec3 under = behind * through + body * (1.0 - through);
+	vec3 under = behind * through + body * (1.0 - through) * murk;
+	// Glancing light reflects, steep light goes in: looking down you see the bed,
+	// looking across you see the sky.
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
+	under *= 1.0 - fresnel * 0.85;
 
 	// Foam: a ragged line at the shore, and streaks where the river falls fast.
 	float grain = texture(foam_tex, mix(world_pos.xz * 0.35, vec2(UV.x * 0.5 - TIME * pace * 0.5, UV.y * 0.5), running)).r;
@@ -156,7 +163,7 @@ void fragment() {
 	EMISSION = under * (1.0 - foam);
 	ROUGHNESS = mix(surface_roughness, 0.7, foam);
 	METALLIC = 0.0;
-	SPECULAR = 0.4;
+	SPECULAR = 0.5;
 	NORMAL_MAP = n * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;
 	NORMAL = normalize(NORMAL + lean * 1.3);

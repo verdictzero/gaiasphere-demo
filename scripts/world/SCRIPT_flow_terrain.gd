@@ -311,8 +311,8 @@ func lagoon_at(x: float, z: float) -> Vector3:
 # (SCRIPT_causeway.gd hands it the line). It is terrain: the mesher, the
 # collision and the bake all get it from `lagoon` below.
 
-const CAUSEWAY_HALF := 3.6        ## half the width of its flat top, metres
-const CAUSEWAY_BANK := 7.0        ## metres its sides take to fall to the bed
+const CAUSEWAY_HALF := 2.1        ## half the width of its flat top, metres
+const CAUSEWAY_BANK := 4.0        ## metres its sides take to fall to the bed
 const CAUSEWAY_RISE := 1.1        ## its top, metres over the water
 
 var _cw_dir := Vector2.ZERO
@@ -347,7 +347,7 @@ func causeway_weight(x: float, z: float) -> float:
 		return 0.0
 	var off := absf(d.dot(Vector2(-_cw_dir.y, _cw_dir.x)))
 	# A little wander in its edge, so it is a bank and not a ruled strip.
-	off -= 0.8 * sin(along * 0.21) + 0.5 * sin(along * 0.53 + 1.3)
+	off -= 0.4 * sin(along * 0.21) + 0.25 * sin(along * 0.53 + 1.3)
 	var ends := smoothstep(_cw_in - 14.0, _cw_in - 4.0, along) * (1.0 - smoothstep(_cw_out + 4.0, _cw_out + 14.0, along))
 	return (1.0 - smoothstep(CAUSEWAY_HALF, CAUSEWAY_HALF + CAUSEWAY_BANK, off)) * ends
 

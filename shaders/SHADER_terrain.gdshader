@@ -47,6 +47,8 @@ uniform vec3 beach_tint : source_color = vec3(2.3, 2.05, 1.6);
 uniform vec3 rock_tint : source_color = vec3(0.85, 0.88, 0.86);
 // The scans are dark; this lifts the whole ground.
 uniform float brightness = 1.7;
+// How deep (0 hard edge .. 1 plain cross-fade) the height blend between layers is.
+uniform float blend_depth : hint_range(0.02, 1.0) = 0.22;
 uniform float normal_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float triplanar_sharpness : hint_range(1.0, 16.0) = 6.0;
 uniform float macro_strength : hint_range(0.0, 1.0) = 0.45;
@@ -61,7 +63,21 @@ uniform float causeway_half = 0.0;
 uniform float cobble_size = 2.2;
 uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
+uniform sampler2D caustic_tex : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float caustic_size = 5.5;
+uniform float caustic_speed = 1.0;
+uniform float caustic_strength : hint_range(0.0, 4.0) = 1.5;
+// The mere's surface, world metres (SCRIPT_bridge.gd sets it).
+uniform float mere_level = -1000.0;
+
 global uniform float enviro_wetness;
+global uniform vec4 enviro_ambient;
+global uniform vec4 enviro_light_color;
+
+// A surface's relief, 0 (crevice) to 1 (peak), from its colour before any tint.
+float height_of(vec3 c) {
+	return clamp(dot(c, vec3(0.45, 0.45, 0.1)) * 2.2, 0.0, 1.0);
+}
 
 vec3 udn(sampler2D tex, vec2 uv) {
 	return texture(tex, uv).xyz * 2.0 - 1.0;
@@ -135,25 +151,43 @@ void fragment() {
 		rock_world_n = normalize(nx.zyx * bw.x + ny.xzy * bw.y + nz.xyz * bw.z);
 	}
 
+	// HEIGHT-BASED BLENDING. Where two surfaces meet they do not cross-fade: the one
+	// that stands higher at that texel wins, so stones poke through moss, litter
+	// lies in the hollows of the soil, and every boundary takes the shape of what
+	// is on either side of it. Each layer's height is read from its own colour
+	// (pale = proud, dark = crevice), which is true enough of all these scans.
+	vec4 hgt = vec4(height_of(ground_a / moss_tint), height_of(earth_a / soil_tint),
+			height_of(rock_a / rock_tint) + 0.08, height_of(sand_a / sand_tint) - 0.05);
+	vec4 lift = (w + hgt * blend_depth * 2.0) * step(vec4(0.004), w);
+	float top = max(max(lift.r, lift.g), max(lift.b, lift.a)) - blend_depth;
+	vec4 hw = max(lift - top, vec4(0.0));
+	w = hw / max(hw.r + hw.g + hw.b + hw.a, 1e-4);
 	vec3 albedo = ground_a * w.r + earth_a * w.g + rock_a * w.b + sand_a * w.a;
 	vec3 flat_n = ground_n * w.r + earth_n * w.g + sand_n * w.a;
 	float roughness = 0.94 * w.r + 0.9 * w.g + 0.82 * w.b + 0.88 * w.a;
 
 	// The river: pebbles on the bed, rock on the banks, silt above them.
 	float damp = 0.0;
+	vec3 caustic = vec3(0.0);
+	float detail_fade = 1.0 - smoothstep(detail_distance, detail_distance * 2.5, dist);
 	if (river > 0.0) {
 		vec2 bp = p / bed_size;
 		vec3 bed_a = textureGrad(bed_albedo, bp, dFdx(bp), dFdy(bp)).rgb * bed_tint;
 		vec3 bed_nn = textureGrad(bed_normal, bp, dFdx(bp), dFdy(bp)).xyz * 2.0 - 1.0;
+		// Under the mere's surface, by height: the causeway stands in the middle of
+		// the band and is dry.
+		float under = 1.0;
 		if (mere) {
 			bed_a = mix(sand_a, bed_a, 0.35);
+			under = smoothstep(mere_level + 0.12, mere_level - 0.3, world_pos.y);
+			bed_w *= under;
 		}
 		float scour_w = smoothstep(1.7, 2.1, at) * (1.0 - smoothstep(2.5, 2.95, at)) * (1.0 - w.b);
 		if (mere) {
 			// THE MERE'S SHORES ARE SAND: pale and dry up the beach, darkening to wet
 			// at the water's edge, with a ragged upper edge where the turf begins.
 			float beach = smoothstep(0.0, 0.3, river + (macro2 - 0.5) * 0.12);
-			float wet_line = smoothstep(0.45, 0.75, river);
+			float wet_line = smoothstep(mere_level + 0.7, mere_level + 0.05, world_pos.y);
 			albedo = mix(albedo, sand_a * beach_tint * mix(1.0, 0.55, wet_line), beach);
 			flat_n = mix(flat_n, sand_n, beach);
 			roughness = mix(roughness, mix(0.9, 0.45, wet_line), beach);
@@ -165,6 +199,26 @@ void fragment() {
 		flat_n = mix(flat_n, bed_nn, bed_w) * (1.0 - bank_w);
 		damp = clamp(bed_w + bank_w * 0.8 + scour_w * 0.6, 0.0, 1.0);
 		roughness = mix(roughness, 0.55, damp);
+		// CAUSTICS on the bed: the bright web that ripples throw down through clear
+		// water. Two copies of a web slide over each other and only where both are
+		// bright does light land, which is what makes it writhe; each colour is taken
+		// a hair apart, for the fringe. It falls straight down: it does not know
+		// where the sun is, only how bright the day is.
+		float lit_bed = mere ? under : bed_w;
+		if (lit_bed > 0.01 && caustic_strength > 0.0) {
+			vec2 cp = p / caustic_size;
+			float t = TIME * caustic_speed;
+			vec3 web = vec3(0.0);
+			for (int k = 0; k < 3; k++) {
+				vec2 o = vec2(float(k) - 1.0) * 0.006;
+				float a1 = textureGrad(caustic_tex, cp + o + vec2(t * 0.031, t * 0.017), dFdx(cp), dFdy(cp)).r;
+				float a2 = textureGrad(caustic_tex, cp * 1.37 - o + vec2(-t * 0.023, t * 0.029) + 0.41, dFdx(cp) * 1.37, dFdy(cp) * 1.37).r;
+				web[k] = pow(min(a1, a2), 3.0);
+			}
+			// Sharpest in the shallows; in deep water the web blurs out and dims.
+			float deep = mere ? clamp((mere_level - world_pos.y) / 9.0, 0.0, 1.0) : 0.0;
+			caustic = web * caustic_strength * lit_bed * mix(1.0, 0.25, deep) * detail_fade;
+		}
 	}
 
 	float keep = 1.0 - max(w.b, bank_w);
@@ -176,7 +230,7 @@ void fragment() {
 		float t = clamp(dot(p - causeway.xy, ab) / dot(ab, ab), 0.0, 1.0);
 		float off = length(p - causeway.xy - ab * t);
 		// A ragged edge: the stones give out into the bank unevenly.
-		float cw = 1.0 - smoothstep(causeway_half - 0.5, causeway_half + 0.9, off + (macro2 - 0.5) * 1.6);
+		float cw = 1.0 - smoothstep(causeway_half - 0.7, causeway_half + 0.7, off + (macro2 - 0.5) * 0.9);
 		if (cw > 0.0) {
 			// Laid ALONG the path: the texture's v runs down the causeway and its u
 			// across, so the courses of stone follow the way you walk.
@@ -184,7 +238,10 @@ void fragment() {
 			vec2 across = vec2(-run.y, run.x);
 			vec2 rel = p - causeway.xy;
 			vec2 cp = vec2(dot(rel, across), dot(rel, run)) / cobble_size;
-			albedo = mix(albedo, textureGrad(cobble_albedo, cp, dFdx(cp), dFdy(cp)).rgb * cobble_tint, cw);
+			vec3 cob = textureGrad(cobble_albedo, cp, dFdx(cp), dFdy(cp)).rgb;
+			// The stones outlast their joints: the path ends in whole stones, not a blur.
+			cw = smoothstep(0.42, 0.58, cw + (height_of(cob) - 0.5) * 0.7);
+			albedo = mix(albedo, cob * cobble_tint, cw);
 			vec3 cn = textureGrad(cobble_normal, cp, dFdx(cp), dFdy(cp)).xyz * 2.0 - 1.0;
 			vec2 tilt = across * cn.x + run * cn.y;          // the normal map, turned with it
 			world_n = normalize(mix(world_n, normalize(geo_n + vec3(tilt.x, 0.0, tilt.y) * detail * 1.4), cw));
@@ -197,7 +254,9 @@ void fragment() {
 	albedo *= mix(1.0, 0.6, wet);
 	roughness = mix(roughness, 0.28, wet * 0.85);
 
-	ALBEDO = albedo * brightness;
+	ALBEDO = albedo * brightness * (1.0 + caustic * 1.6);
+	// Some of it as light of its own, so the web shows on a bed that is in shade.
+	EMISSION = albedo * brightness * caustic * (enviro_ambient.rgb * 1.5 + enviro_light_color.rgb * 0.25);
 	ROUGHNESS = roughness;
 	METALLIC = 0.0;
 	SPECULAR = 0.4;
