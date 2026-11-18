@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_island_world.gd" id="world"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_enviro.gd" id="enviro"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_flora.gd" id="flora"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_terrain_occluders.gd" id="occl"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_stone.gd" id="sword"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_fog_patches.gd" id="fogp"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_dressing.gd" id="cliffs"]
@@ -45,6 +46,9 @@ script = ExtResource("fogp")
 
 [node name="SwordStone" type="Node3D" parent="."]
 script = ExtResource("sword")
+
+[node name="TerrainOccluders" type="Node3D" parent="."]
+script = ExtResource("occl")
 
 [node name="LandingSpot" type="Node3D" parent="."]
 script = ExtResource("landing")

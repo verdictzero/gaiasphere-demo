@@ -226,21 +226,11 @@ static func _grass_mesh(mat: Material) -> ArrayMesh:
 	return mesh
 
 
-func _far_instances(layer: Dictionary, holder: Node3D) -> Dictionary:
-	var out := {"cross": [], "board": []}
-	var box := AABB(Vector3(-_extent, -20.0, -_extent), Vector3(_extent * 2.0, 120.0, _extent * 2.0))
-	for kind in layer["kinds"]:
-		for which in ["cross", "board"]:
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = kind[which]
-			var mmi := MultiMeshInstance3D.new()
-			mmi.multimesh = mm
-			mmi.custom_aabb = box
-			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			holder.add_child(mmi)
-			out[which].append(mm)
-	return out
+func _far_instances(_layer: Dictionary, holder: Node3D) -> Dictionary:
+	# Filled by `_repack_far`: one MultiMesh per (kind, impostor, FAR_CELL square of
+	# island), each with that square's bounds, so the far forest is frustum- and
+	# occlusion-culled square by square instead of being one island-wide draw.
+	return {"holder": holder, "mms": {}}
 
 
 # ------------------------------------------------------------------ placement
@@ -629,35 +619,51 @@ func _open_tile(layer: Dictionary, key: Vector2i, bufs: Array) -> void:
 	(layer["tiles"] as Dictionary)[key] = {"mmis": mmis, "lod": -1}
 
 
-## Everything outside the near tiles, merged per kind: crossed planes out to
-## `cross_reach`, billboards beyond.
+const FAR_CELL := 512.0
+
+
+## Everything outside the near tiles, as impostors: crossed planes out to
+## `cross_reach`, billboards beyond, merged per kind within each FAR_CELL square.
 func _repack_far(layer: Dictionary, near: Dictionary, at: Vector3) -> void:
 	var tile := float(layer["tile"])
 	var cross_reach := float(layer["cross_reach"])
 	var kinds: Array = layer["kinds"]
-	var cross: Array = []
-	var board: Array = []
-	for k in kinds.size():
-		cross.append(PackedFloat32Array())
-		board.append(PackedFloat32Array())
 	var cache: Dictionary = layer["cache"]
 	var lift := maxf(0.0, at.y - 80.0)
+	var packed := {}          # Vector3i(cell x, cell z, kind * 2 + board) -> buffer
 	for key in cache:
 		if near.has(key):
 			continue
 		var bufs: Array = cache[key]
-		var to: Array = cross if _tile_distance(key, tile, at) + lift < cross_reach else board
+		var board := 0 if _tile_distance(key, tile, at) + lift < cross_reach else 1
+		var cx := int(floor((float(key.x) + 0.5) * tile / FAR_CELL))
+		var cz := int(floor((float(key.y) + 0.5) * tile / FAR_CELL))
 		for k in kinds.size():
 			var from: PackedFloat32Array = bufs[k]
-			if not from.is_empty():
-				var into: PackedFloat32Array = to[k]
-				into.append_array(from)
-				to[k] = into
+			if from.is_empty():
+				continue
+			var slot := Vector3i(cx, cz, k * 2 + board)
+			var into: PackedFloat32Array = packed.get(slot, PackedFloat32Array())
+			into.append_array(from)
+			packed[slot] = into
 	var far: Dictionary = layer["far"]
-	for k in kinds.size():
-		for pair in [[far["cross"][k], cross[k]], [far["board"][k], board[k]]]:
-			var mm: MultiMesh = pair[0]
-			var buf: PackedFloat32Array = pair[1]
-			mm.instance_count = buf.size() / STRIDE
-			if not buf.is_empty():
-				mm.buffer = buf
+	var mms: Dictionary = far["mms"]
+	for slot in mms:
+		if not packed.has(slot):
+			(mms[slot] as MultiMesh).instance_count = 0
+	for slot in packed:
+		var mm: MultiMesh = mms.get(slot)
+		if mm == null:
+			mm = MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = kinds[slot.z / 2]["board" if slot.z % 2 == 1 else "cross"]
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.custom_aabb = AABB(Vector3(slot.x * FAR_CELL - 30.0, -20.0, slot.y * FAR_CELL - 30.0),
+					Vector3(FAR_CELL + 60.0, 140.0, FAR_CELL + 60.0))
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			(far["holder"] as Node3D).add_child(mmi)
+			mms[slot] = mm
+		var buf: PackedFloat32Array = packed[slot]
+		mm.instance_count = buf.size() / STRIDE
+		mm.buffer = buf

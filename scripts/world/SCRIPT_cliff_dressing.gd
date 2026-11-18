@@ -13,7 +13,7 @@ extends Node3D
 
 @export var world_path: NodePath = ^"../IslandWorld"
 ## Metres of coast per chunk, on average.
-@export var spacing := 34.0
+@export var spacing := 19.0
 @export var chunk_seed := 152
 
 # name, how often, how far below the rim its top sits (min, max), scale (min, max)
@@ -45,7 +45,7 @@ const HALF_DEPTH := {"cliff_buttress_a": 5.5, "cliff_buttress_b": 6.0, "cliff_pi
 
 ## Where every rock goes: [{name, x, y, z, yaw, sx, sy, sz, half_depth, half_width}].
 ## One function, used by _ready and by the edge dump, so the picture is of the game.
-static func layout(field: IslandField, spacing_m := 34.0, seed_value := 152) -> Array:
+static func layout(field: IslandField, spacing_m := 19.0, seed_value := 152) -> Array:
 	var out: Array = []
 	var isl: Variant = field.island_in_cell(field.hub_cell())
 	if isl == null:
