@@ -28,7 +28,7 @@ uniform float bump_amp = 70.0;
 uniform float top_round = 26.0;
 uniform float bottom_round = 90.0;
 uniform float density_gain = 0.05;
-uniform vec3 cloud_albedo : source_color = vec3(0.86, 0.88, 0.9);
+uniform vec3 cloud_albedo : source_color = vec3(0.42, 0.44, 0.48);
 uniform float horizon_fade_start = 3800.0;
 uniform float horizon_fade_end = 5200.0;
 uniform float rim_fade_start = 5600.0;
@@ -118,7 +118,8 @@ void fragment() {
 			float shade = density_at(sp + light_dir * 34.0) + density_at(sp + light_dir * 90.0) * 0.6;
 			float lit = exp(-shade * 1.7);
 			float h = clamp((sp.y - bottom) / (top - bottom), 0.0, 1.0);
-			vec3 c = cloud_albedo * (sky * (0.3 + 0.6 * h * h) + sun * lit * (0.16 + 0.2 * min(phase, 2.0)));
+			// Dark in its folds and deep down; only the crests take the sun.
+			vec3 c = cloud_albedo * (sky * (0.12 + 0.55 * h * h * h) + sun * lit * (0.16 + 0.2 * min(phase, 2.0)));
 			float far = 1.0 - exp(-t * 0.00022);
 			c = mix(c, enviro_fog_color.rgb, far);
 			float a = 1.0 - exp(-dens * dt);
