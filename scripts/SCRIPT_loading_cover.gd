@@ -25,6 +25,8 @@ var _phase := WORLD
 var _left := 0.0
 var _black: ColorRect
 var _label: Label
+var _logo: TextureRect
+var _shown := 0.0
 var _scatters: Array[Node] = []
 var _explorer: Node3D
 
@@ -36,13 +38,28 @@ func _ready() -> void:
 	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_black)
+	# The logo, as large as fits with room under it, and one line beneath: LOADING n%.
+	_logo = TextureRect.new()
+	_logo.texture = load("res://branding/logo.png")
+	_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_logo.anchor_left = 0.14
+	_logo.anchor_right = 0.86
+	_logo.anchor_top = 0.08
+	_logo.anchor_bottom = 0.78
+	_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_logo)
 	_label = Label.new()
-	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_label.anchor_left = 0.0
+	_label.anchor_right = 1.0
+	_label.anchor_top = 0.8
+	_label.anchor_bottom = 0.92
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_label.add_theme_color_override(&"font_color", Color(0.55, 0.62, 0.55))
-	_label.text = "building the island"
+	_label.add_theme_color_override(&"font_color", Color(0.62, 0.95, 0.8))
+	_label.add_theme_font_size_override(&"font_size", 34)
 	add_child(_label)
+	_show(0.0)
 	_explorer = get_node_or_null(explorer_path) as Node3D
 	for p in scatter_paths:
 		var n := get_node_or_null(p)
@@ -59,7 +76,8 @@ func _ready() -> void:
 
 func _on_progress(stage: String, done: int, total: int) -> void:
 	if total > 0:
-		_label.text = "building the island\n%s  %d / %d" % [stage, done, total]
+		# The terrain is most of the wait: it fills the first 85%.
+		_show(0.85 * float(done) / float(total))
 
 
 func _to_scatter() -> void:
@@ -67,7 +85,7 @@ func _to_scatter() -> void:
 		return
 	_phase = SCATTER
 	_left = scatter_timeout
-	_label.text = "building the island\nplanting"
+	_show(0.85)
 
 
 func _process(delta: float) -> void:
@@ -80,6 +98,7 @@ func _process(delta: float) -> void:
 					s.call(&"prefill_covered")
 				if not bool(s.call(&"prefill_step")):
 					all_done = false
+			_show(0.85 + (0.12 if all_done else 0.06))
 			if all_done or _left <= 0.0:
 				_phase = GROUND
 				_left = ground_timeout
@@ -88,15 +107,23 @@ func _process(delta: float) -> void:
 			if _left <= 0.0 or _ground():
 				if _explorer != null and _explorer.has_method(&"arrive"):
 					_explorer.call(&"arrive")
-				_label.visible = false
+				_show(1.0)
 				_phase = FADE
 				_left = fade
 		FADE:
 			_left -= delta
 			_black.color.a = clampf(_left / maxf(fade, 0.01), 0.0, 1.0)
+			_logo.modulate.a = _black.color.a
+			_label.modulate.a = _black.color.a
 			if _left <= 0.0:
 				_phase = DONE
 				queue_free()
+
+
+## LOADING and a whole percentage that never goes backwards.
+func _show(ratio: float) -> void:
+	_shown = maxf(_shown, clampf(ratio, 0.0, 1.0))
+	_label.text = "LOADING %d%%" % int(round(_shown * 100.0))
 
 
 # Is the terrain's collision in under the explorer yet? One ray down.
