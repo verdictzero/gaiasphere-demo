@@ -11,37 +11,40 @@ extends Node3D
 #   enviro.hour = 21.5                  # jump to a time
 #   enviro.set_weather("storm", 20.0)   # blend to a preset over 20 seconds
 #
-# Keys while playing: T / G time forward / back, 1-6 the weather presets.
+# Keys while playing: T / G time forward / back, 1-7 the weather presets.
 
 signal weather_changed(name: String)
 
 const WEATHERS := {
 	# coverage and density shape the clouds; fog is metres^-1; rain 0..1;
 	# dim is how much direct light the cloud takes away; bolts per minute.
-	"clear":    {"coverage": 0.22, "density": 0.030, "fog": 0.00012, "mist": 0.012, "wind": 0.25, "rain": 0.0, "dim": 0.0,  "bolts": 0.0},
-	"cloudy":   {"coverage": 0.50, "density": 0.036, "fog": 0.00022, "mist": 0.020, "wind": 0.40, "rain": 0.0, "dim": 0.25, "bolts": 0.0},
-	"overcast": {"coverage": 0.86, "density": 0.050, "fog": 0.00045, "mist": 0.035, "wind": 0.50, "rain": 0.0, "dim": 0.70, "bolts": 0.0},
-	"foggy":    {"coverage": 0.60, "density": 0.040, "fog": 0.0042, "mist": 0.110, "wind": 0.15, "rain": 0.0, "dim": 0.45, "bolts": 0.0},
-	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.050, "wind": 0.70, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
-	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.045, "wind": 1.00, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
+	"clear":    {"coverage": 0.22, "density": 0.030, "fog": 0.00012, "mist": 0.0015, "wind": 0.25, "rain": 0.0, "dim": 0.0,  "bolts": 0.0},
+	"cloudy":   {"coverage": 0.50, "density": 0.036, "fog": 0.00022, "mist": 0.003, "wind": 0.40, "rain": 0.0, "dim": 0.25, "bolts": 0.0},
+	"overcast": {"coverage": 0.86, "density": 0.050, "fog": 0.00045, "mist": 0.006, "wind": 0.50, "rain": 0.0, "dim": 0.70, "bolts": 0.0},
+	"foggy":    {"coverage": 0.60, "density": 0.040, "fog": 0.0042, "mist": 0.03, "wind": 0.15, "rain": 0.0, "dim": 0.45, "bolts": 0.0},
+	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.01, "wind": 0.70, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
+	# The island as it is meant to be seen: broken cloud that lets a low sun through,
+	# fog thick enough to carry its shafts.
+	"golden_fog": {"coverage": 0.46, "density": 0.034, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
+	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.008, "wind": 1.00, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
 }
-const WEATHER_KEYS := ["clear", "cloudy", "overcast", "foggy", "rain", "storm"]
+const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "rain", "storm"]
 
 ## Hour of the day, 0-24.
-@export_range(0.0, 24.0) var hour := 19.1
-## Whether time passes on its own.
-@export var advance := true
+@export_range(0.0, 24.0) var hour := 17.3
+## Whether time passes on its own. Off: the island is held at golden hour.
+@export var advance := false
 ## Real minutes for one full day.
 @export var day_minutes := 48.0
 ## Tilt of the sun's path from overhead, degrees.
 @export var latitude := 38.0
 ## Where the moon is in its month: 0 new, 0.5 full.
 @export_range(0.0, 1.0) var moon_phase := 0.42
-@export var weather := "foggy"
+@export var weather := "golden_fog"
 ## 0 low, 1 medium, 2 high: cloud march steps, god-ray samples, shadow reach.
 @export_range(0, 2) var quality := 1
 ## Cold, slightly drained colour: the look of the place. 0 turns the grade off.
-@export_range(0.0, 1.0) var spooky := 0.7
+@export_range(0.0, 1.0) var spooky := 0.5
 @export var god_rays := true
 
 var sun_dir := Vector3.UP
@@ -97,6 +100,11 @@ func set_weather(to: String, seconds := 12.0) -> void:
 	weather_changed.emit(to)
 
 
+## How foggy it is, 0 (clear air) to 1 (the thickest preset).
+func fog_amount() -> float:
+	return clampf(float(_now["fog"]) / 0.0042, 0.0, 1.0)
+
+
 ## 0 at night, 1 in full day.
 func daylight() -> float:
 	return smoothstep(-0.08, 0.22, sun_dir.y)
@@ -113,7 +121,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			hour = fposmod(hour + 0.5, 24.0)
 		elif k == KEY_G:
 			hour = fposmod(hour - 0.5, 24.0)
-		elif k >= KEY_1 and k <= KEY_6 and not event.echo:
+		elif k >= KEY_1 and k <= KEY_7 and not event.echo:
 			set_weather(WEATHER_KEYS[k - KEY_1], 8.0)
 
 
@@ -149,7 +157,7 @@ func _build_environment() -> void:
 	_sky_mat.shader = load("res://shaders/SHADER_enviro_sky.gdshader")
 	_sky_mat.set_shader_parameter("cloud_shape", shape)
 	_sky_mat.set_shader_parameter("cloud_weather", weather_map)
-	_sky_mat.set_shader_parameter("cloud_steps", [20, 36, 56][quality])
+	_sky_mat.set_shader_parameter("cloud_steps", [28, 48, 72][quality])
 	_sky_mat.set_shader_parameter("cloud_light_steps", [2, 3, 4][quality])
 	var sky := Sky.new()
 	sky.sky_material = _sky_mat
@@ -170,10 +178,10 @@ func _build_environment() -> void:
 	_env.fog_enabled = true
 	_env.fog_aerial_perspective = 0.35
 	_env.fog_sky_affect = 0.0
-	_env.fog_height = 9.0
+	_env.fog_height = 4.0
 	_env.adjustment_enabled = spooky > 0.0
-	_env.adjustment_saturation = lerpf(1.0, 0.78, spooky)
-	_env.adjustment_contrast = lerpf(1.0, 1.08, spooky)
+	_env.adjustment_saturation = lerpf(1.0, 0.86, spooky)
+	_env.adjustment_contrast = lerpf(1.0, 1.22, spooky)
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = _env
@@ -278,8 +286,9 @@ func _apply(dt: float) -> void:
 
 	var day := daylight()
 	var dusk := exp(-pow(sun_dir.y / 0.16, 2.0))
-	var sun_tint := Color(1.0, 0.6, 0.36).lerp(Color(1.0, 0.95, 0.86), smoothstep(0.0, 0.32, sun_dir.y))
-	var sun_energy := smoothstep(-0.03, 0.14, sun_dir.y) * 1.9
+	var sun_tint := Color(1.0, 0.62, 0.3).lerp(Color(1.0, 0.95, 0.86), smoothstep(0.02, 0.42, sun_dir.y))
+	# A low sun is the strong, warm one: this is where the contrast comes from.
+	var sun_energy := smoothstep(-0.03, 0.1, sun_dir.y) * lerpf(3.4, 2.0, smoothstep(0.1, 0.5, sun_dir.y))
 	var moon_tint := Color(0.55, 0.68, 1.0)
 	var moon_lit := 1.0 - absf(moon_phase - 0.5) * 2.0
 	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.12 + 0.3 * moon_lit)
@@ -309,7 +318,7 @@ func _apply(dt: float) -> void:
 	var hgrey := (horizon.r + horizon.g + horizon.b) / 3.0
 	horizon = horizon.lerp(Color(hgrey, hgrey * 1.02, hgrey * 1.05), overcast * 0.8)
 	# The look: a cold green-grey cast over whatever the hour gives.
-	var cast := Color(0.86, 1.0, 0.95).lerp(Color.WHITE, 1.0 - spooky)
+	var cast := Color(0.84, 0.98, 1.0).lerp(Color.WHITE, 1.0 - spooky)
 	zenith *= cast
 	horizon *= cast
 
@@ -317,16 +326,21 @@ func _apply(dt: float) -> void:
 	# Light from the whole sky is nearer white than the blue overhead.
 	var ambient_grey := (ambient.r + ambient.g + ambient.b) / 3.0
 	ambient = ambient.lerp(Color(ambient_grey, ambient_grey, ambient_grey), 0.55)
-	var ambient_energy := lerpf(0.9, 1.25, day) * lerpf(1.0, 0.8, overcast)
+	var ambient_energy := lerpf(0.75, 0.72, day) * lerpf(1.0, 1.2, overcast)
 	fog_color = horizon.lerp(ambient, 0.35)
-	fog_color += Color(tint.r, tint.g, tint.b) * energy * 0.04
+	fog_color += Color(tint.r, tint.g, tint.b) * energy * 0.05
 
 	_env.ambient_light_color = ambient + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
 	_env.ambient_light_energy = ambient_energy
 	_env.fog_light_color = fog_color
-	_env.fog_density = float(_now["fog"])
+	# Fog is a layer on the ground: seen from high above, the island shows through it.
+	var cam_y := 0.0
+	var view_cam := get_viewport().get_camera_3d()
+	if view_cam != null:
+		cam_y = view_cam.global_position.y
+	_env.fog_density = float(_now["fog"]) * lerpf(1.0, 0.07, smoothstep(70.0, 420.0, cam_y))
 	_env.fog_height_density = float(_now["mist"])
-	_env.fog_sun_scatter = 0.25 * direct
+	_env.fog_sun_scatter = 0.7 * direct
 	_env.background_energy_multiplier = 1.0
 
 	# Lightning.
@@ -345,7 +359,7 @@ func _apply(dt: float) -> void:
 	_wind_drift += wind_vector() * dt * 22.0
 	wetness = move_toward(wetness, clampf(rain * 1.5, 0.0, 1.0), dt * (0.08 if rain > 0.01 else 0.02))
 
-	var cloud_light := Color(tint.r, tint.g, tint.b) * (sun_energy if use_sun else moon_energy * 2.2)
+	var cloud_light := Color(tint.r, tint.g, tint.b) * (minf(sun_energy, 1.8) if use_sun else moon_energy * 2.2)
 	_sky_mat.set_shader_parameter("zenith_color", zenith)
 	_sky_mat.set_shader_parameter("horizon_color", horizon)
 	_sky_mat.set_shader_parameter("ground_color", fog_color * 0.8)
@@ -394,7 +408,7 @@ func _apply(dt: float) -> void:
 		_rays.global_position = cam.global_position
 		var facing := (-cam.global_basis.z).dot(light_dir)
 		var strength := smoothstep(0.05, 0.45, facing) * smoothstep(0.0, 0.1, light_dir.y)
-		strength *= (0.25 + 0.75 * direct) * (1.0 + float(_now["mist"]) * 6.0)
+		strength *= (0.25 + 0.75 * direct) * (0.7 + fog_amount() * 1.3)
 		var uv := Vector2(0.5, 0.5)
 		if facing > 0.0:
 			var sp := cam.unproject_position(cam.global_position + light_dir * 1000.0)
@@ -402,4 +416,4 @@ func _apply(dt: float) -> void:
 			uv = Vector2(sp.x / size.x, sp.y / size.y)
 		_rays_mat.set_shader_parameter("light_uv", uv)
 		_rays_mat.set_shader_parameter("ray_color", Color(tint.r, tint.g, tint.b))
-		_rays_mat.set_shader_parameter("intensity", strength * (0.2 if use_sun else 0.12) * minf(energy + 0.15, 1.0))
+		_rays_mat.set_shader_parameter("intensity", strength * (0.55 if use_sun else 0.25) * minf(energy + 0.15, 1.0))

@@ -12,8 +12,8 @@ uniform vec2 light_uv = vec2(0.5);
 uniform vec3 ray_color : source_color = vec3(1.0, 0.85, 0.6);
 uniform float intensity = 0.0;
 uniform int samples = 24;
-uniform float reach : hint_range(0.1, 1.0) = 0.85;
-uniform float decay : hint_range(0.8, 1.0) = 0.955;
+uniform float reach : hint_range(0.1, 1.0) = 0.95;
+uniform float decay : hint_range(0.8, 1.0) = 0.97;
 
 void vertex() {
 	POSITION = vec4(VERTEX.xy, 1.0, 1.0);
@@ -34,9 +34,11 @@ void fragment() {
 		uv += delta;
 		// Reversed depth: the sky is at 0.
 		float open = step(texture(depth_tex, clamp(uv, vec2(0.001), vec2(0.999))).r, 0.000001);
-		float near = 1.0 - smoothstep(0.0, 0.55, length((uv - light_uv) * aspect));
+		float near = 1.0 - smoothstep(0.0, 0.95, length((uv - light_uv) * aspect));
 		lit += open * near * w;
 		w *= decay;
 	}
-	ALBEDO = ray_color * (lit / float(samples)) * intensity;
+	// Squared: the shafts stand out from the general glow instead of washing the frame.
+	float shaft = lit / float(samples);
+	ALBEDO = ray_color * (shaft * shaft * 1.6 + shaft * 0.25) * intensity;
 }

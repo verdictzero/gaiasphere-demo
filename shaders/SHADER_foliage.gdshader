@@ -16,7 +16,14 @@ uniform float wind_bend = 0.5;
 uniform float wind_flutter = 0.03;
 // The texture holds this many plants side by side; INSTANCE_CUSTOM.x picks one.
 uniform float atlas_columns = 1.0;
-// Plants shrink into the ground between these distances (0 = never).
+// GRASS LEAVES THE PICTURE IN TWO STAGES (0 = neither). First it thins: between
+// `thin_start` and `thin_end` each clump drops out at its own distance, set by a
+// random number it carries, until only `thin_keep` of them are left. Then what
+// remains dissolves through a screen-door dither between `fade_start` and
+// `fade_end`, where the tiles stop being drawn. Nothing pops and nothing shrinks.
+uniform float thin_start = 0.0;
+uniform float thin_end = 0.0;
+uniform float thin_keep : hint_range(0.0, 1.0) = 0.3;
 uniform float fade_start = 0.0;
 uniform float fade_end = 0.0;
 
@@ -24,13 +31,19 @@ uniform float fade_end = 0.0;
 global uniform float enviro_wetness;
 
 varying vec3 shade;
+varying float dissolve;
 
 void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
+	dissolve = 0.0;
 	if (fade_end > 0.0) {
 		float d = distance(root, CAMERA_POSITION_WORLD);
-		float keep = 1.0 - smoothstep(fade_start, fade_end, d);
-		VERTEX = root + (VERTEX - root) * keep;
+		dissolve = smoothstep(fade_start, fade_end, d);
+		// INSTANCE_CUSTOM.z is the clump's lot: low numbers go first.
+		float gone = smoothstep(thin_start, thin_end, d) * (1.0 - thin_keep);
+		if (INSTANCE_CUSTOM.z < gone) {
+			VERTEX = root;          // every vertex on one point: no triangle is drawn
+		}
 	}
 	VERTEX += wind_offset(VERTEX, UV2, wind_bend, wind_flutter);
 	shade = COLOR.rgb;
@@ -49,6 +62,12 @@ void fragment() {
 	// route shaded these cards black.
 	if (a < alpha_cut) {
 		discard;
+	}
+	if (dissolve > 0.0) {
+		float screen = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));
+		if (dissolve > screen) {
+			discard;
+		}
 	}
 	ALBEDO = t.rgb * tint * shade * mix(1.0, 0.8, enviro_wetness);
 	ROUGHNESS = mix(roughness, 0.3, enviro_wetness * 0.7);

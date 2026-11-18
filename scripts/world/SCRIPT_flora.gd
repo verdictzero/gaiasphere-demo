@@ -170,12 +170,13 @@ func _build_layers() -> void:
 	})
 
 	# --- grass: crossed quads cut from the clump photos, one atlas, one draw per tile
-	var reach := 46.0 * _scale
+	var reach := 62.0 * _scale
 	var blades := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
 		"albedo_tex": load("res://assets/grass/textures/grass_atlas_basecolor.png"),
 		"tint": Color(0.62, 0.7, 0.5), "alpha_cut": 0.36, "roughness": 0.7,
 		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0,
-		"backlight": Color(0.2, 0.25, 0.08), "fade_start": reach * 0.6, "fade_end": reach})
+		"backlight": Color(0.2, 0.25, 0.08), "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
+		"fade_start": reach * 0.72, "fade_end": reach * 0.98})
 	_layers.append({
 		"name": "grass", "tile": 10.0, "radius": reach, "stride": STRIDE_CUSTOM,
 		"dists": [], "shadow_lods": 0,
@@ -367,7 +368,7 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 
 func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 	var buf := PackedFloat32Array()
-	var grid := 0.62
+	var grid := 0.44        # thick underfoot; the shader thins it with distance
 	var tile := float(layer["tile"])
 	var x0 := float(key.x) * tile
 	var z0 := float(key.y) * tile
@@ -403,7 +404,7 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var wide := tall * (1.0 if variant < 0.5 else (1.2 if variant < 1.5 else 1.45))
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 57) * TAU).scaled(Vector3(wide, tall, wide))
 			_push(buf, basis, Vector3(x, y - 0.03, z))
-			buf.append_array([variant, _hash(cx, cz, 58), 0.0, 0.0])
+			buf.append_array([variant, _hash(cx, cz, 58), _hash(cx, cz, 59), 0.0])
 	return [buf]
 
 

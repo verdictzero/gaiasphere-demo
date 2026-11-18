@@ -52,7 +52,8 @@ float cloud_at(vec3 p, bool cheap) {
 	// Flat bases, rounded tops.
 	float profile = smoothstep(0.0, 0.1, h) * smoothstep(1.0, 0.35, h);
 	float d = (weather * 0.62 + shape * 0.38) - (1.0 - cloud_coverage * 1.08);
-	d = clamp(d * 3.2, 0.0, 1.0) * profile;
+	d = clamp(d * 1.5, 0.0, 1.0);
+	d = d * d * (3.0 - 2.0 * d) * profile;
 	if (!cheap && d > 0.0) {
 		float detail = texture(cloud_shape, q / 620.0 + cloud_wind / 2600.0).r;
 		d = clamp(d - detail * 0.34 * (1.0 - d), 0.0, 1.0);
@@ -114,7 +115,8 @@ vec4 clouds(vec3 origin, vec3 dir, float jitter) {
 	}
 	float n = float(cloud_steps);
 	float dt = (t1 - t0) / n;
-	float t = t0 + dt * jitter;
+	// A little jitter hides the slices; a lot of it is the speckle.
+	float t = t0 + dt * (0.35 + 0.3 * jitter);
 	float trans = 1.0;
 	vec3 light = vec3(0.0);
 	float cosang = dot(dir, cloud_light_dir);
@@ -136,7 +138,7 @@ vec4 clouds(vec3 origin, vec3 dir, float jitter) {
 			float powder = 1.0 - exp(-d * dt * 2.0);
 			float h = (p.y - cloud_base) / (cloud_top - cloud_base);
 			vec3 amb = cloud_ambient * (0.45 + 0.75 * h) + vec3(0.7, 0.75, 1.0) * flash * 2.5;
-			vec3 s = cloud_light_color * sun_t * phase * (0.6 + 1.2 * powder) * 2.6 + amb;
+			vec3 s = cloud_light_color * sun_t * min(phase, 1.4) * (0.6 + 1.2 * powder) * 1.5 + amb;
 			float a = 1.0 - exp(-d * dt);
 			light += s * a * trans;
 			trans *= 1.0 - a;

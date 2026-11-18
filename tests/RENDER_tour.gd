@@ -103,6 +103,26 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		4:
 			_shot("4_island")
+			# Into the low sun through the trees, from where the tour began: the shafts.
+			var enviro := _scene.get_node_or_null("Enviro")
+			_explorer.flying = false
+			_explorer.call("arrive")
+			if enviro != null:
+				var sun: Vector3 = enviro.light_dir
+				_look_at(_explorer.global_position + Vector3(sun.x, sun.y * 0.5 + 0.05, sun.z) * 100.0)
+			_wait = _frames_for(240)
+		5:
+			_shot("5_into_the_sun")
+			# The island's edge from just off it: the rock set into the wall, and the cloud at its foot.
+			var coast := 1600.0
+			while coast > 200.0 and not world.is_land(Vector3(coast, 0.0, 0.0)):
+				coast -= 10.0
+			_explorer.flying = true
+			_explorer.global_position = Vector3(coast + 150.0, 30.0, 260.0)
+			_look_at(Vector3(coast - 40.0, -25.0, -80.0))
+			_wait = _frames_for(240)
+		6:
+			_shot("6_edge")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true

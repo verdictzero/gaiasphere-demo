@@ -5,6 +5,8 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_island_world.gd" id="world"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_enviro.gd" id="enviro"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_flora.gd" id="flora"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_fog_patches.gd" id="fogp"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_dressing.gd" id="cliffs"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cloud_sea.gd" id="cloudsea"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_landing_spot.gd" id="landing"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_edge_falls.gd" id="falls"]
@@ -34,6 +36,12 @@ prewarm = true
 [node name="Flora" type="Node3D" parent="."]
 script = ExtResource("flora")
 world_path = NodePath("../IslandWorld")
+
+[node name="CliffDressing" type="Node3D" parent="."]
+script = ExtResource("cliffs")
+
+[node name="FogPatches" type="Node3D" parent="."]
+script = ExtResource("fogp")
 
 [node name="LandingSpot" type="Node3D" parent="."]
 script = ExtResource("landing")
