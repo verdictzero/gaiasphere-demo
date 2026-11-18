@@ -130,7 +130,10 @@ func _process(_delta: float) -> bool:
 				_fail = true
 			else:
 				_explorer.flying = false
-				_explorer.global_position = stone.global_position + Vector3(4.2, 0.4, 3.4)
+				# From the sunward side, so the lit faces are the ones in view.
+				var sun_side: Vector3 = _scene.get_node("Enviro").light_dir
+				sun_side.y = 0.0
+				_explorer.global_position = stone.global_position + sun_side.normalized().rotated(Vector3.UP, 0.5) * 3.6 + Vector3(0, 0.4, 0)
 				_look_at(stone.global_position + Vector3(0.0, 1.5, 0.0))
 			_wait = _frames_for(240)
 		7:

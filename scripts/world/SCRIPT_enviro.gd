@@ -178,7 +178,8 @@ func _build_environment() -> void:
 	_env.fog_enabled = true
 	_env.fog_aerial_perspective = 0.35
 	_env.fog_sky_affect = 0.0
-	_env.fog_height = 4.0
+	# The pooled mist lies below the island's rim, on the cloud sea, not over the wall.
+	_env.fog_height = -30.0
 	_env.adjustment_enabled = spooky > 0.0
 	_env.adjustment_saturation = lerpf(1.0, 0.86, spooky)
 	_env.adjustment_contrast = lerpf(1.0, 1.22, spooky)
@@ -326,7 +327,7 @@ func _apply(dt: float) -> void:
 	# Light from the whole sky is nearer white than the blue overhead.
 	var ambient_grey := (ambient.r + ambient.g + ambient.b) / 3.0
 	ambient = ambient.lerp(Color(ambient_grey, ambient_grey, ambient_grey), 0.55)
-	var ambient_energy := lerpf(0.75, 0.72, day) * lerpf(1.0, 1.2, overcast)
+	var ambient_energy := lerpf(0.75, 1.25, day) * lerpf(1.0, 1.2, overcast)
 	fog_color = horizon.lerp(ambient, 0.35)
 	fog_color += Color(tint.r, tint.g, tint.b) * energy * 0.05
 
@@ -340,7 +341,7 @@ func _apply(dt: float) -> void:
 		cam_y = view_cam.global_position.y
 	_env.fog_density = float(_now["fog"]) * lerpf(1.0, 0.07, smoothstep(70.0, 420.0, cam_y))
 	_env.fog_height_density = float(_now["mist"])
-	_env.fog_sun_scatter = 0.7 * direct
+	_env.fog_sun_scatter = 0.22 * direct
 	_env.background_energy_multiplier = 1.0
 
 	# Lightning.
