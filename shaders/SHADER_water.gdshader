@@ -63,10 +63,13 @@ float swell(vec2 p, float t) {
 	vec2 d = p - mere_centre;
 	float r = length(d);
 	float around = atan(d.y, d.x);
-	float wobble = sin(around * 7.0 + r * 0.05) * 1.3 + sin(around * 13.0 - t * 0.2) * 0.6;
+	// Each ring is bent well out of round, and broken into arcs that come and go.
+	float wobble = (sin(around * 5.0 + r * 0.045) * 0.34 + sin(around * 11.0 - r * 0.03 - t * 0.15) * 0.2
+			+ sin(around * 23.0 + r * 0.08) * 0.1) * wave_length;
+	float arcs = smoothstep(-0.25, 0.55, sin(around * 6.0 + r * 0.09 - t * 0.21) * sin(around * 15.0 - r * 0.05 + 2.0));
 	float a = sin((r + wobble) * 6.2832 / wave_length - t * wave_pace) * 0.5 + 0.5;
 	float b = sin((r - wobble * 0.7) * 6.2832 / (wave_length * 0.37) - t * wave_pace * 1.7 + 1.3) * 0.5 + 0.5;
-	return pow(a, 2.4) * 0.72 + pow(b, 2.0) * 0.28;
+	return (pow(a, 2.4) * 0.72 + pow(b, 2.0) * 0.28) * (0.3 + 0.7 * arcs);
 }
 
 void vertex() {
@@ -147,7 +150,7 @@ void fragment() {
 	SPECULAR = 0.4;
 	NORMAL_MAP = n * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;
-	NORMAL = normalize(NORMAL + lean * 3.0);
+	NORMAL = normalize(NORMAL + lean * 1.3);
 	// A soft edge where the water meets the bank, and where a river ends.
 	ALPHA = smoothstep(0.0, 0.05, thick) * clamp(COLOR.g, 0.0, 1.0) * clamp(COLOR.b, 0.0, 1.0);
 }
