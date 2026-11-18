@@ -38,7 +38,8 @@ uniform float far_scale = 5.0;
 uniform float far_chop = 1.6;
 uniform float surface_roughness : hint_range(0.0, 1.0) = 0.035;
 uniform vec3 foam_color : source_color = vec3(0.82, 0.86, 0.84);
-uniform float shore_foam = 0.22;        // metres of water under the shore's foam line
+uniform float shore_foam = 1.3;         // metres of water the foam reaches out over
+uniform float foam_strength : hint_range(0.0, 2.0) = 1.25;
 uniform float rapids_foam = 1.0;
 
 // WAVES ON THE MERE: rings running outward from the islet in its middle, with
@@ -154,10 +155,20 @@ void fragment() {
 
 	// Foam: a ragged line at the shore, and streaks where the river falls fast.
 	float grain = texture(foam_tex, mix(world_pos.xz * 0.35, vec2(UV.x * 0.5 - TIME * pace * 0.5, UV.y * 0.5), running)).r;
-	float shore = (1.0 - smoothstep(0.0, shore_foam, thick)) * smoothstep(0.25, 0.75, grain + 0.25);
+	// FOAM WHERE THE WATER MEETS ANYTHING: the shore, the causeway, a boulder, the
+	// stone under the sword. It comes from how little water lies in front of what is
+	// behind the surface, so whatever stands in the water gets it without being told.
+	// A solid white line at the very edge, then a broken band behind it, with lines
+	// of foam that lap in and out.
+	float near = 1.0 - smoothstep(0.0, shore_foam, thick);
+	float lap = sin(thick * 7.0 / shore_foam - TIME * 1.7 + grain * 5.0) * 0.5 + 0.5;
+	float fine = texture(foam_tex, world_pos.xz * 1.3 + vec2(TIME * 0.03, -TIME * 0.02)).r;
+	float band = smoothstep(0.42, 0.62, near * (0.55 + 0.45 * lap) + (grain - 0.5) * 0.5 * near + (fine - 0.5) * 0.3 * near);
+	float line = 1.0 - smoothstep(0.0, shore_foam * 0.14, thick);
+	float shore = clamp(max(line, band) * foam_strength, 0.0, 1.0);
 	float rapids = smoothstep(0.35, 0.9, steep * rapids_foam) * smoothstep(0.4, 0.75, grain);
 	float whitecap = crest * crest_foam * smoothstep(0.3, 0.7, grain + crest * 0.4) * (0.35 + enviro_wind.z);
-	float foam = clamp(shore * 0.75 + rapids + whitecap, 0.0, 1.0);
+	float foam = clamp(shore + rapids + whitecap, 0.0, 1.0);
 
 	ALBEDO = foam_color * foam;
 	EMISSION = under * (1.0 - foam);
@@ -168,5 +179,5 @@ void fragment() {
 	NORMAL_MAP_DEPTH = 1.0;
 	NORMAL = normalize(NORMAL + lean * 1.3);
 	// A soft edge where the water meets the bank, and where a river ends.
-	ALPHA = smoothstep(0.0, 0.05, thick) * clamp(COLOR.g, 0.0, 1.0) * clamp(COLOR.b, 0.0, 1.0);
+	ALPHA = smoothstep(0.0, 0.02, thick) * clamp(COLOR.g, 0.0, 1.0) * clamp(COLOR.b, 0.0, 1.0);
 }
