@@ -1,4 +1,4 @@
-# Builds the Windows and Linux executables and attaches them to a release.
+# Builds the Windows and Linux executables and the Android APK and attaches them to a release.
 #
 #   push to the release branch -> a release v<config/version> (project.godot's)
 #                                 with both zips; bump the version to make another
@@ -22,7 +22,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +32,7 @@ jobs:
           path: |
             ~/godot-bin
             ~/.local/share/godot/export_templates
-          key: godot-${{ env.GODOT_VERSION }}-desktop-v1
+          key: godot-${{ env.GODOT_VERSION }}-all-v1
 
       - name: Godot
         run: |
@@ -51,13 +51,15 @@ jobs:
           godot --version
 
       - name: Build
-        run: tools/build.sh both
+        run: tools/build.sh all
 
       - name: Keep the zips
         uses: actions/upload-artifact@v4
         with:
           name: WestVirginia
-          path: build/WestVirginia_*.zip
+          path: |
+            build/WestVirginia_*.zip
+            build/WestVirginia_android.apk
 
       - name: Release
         if: github.event_name == 'push'
@@ -74,7 +76,7 @@ jobs:
             echo "::error::$name is already released. Bump config/version in project.godot and push again."
             exit 1
           fi
-          gh release create "$name" build/WestVirginia_windows.zip build/WestVirginia_linux.zip \
+          gh release create "$name" build/WestVirginia_windows.zip build/WestVirginia_linux.zip build/WestVirginia_android.apk \
             --target "$GITHUB_SHA" \
             --title "West Virginia $name" \
-            --notes "Unzip and run. The first launch builds the island and takes a while; later ones are quick. Controls are in the README."
+            --notes "Windows and Linux: unzip and run. Android: an arm64 debug-signed APK to sideload. The island is baked into the build. Controls are in the README."
