@@ -42,6 +42,8 @@ uniform vec3 litter_tint : source_color = vec3(0.85, 0.8, 0.72);
 uniform vec3 trail_tint : source_color = vec3(0.8, 0.76, 0.7);
 uniform vec3 sand_tint : source_color = vec3(0.7, 0.68, 0.62);
 uniform vec3 bed_tint : source_color = vec3(0.6, 0.62, 0.58);
+// Dry sand on the mere's beaches, as a multiple of the (damp, dark) sand scan.
+uniform vec3 beach_tint : source_color = vec3(2.3, 2.05, 1.6);
 uniform vec3 rock_tint : source_color = vec3(0.85, 0.88, 0.86);
 // The scans are dark; this lifts the whole ground.
 uniform float brightness = 1.7;
@@ -147,6 +149,16 @@ void fragment() {
 			bed_a = mix(sand_a, bed_a, 0.35);
 		}
 		float scour_w = smoothstep(1.7, 2.1, at) * (1.0 - smoothstep(2.5, 2.95, at)) * (1.0 - w.b);
+		if (mere) {
+			// THE MERE'S SHORES ARE SAND: pale and dry up the beach, darkening to wet
+			// at the water's edge, with a ragged upper edge where the turf begins.
+			float beach = smoothstep(0.0, 0.3, river + (macro2 - 0.5) * 0.12);
+			float wet_line = smoothstep(0.45, 0.75, river);
+			albedo = mix(albedo, sand_a * beach_tint * mix(1.0, 0.55, wet_line), beach);
+			flat_n = mix(flat_n, sand_n, beach);
+			roughness = mix(roughness, mix(0.9, 0.45, wet_line), beach);
+			scour_w = 0.0;
+		}
 		albedo = mix(albedo, soil_a * 0.8, scour_w * 0.8);
 		albedo = mix(albedo, rock_a, bank_w);
 		albedo = mix(albedo, bed_a, bed_w);

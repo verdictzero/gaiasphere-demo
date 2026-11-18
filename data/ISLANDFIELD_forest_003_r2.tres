@@ -223,5 +223,5 @@ flow_lagoon_radius = 330.0
 flow_lagoon_islet = 150.0
 flow_lagoon_depth = 11.0
 flow_lagoon_shelf = 22.0
-flow_lagoon_beach = 8.0
+flow_lagoon_beach = 15.0
 flow_lagoon_wobble = 0.11
