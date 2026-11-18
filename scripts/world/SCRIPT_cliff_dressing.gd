@@ -13,21 +13,22 @@ extends Node3D
 
 @export var world_path: NodePath = ^"../IslandWorld"
 ## Metres of coast per chunk, on average.
-@export var spacing := 22.0
+## Close enough that every rock overlaps its neighbours: no wall shows between them.
+@export var spacing := 11.0
 @export var chunk_seed := 152
 
 # name, how often, how far below the rim its top sits (min, max), scale (min, max)
 const KINDS := [
 	# Big enough that neighbours run into each other: the edge is one jagged mass
 	# of rock, not a row of stones on a wall.
-	["cliff_buttress_a", 0.22, 2.0, 12.0, 1.9, 3.6],
-	["cliff_buttress_b", 0.20, 2.0, 12.0, 1.7, 3.2],
-	["cliff_pillar_a", 0.14, 0.0, 12.0, 1.8, 3.4],
-	["cliff_pillar_b", 0.10, 2.0, 14.0, 1.5, 2.6],
-	["cliff_slab_a", 0.12, 2.0, 12.0, 1.8, 3.4],
-	["cliff_shelf_a", 0.08, 8.0, 26.0, 1.6, 3.0],
-	["cliff_fang_a", 0.08, 14.0, 40.0, 1.4, 2.6],
-	["cliff_fang_b", 0.06, 20.0, 46.0, 1.2, 2.0],
+	["cliff_buttress_a", 0.30, 0.0, 5.0, 1.9, 3.6],
+	["cliff_buttress_b", 0.26, 0.0, 5.0, 1.7, 3.2],
+	["cliff_pillar_a", 0.14, 0.0, 6.0, 1.8, 3.4],
+	["cliff_pillar_b", 0.10, 0.0, 7.0, 1.5, 2.6],
+	["cliff_slab_a", 0.14, 0.0, 5.0, 1.8, 3.4],
+	["cliff_shelf_a", 0.03, 8.0, 26.0, 1.6, 3.0],
+	["cliff_fang_a", 0.02, 14.0, 40.0, 1.4, 2.6],
+	["cliff_fang_b", 0.01, 20.0, 46.0, 1.2, 2.0],
 ]
 const LOD_ENDS := [260.0, 700.0, 1700.0, 0.0]
 
@@ -47,7 +48,7 @@ const HALF_DEPTH := {"cliff_buttress_a": 5.5, "cliff_buttress_b": 6.0, "cliff_pi
 
 ## Where every rock goes: [{name, x, y, z, yaw, sx, sy, sz, half_depth, half_width}].
 ## One function, used by _ready and by the edge dump, so the picture is of the game.
-static func layout(field: IslandField, spacing_m := 22.0, seed_value := 152) -> Array:
+static func layout(field: IslandField, spacing_m := 11.0, seed_value := 152) -> Array:
 	var out: Array = []
 	var isl: Variant = field.island_in_cell(field.hub_cell())
 	if isl == null:
