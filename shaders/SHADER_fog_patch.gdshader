@@ -9,7 +9,7 @@ uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
 uniform float opacity : hint_range(0.0, 1.0) = 0.5;
 uniform float soft_depth = 9.0;      // metres over which it fades into what it touches
-uniform float near_fade = 14.0;
+uniform float near_fade = 26.0;
 uniform float far_start = 260.0;
 uniform float far_end = 360.0;
 
@@ -25,11 +25,10 @@ varying vec3 world_centre;
 void vertex() {
 	seed = INSTANCE_CUSTOM.x;
 	world_centre = MODEL_MATRIX[3].xyz;
-	// Face the camera about the vertical, keeping the instance's size.
-	vec3 to_cam = CAMERA_POSITION_WORLD - world_centre;
-	to_cam.y = 0.0;
-	to_cam = normalize(to_cam);
-	vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), to_cam));
+	// Billboarded to the camera's PLANE, not toward its position: every sheet lies
+	// parallel to the screen, so sheets do not fan round as the player walks past
+	// them, and none is ever seen edge-on. Kept upright.
+	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	float sx = length(MODEL_MATRIX[0].xyz);
 	float sy = length(MODEL_MATRIX[1].xyz);
 	vec3 drift = vec3(enviro_wind.x, 0.0, enviro_wind.y) * sin(enviro_wind.w * 0.05 + seed * 6.28) * 6.0;
@@ -51,8 +50,12 @@ void fragment() {
 	float behind = -p.z / p.w;
 	float here = -VERTEX.z;
 	a *= clamp((behind - here) / soft_depth, 0.0, 1.0);
-	a *= smoothstep(0.0, near_fade, here) * (1.0 - smoothstep(far_start, far_end, here));
-	if (a < 0.004) {
+	a *= 1.0 - smoothstep(far_start, far_end, here);
+	// Close to: the bank thins out through a screen-door dither and is gone
+	// (culled, pixel by pixel) by the time the camera is in it.
+	float near = smoothstep(near_fade * 0.3, near_fade, here);
+	float screen = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));
+	if (a < 0.004 || near <= screen) {
 		discard;
 	}
 	// Fog between the eye and the sun glows; fog with the sun behind the eye is flat.

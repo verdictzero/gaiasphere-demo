@@ -24,11 +24,16 @@ uniform float ripple_stretch = 1.4;
 uniform vec3 shallow_color : source_color = vec3(0.10, 0.17, 0.13);
 uniform vec3 deep_color : source_color = vec3(0.012, 0.035, 0.032);
 // Metres of water you can see through.
-uniform float clarity = 2.6;
-uniform float refraction = 0.035;
+uniform float clarity = 3.4;
+uniform float refraction = 0.05;
 uniform float wave_size = 3.2;
 uniform float wave_strength : hint_range(0.0, 2.0) = 0.55;
 uniform float flow_speed = 0.9;
+// Ripples reach `1 + far_scale` times their size, and `1 + far_chop` times their
+// strength, by `far_distance` metres from the camera.
+uniform float far_distance = 260.0;
+uniform float far_scale = 5.0;
+uniform float far_chop = 1.6;
 uniform float surface_roughness : hint_range(0.0, 1.0) = 0.06;
 uniform vec3 foam_color : source_color = vec3(0.82, 0.86, 0.84);
 uniform float shore_foam = 0.22;        // metres of water under the shore's foam line
@@ -63,12 +68,17 @@ void fragment() {
 
 	// Running water carries its ripples downstream in the river's own frame;
 	// still water drifts them with the wind over the world.
+	// Far water is drawn with larger, stronger ripples: fine ones average away to a
+	// mirror at distance, and it is the broad ones that read from across the mere.
+	float far = clamp(length(VERTEX) / far_distance, 0.0, 1.0);
+	float grow = 1.0 + far_scale * far;
+	chop *= 1.0 + far_chop * far;
 	float pace = flow_speed * (1.0 + 2.5 * steep);
-	vec2 r1 = vec2(UV.x - TIME * pace, UV.y) / wave_size;
+	vec2 r1 = vec2(UV.x - TIME * pace, UV.y) / (wave_size * grow);
 	vec2 r2 = vec2(UV.x * 0.7 - TIME * pace * 1.6, UV.y * 0.7 + 3.1) / (wave_size * 0.43);
 	vec2 wind = enviro_wind.xy * TIME * 0.12;
-	vec2 s1 = (world_pos.xz + wind) / (wave_size * 1.7);
-	vec2 s2 = (world_pos.zx * vec2(1.0, -1.0) - wind * 1.6) / (wave_size * 0.6);
+	vec2 s1 = (world_pos.xz + wind) / (wave_size * 1.7 * grow);
+	vec2 s2 = (world_pos.zx * vec2(1.0, -1.0) - wind * 1.6) / (wave_size * 0.6 * grow);
 	vec3 n = mix(texture(wave_a, s1).xyz + texture(wave_b, s2).xyz,
 			texture(wave_a, r1).xyz + texture(wave_b, r2).xyz, running) - 1.0;
 	n = normalize(vec3(n.xy * chop, 1.0));

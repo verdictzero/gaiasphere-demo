@@ -184,7 +184,7 @@ func _build_layers() -> void:
 		"albedo_tex": load("res://assets/grass/textures/grass_atlas_basecolor.png"),
 		"tint": Color(0.62, 0.7, 0.5), "alpha_cut": 0.36, "roughness": 0.7,
 		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0,
-		"backlight": Color(0.2, 0.25, 0.08), "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
+		"backlight": Color(0.035, 0.05, 0.015), "specular": 0.04, "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
 		"fade_start": reach * 0.72, "fade_end": reach * 0.98})
 	_layers.append({
 		"name": "grass", "tile": 10.0, "radius": reach, "stride": STRIDE_CUSTOM,
@@ -245,6 +245,24 @@ static func _hash(x: int, z: int, salt: int) -> float:
 	return float(h & 0xFFFFFF) / float(0x1000000)
 
 
+static func _smooth_noise(x: float, z: float, salt: int) -> float:
+	var ix := int(floor(x))
+	var iz := int(floor(z))
+	var fx := x - float(ix)
+	var fz := z - float(iz)
+	fx = fx * fx * (3.0 - 2.0 * fx)
+	fz = fz * fz * (3.0 - 2.0 * fz)
+	return lerpf(lerpf(_hash(ix, iz, salt), _hash(ix + 1, iz, salt), fx),
+			lerpf(_hash(ix, iz + 1, salt), _hash(ix + 1, iz + 1, salt), fx), fz)
+
+
+## MEADOWS: open ground among the trees, a few hundred metres across, where the
+## forest stops and the grass grows thick. 0 in the wood, 1 well inside a meadow.
+static func meadow(x: float, z: float) -> float:
+	var n := _smooth_noise(x / 210.0, z / 210.0, 71) * 0.7 + _smooth_noise(x / 70.0, z / 70.0, 72) * 0.3
+	return smoothstep(0.56, 0.66, n)
+
+
 static func _push(buf: PackedFloat32Array, basis: Basis, at: Vector3) -> void:
 	buf.append_array([basis.x.x, basis.y.x, basis.z.x, at.x, basis.x.y, basis.y.y, basis.z.y, at.y,
 			basis.x.z, basis.y.z, basis.z.z, at.z])
@@ -291,6 +309,9 @@ func _place_trees(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 					or float(s.get("flow_weight", 0.0)) > 0.3:
 				continue
 			if float(s.get("slope", 0.0)) > 0.4:
+				continue
+			# Meadows are open: the wood thins at their edge and stops inside.
+			if from_stone >= _islet_radius and _hash(cx, cz, 8) < meadow(x, z) * 1.15:
 				continue
 			if _hash(cx, cz, 3) > want:
 				continue
@@ -407,8 +428,9 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var px := x0 + (float(ix) + 0.5) * grid
 			var pz := z0 + (float(iz) + 0.5) * grid
 			var meadow := 1.0 - smoothstep(_clearing * 0.8, _clearing * 1.15, Vector2(px, pz).distance_to(_islet))
+			meadow = maxf(meadow, Flora.meadow(px, pz) * clampf(w.r * 2.5 + 0.4, 0.0, 1.0))
 			if meadow > 0.0:
-				# The meadow round the stone is all grass, thick and even.
+				# Meadows (and the one round the stone) are all grass, thick and even.
 				want = maxf(want, meadow * 1.3)
 				patch = maxf(patch, meadow)
 			if Vector2(px, pz).distance_to(_islet) < 1.3:

@@ -13,21 +13,23 @@ extends Node3D
 
 @export var world_path: NodePath = ^"../IslandWorld"
 ## Metres of coast per chunk, on average.
-@export var spacing := 19.0
+@export var spacing := 22.0
 @export var chunk_seed := 152
 
 # name, how often, how far below the rim its top sits (min, max), scale (min, max)
 const KINDS := [
-	["cliff_buttress_a", 0.20, 4.0, 9.0, 0.8, 1.5],
-	["cliff_buttress_b", 0.17, 4.0, 9.0, 0.8, 1.4],
-	["cliff_pillar_a", 0.14, 3.0, 9.0, 0.8, 1.6],
-	["cliff_pillar_b", 0.10, 4.0, 10.0, 0.7, 1.3],
-	["cliff_slab_a", 0.12, 4.0, 9.0, 0.8, 1.5],
-	["cliff_shelf_a", 0.10, 7.0, 22.0, 0.8, 1.6],
-	["cliff_fang_a", 0.10, 16.0, 40.0, 0.8, 1.5],
-	["cliff_fang_b", 0.07, 22.0, 46.0, 0.7, 1.2],
+	# Big enough that neighbours run into each other: the edge is one jagged mass
+	# of rock, not a row of stones on a wall.
+	["cliff_buttress_a", 0.22, 2.0, 12.0, 1.9, 3.6],
+	["cliff_buttress_b", 0.20, 2.0, 12.0, 1.7, 3.2],
+	["cliff_pillar_a", 0.14, 0.0, 12.0, 1.8, 3.4],
+	["cliff_pillar_b", 0.10, 2.0, 14.0, 1.5, 2.6],
+	["cliff_slab_a", 0.12, 2.0, 12.0, 1.8, 3.4],
+	["cliff_shelf_a", 0.08, 8.0, 26.0, 1.6, 3.0],
+	["cliff_fang_a", 0.08, 14.0, 40.0, 1.4, 2.6],
+	["cliff_fang_b", 0.06, 20.0, 46.0, 1.2, 2.0],
 ]
-const LOD_ENDS := [140.0, 380.0, 950.0, 0.0]
+const LOD_ENDS := [260.0, 700.0, 1700.0, 0.0]
 
 
 ## THE WALL IS NOT UNDER THE COAST. Below the walkable edge the terrain's shoulder
@@ -36,7 +38,7 @@ const LOD_ENDS := [140.0, 380.0, 950.0, 0.0]
 ## tests/DUMP_edge.gd and tools/plot_edge.py, which draw it from above).
 const WALL_OUT := 9.8
 ## How much of a rock's depth is behind the wall's face (0 = just touching, 1 = all of it).
-const BURIED := 0.22
+const BURIED := 0.42
 # Half-depths of the meshes, metres, front to back (assets/cliff/manifest.json).
 const HALF_DEPTH := {"cliff_buttress_a": 5.5, "cliff_buttress_b": 6.0, "cliff_pillar_a": 3.5,
 	"cliff_pillar_b": 4.5, "cliff_slab_a": 2.5, "cliff_shelf_a": 6.0, "cliff_fang_a": 4.0,
@@ -45,7 +47,7 @@ const HALF_DEPTH := {"cliff_buttress_a": 5.5, "cliff_buttress_b": 6.0, "cliff_pi
 
 ## Where every rock goes: [{name, x, y, z, yaw, sx, sy, sz, half_depth, half_width}].
 ## One function, used by _ready and by the edge dump, so the picture is of the game.
-static func layout(field: IslandField, spacing_m := 19.0, seed_value := 152) -> Array:
+static func layout(field: IslandField, spacing_m := 22.0, seed_value := 152) -> Array:
 	var out: Array = []
 	var isl: Variant = field.island_in_cell(field.hub_cell())
 	if isl == null:
@@ -103,8 +105,8 @@ static func layout(field: IslandField, spacing_m := 19.0, seed_value := 152) -> 
 		# Its middle sits so that BURIED of its depth is behind the wall's face.
 		var at := centre + dir * lo + normal * (WALL_OUT + half * (1.0 - 2.0 * BURIED))
 		out.append({"name": kind[0], "x": at.x, "y": rim - drop, "z": at.y,
-				"yaw": atan2(normal.x, normal.y) + yaw_jitter * 0.5, "sx": sx, "sy": size, "sz": sz,
-				"half_depth": half, "coast": lo, "dx": dir.x, "dz": dir.y, "nx": normal.x, "nz": normal.y})
+				"yaw": atan2(normal.x, normal.y) + yaw_jitter * 1.6, "sx": sx, "sy": size, "sz": sz,
+				"half_depth": half, "coast": lo, "tilt_x": rng.randf_range(-0.22, 0.22), "tilt_z": rng.randf_range(-0.22, 0.22), "dx": dir.x, "dz": dir.y, "nx": normal.x, "nz": normal.y})
 	return out
 
 
@@ -128,7 +130,8 @@ func _ready() -> void:
 	for rock in rocks:
 		var holder := Node3D.new()
 		holder.position = Vector3(rock["x"], rock["y"], rock["z"])
-		holder.basis = Basis(Vector3.UP, rock["yaw"]).scaled(Vector3(rock["sx"], rock["sy"], rock["sz"]))
+		var turn := Basis(Vector3.UP, rock["yaw"]) * Basis(Vector3.RIGHT, rock["tilt_x"]) * Basis(Vector3.BACK, rock["tilt_z"])
+		holder.basis = turn.scaled_local(Vector3(rock["sx"], rock["sy"], rock["sz"]))
 		add_child(holder)
 		var lods: Array = meshes[rock["name"]]
 		for l in 4:

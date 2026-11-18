@@ -142,6 +142,16 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		7:
 			_shot("7_sword")
+			# The bridge, from the outer shore beside it.
+			var bridge := _scene.get_node_or_null("StoneBridge")
+			if bridge != null and bridge.start != Vector3.ZERO:
+				var run: Vector3 = (bridge.finish - bridge.start).normalized()
+				_explorer.flying = true
+				_explorer.global_position = bridge.start - run * 16.0 + run.cross(Vector3.UP) * 13.0 + Vector3(0, 4.5, 0)
+				_look_at(bridge.start.lerp(bridge.finish, 0.45))
+			_wait = _frames_for(240)
+		8:
+			_shot("8_bridge")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true

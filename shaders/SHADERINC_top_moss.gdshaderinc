@@ -40,7 +40,13 @@ void top_moss(inout vec3 albedo, inout vec3 world_n, inout float roughness, inou
 		return;
 	}
 	vec2 uv = world_pos.xz * moss_scale;
-	vec3 col = texture(moss_albedo, uv).rgb * moss_tint;
+	// From three sides, like the rock under it, so moss creeping over a steep
+	// shoulder does not smear down it.
+	vec3 mw = pow(abs(geo_n), vec3(4.0));
+	mw /= mw.x + mw.y + mw.z;
+	vec3 mp = world_pos * moss_scale;
+	vec3 col = (texture(moss_albedo, mp.zy).rgb * mw.x + texture(moss_albedo, uv).rgb * mw.y
+			+ texture(moss_albedo, mp.xy).rgb * mw.z) * moss_tint;
 	vec3 nt = texture(moss_normal, uv).xyz * 2.0 - 1.0;
 	// The moss lies on a top-down projection: its tangent is +X, its bitangent +Z.
 	vec3 base_n = normalize(mix(world_n, geo_n, moss_softness));

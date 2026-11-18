@@ -46,6 +46,8 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 ## Cold, slightly drained colour: the look of the place. 0 turns the grade off.
 @export_range(0.0, 1.0) var spooky := 0.5
 @export var god_rays := true
+## The anamorphic lens flare on the sun (0 turns it off).
+@export_range(0.0, 2.0) var flare_strength := 0.85
 ## How far the fog turns gold when the sun is low (0 leaves it grey).
 @export_range(0.0, 1.0) var fog_warmth := 0.8
 
@@ -161,7 +163,7 @@ func _build_environment() -> void:
 	_sky_mat.shader = load("res://shaders/SHADER_enviro_sky.gdshader")
 	_sky_mat.set_shader_parameter("cloud_shape", shape)
 	_sky_mat.set_shader_parameter("cloud_weather", weather_map)
-	_sky_mat.set_shader_parameter("cloud_steps", [28, 48, 72][quality])
+	_sky_mat.set_shader_parameter("cloud_steps", [32, 80, 112][quality])
 	_sky_mat.set_shader_parameter("cloud_light_steps", [3, 5, 6][quality])
 	var sky := Sky.new()
 	sky.sky_material = _sky_mat
@@ -426,5 +428,7 @@ func _apply(dt: float) -> void:
 			var size := get_viewport().get_visible_rect().size
 			uv = Vector2(sp.x / size.x, sp.y / size.y)
 		_rays_mat.set_shader_parameter("light_uv", uv)
+		_rays_mat.set_shader_parameter("flare", flare_strength * smoothstep(0.0, 0.3, facing)
+				* smoothstep(0.0, 0.08, light_dir.y) * minf(energy, 1.6) * (1.0 if use_sun else 0.3))
 		_rays_mat.set_shader_parameter("ray_color", Color(tint.r, tint.g, tint.b))
 		_rays_mat.set_shader_parameter("intensity", strength * (0.3 if use_sun else 0.16) * lerpf(1.0, 0.2, smoothstep(40.0, 300.0, cam.global_position.y)) * minf(energy + 0.15, 1.0))

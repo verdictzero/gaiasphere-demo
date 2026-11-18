@@ -10,6 +10,7 @@ uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, r
 uniform vec3 tint : source_color = vec3(1.0);
 uniform float alpha_cut : hint_range(0.0, 1.0) = 0.38;
 uniform float roughness : hint_range(0.0, 1.0) = 0.6;
+uniform float specular : hint_range(0.0, 1.0) = 0.35;
 // Light that comes through the leaf from behind.
 uniform vec3 backlight : source_color = vec3(0.16, 0.2, 0.06);
 // Metres the tips swing in a full wind, and how hard they shiver.
@@ -72,7 +73,7 @@ void fragment() {
 	}
 	ALBEDO = t.rgb * tint * shade * mix(1.0, 0.8, enviro_wetness);
 	ROUGHNESS = mix(roughness, 0.3, enviro_wetness * 0.7);
-	SPECULAR = 0.35;
+	SPECULAR = specular;
 	BACKLIGHT = backlight;
 	if (!FRONT_FACING) {
 		NORMAL = -NORMAL;

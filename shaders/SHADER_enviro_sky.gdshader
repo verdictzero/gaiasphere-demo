@@ -30,7 +30,7 @@ uniform vec3 cloud_wind = vec3(0.0);      // metres the field has drifted
 uniform vec3 cloud_light_dir = vec3(0.0, 1.0, 0.0);
 uniform vec3 cloud_light_color : source_color = vec3(1.0);
 uniform vec3 cloud_ambient : source_color = vec3(0.4, 0.45, 0.55);
-uniform int cloud_steps = 28;
+uniform int cloud_steps = 80;
 uniform int cloud_light_steps = 3;
 uniform float flash = 0.0;
 // How much the cloud opens toward the sun (0 none): set when the sun is low.
