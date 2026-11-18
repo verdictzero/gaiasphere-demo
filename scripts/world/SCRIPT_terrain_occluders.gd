@@ -50,12 +50,20 @@ func _build(field: IslandField, thread: Thread) -> void:
 			for z in range(pz, mini(pz + PATCH, n - 1)):
 				for x in range(px, mini(px + PATCH, n - 1)):
 					var corners := [Vector2i(x, z), Vector2i(x + 1, z), Vector2i(x + 1, z + 1), Vector2i(x, z + 1)]
-					var ok := true
+					# A cell with a corner off the island still occludes, from the corners
+					# that are on it: the last ground before the edge is what hides the
+					# rock hanging below the rim, so it must not be left out.
+					var on_land := 0
+					var low := 1e9
+					for c in corners:
+						if h[c.y * n + c.x] > -1e8:
+							on_land += 1
+							low = minf(low, h[c.y * n + c.x])
+					if on_land < 3:
+						continue
 					for c in corners:
 						if h[c.y * n + c.x] < -1e8:
-							ok = false         # off the island: no occluder here
-					if not ok:
-						continue
+							h[c.y * n + c.x] = low - 6.0
 					var ids: Array = []
 					for c in corners:
 						if not at.has(c):

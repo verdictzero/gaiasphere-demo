@@ -30,7 +30,9 @@ const KINDS := [
 	["cliff_fang_a", 0.02, 14.0, 40.0, 1.4, 2.6],
 	["cliff_fang_b", 0.01, 20.0, 46.0, 1.2, 2.0],
 ]
-const LOD_ENDS := [260.0, 700.0, 1700.0, 0.0]
+# Where each level of detail hands over to the next, metres; past the last, the rock
+# is not drawn at all. The island is 2.6 km across, so its far side still shows.
+const LOD_ENDS := [260.0, 700.0, 1700.0, 3400.0]
 
 
 ## THE WALL IS NOT UNDER THE COAST. Below the walkable edge the terrain's shoulder
@@ -140,6 +142,9 @@ func _ready() -> void:
 			mi.mesh = lods[l]
 			mi.visibility_range_begin = 0.0 if l == 0 else float(LOD_ENDS[l - 1])
 			mi.visibility_range_end = float(LOD_ENDS[l])
+			# Hidden when the ground is in the way (the terrain's occluders; see
+			# SCRIPT_terrain_occluders.gd): from inland, the whole edge is below the rim.
+			mi.ignore_occlusion_culling = false
 			mi.cast_shadow = (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if l < 2
 					else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 			holder.add_child(mi)
