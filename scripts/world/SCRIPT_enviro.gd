@@ -327,7 +327,7 @@ func _apply(dt: float) -> void:
 	# Light from the whole sky is nearer white than the blue overhead.
 	var ambient_grey := (ambient.r + ambient.g + ambient.b) / 3.0
 	ambient = ambient.lerp(Color(ambient_grey, ambient_grey, ambient_grey), 0.55)
-	var ambient_energy := lerpf(0.75, 1.25, day) * lerpf(1.0, 1.2, overcast)
+	var ambient_energy := lerpf(0.75, 1.9, day) * lerpf(1.0, 1.2, overcast)
 	fog_color = horizon.lerp(ambient, 0.35)
 	fog_color += Color(tint.r, tint.g, tint.b) * energy * 0.05
 

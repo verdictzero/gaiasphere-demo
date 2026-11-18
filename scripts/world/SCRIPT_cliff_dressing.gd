@@ -81,7 +81,8 @@ func _ready() -> void:
 		var inland := centre + dir * (lo - 5.0)
 		var rim := field.height_at(inland.x, inland.y, 0.0)
 		# Sunk into the wall by a third of its depth, top a little under the rim.
-		var at := centre + dir * (lo - 3.5 * size)
+		# Standing out from the wall: only its back third is in the rock.
+		var at := centre + dir * (lo + 2.5 * size)
 		var holder := Node3D.new()
 		holder.position = Vector3(at.x, rim - rng.randf_range(float(kind[2]), float(kind[3])), at.y)
 		holder.basis = Basis(Vector3.UP, atan2(dir.x, dir.y) + rng.randf_range(-0.45, 0.45)) \

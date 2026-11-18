@@ -10,7 +10,6 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_dressing.gd" id="cliffs"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cloud_sea.gd" id="cloudsea"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_landing_spot.gd" id="landing"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_edge_falls.gd" id="falls"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_river_water.gd" id="water"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_underwater_view.gd" id="uw_view"]
 [ext_resource type="Resource" path="res://data/ISLANDFIELD_forest_003_r2.tres" id="field"]
@@ -55,10 +54,6 @@ bearing_deg = 200.0
 [node name="CloudSea" type="Node3D" parent="."]
 script = ExtResource("cloudsea")
 cloud_material = ExtResource("cloud_mat")
-
-[node name="EdgeFalls" type="Node3D" parent="."]
-script = ExtResource("falls")
-world_path = NodePath("../IslandWorld")
 
 [node name="RiverWater" type="Node3D" parent="."]
 script = ExtResource("water")

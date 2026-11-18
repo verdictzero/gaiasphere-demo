@@ -5,7 +5,7 @@ a standalone example of a terrain engine and a water engine, lifted out of a
 larger game with everything that was the game left behind. There is no title
 screen, no menu and no HUD. It starts, builds the island, and puts you on it.
 
-Made with Godot 4.7-dev5, on the GL Compatibility renderer.
+Made with Godot 4.7-dev5, on the Mobile renderer.
 
 ## Running it
 
@@ -15,7 +15,7 @@ it and run the one file in it (`WestVirginia.exe` on Windows,
 
 The first launch spends a while on a black screen that says `building the
 island`: the terrain is generated when the program starts, not shipped. It is
-kept on disk afterwards and later launches are much quicker.
+built again on every launch.
 
 To run it from source, open the folder in Godot 4.7-dev5 and press play.
 
@@ -40,71 +40,66 @@ no collision and its speed runs from a crawl to crossing the island in seconds.
 ## What is in it
 
 The island is not a model. `data/ISLANDFIELD_forest_003_r2.tres` is a few
-hundred numbers, and everything is generated from them at start-up.
+hundred numbers, and the ground, the rivers and where everything grows are
+generated from them at start-up. It runs on Godot's Mobile renderer and
+everything on screen is lit by one sun (or moon) and the sky.
+
+**Sky, light and weather** (`scripts/world/SCRIPT_enviro.gd`)
+
+One node owns the time of day, the sun and moon and the shadowed light they
+share, the atmosphere, raymarched volumetric clouds, fog, rain, lightning, god
+rays, wind and wetness, and publishes them as `enviro_*` shader globals that
+every other shader reads. It is held at golden hour in fog (`hour`, `advance`,
+`weather`). While playing: `T` / `G` move the time, `1`-`7` pick a weather
+(golden fog, clear, cloudy, overcast, foggy, rain, storm). `quality` (0-2)
+scales cloud steps, god-ray samples and shadow reach.
+
+- `shaders/SHADER_enviro_sky.gdshader`: sky, sun, moon with a phase, stars, clouds.
+- `shaders/SHADER_god_rays.gdshader`: light shafts, a screen pass.
+- `scripts/world/SCRIPT_fog_patches.gd`, `shaders/SHADER_fog_patch.gdshader`:
+  drifting banks of fog among the trees.
+- `scripts/world/SCRIPT_cloud_sea.gd`, `shaders/SHADER_cloud_sea.gdshader`: the
+  cloud deck the island floats over, lit by the same light and banked against
+  the island's wall.
 
 **Terrain**
 
-- `scripts/world/SCRIPT_island_field.gd`: the height field. The island's
-  outline, hills, trails, cliffs and what the ground is made of at any point,
-  as a function of position, so any chunk can be built at any resolution.
-- `scripts/world/SCRIPT_flow_terrain.gd`: the water's landforms. Cones and
-  vents the rivers rise from, the rivers themselves as splines that run
-  downhill to the coast, the beds carved for them, and the mere round the
-  middle with its islet, shelf and beaches.
-- `scripts/world/SCRIPT_chunk_mesher.gd`: turns a square of the field into a
-  mesh, with skirts and the cliff wall under the island's edge.
-- `scripts/world/SCRIPT_island_world.gd`: streams those chunks round the
-  camera at five levels of detail, on worker threads, lays collision under the
-  near ones, and (here) builds the whole island before the first frame.
-- `scripts/autoload/AUTOLOAD_terrain_bake.gd`: keeps built chunks in memory and
-  on disk, so the second launch reads them back.
-- `shaders/SHADER_terrain_splat_w2.gdshader`: the ground. A texture atlas
-  splatted by what the field says is there, the wet river beds and banks, and
-  fog by height and distance.
+- `scripts/world/SCRIPT_island_field.gd`, `SCRIPT_flow_terrain.gd`,
+  `SCRIPT_chunk_mesher.gd`, `SCRIPT_island_world.gd`: the height field, the
+  rivers and mere, the mesher, and the streamer that draws chunks at five
+  levels of detail. Unchanged from the original project.
+- `shaders/SHADER_terrain.gdshader`, `materials/MAT_terrain.tres`: the lit
+  ground, blended from Poly Haven scans (`textures/polyhaven/`, CC0).
+- `scripts/world/SCRIPT_cliff_dressing.gd`: rock masses (`assets/cliff`) set
+  into the island's edge. `shaders/SHADER_boulder.gdshader` and
+  `SHADERINC_top_moss.gdshaderinc` are the rock and its moss.
+
+**Everything that grows** (`scripts/world/SCRIPT_flora.gd`)
+
+Firs, ferns, boulders and grass (`assets/fir`, `fern`, `boulder`, `grass`),
+instanced per tile, with the level of detail stepping down by distance: three
+meshes, then for trees crossed-plane impostors and billboards out to the far
+shore. Grass thins with distance and then dissolves. `quality` and `density`
+scale it. Each asset folder has its own README and is rebuilt by a script in
+`tools/`. The sword in the stone (`assets/sword_in_stone`,
+`SCRIPT_sword_stone.gd`) stands on the islet in the mere.
 
 **Water**
 
-- `scripts/world/SCRIPT_river_water.gd`: one mesh for all the water, swept
-  along each river's spline and round the mere, carrying its own flow
-  direction and speed; answers "is there water here, and how high" for
-  swimming and the underwater view, and runs rings out from whatever disturbs
-  it.
-- `shaders/SHADER_river_water.gdshader`: the surface. Depth colour, ripples
-  that run downstream and faster on the hills, foam at the banks and rapids,
-  sky and sun on it, all on the ground's texel grid and stepped in whole
-  frames.
-- `scripts/world/SCRIPT_edge_falls.gd`: the waterfalls where a river reaches
-  the island's edge and goes over.
-- `scripts/world/SCRIPT_underwater_view.gd` and
-  `shaders/SHADER_underwater.gdshader`: the waterline across the lens and the
-  murk below it.
-- `materials/MAT_river_water_003_r2.tres`: this water's numbers. The same
-  shader makes a clear tropical lagoon with different ones.
+- `scripts/world/SCRIPT_river_water.gd`: one mesh for the rivers and the mere.
+- `shaders/SHADER_water.gdshader`, `materials/MAT_water.tres`: the lit surface:
+  sky reflection, refraction, depth colour, foam.
+- `scripts/world/SCRIPT_underwater_view.gd`, `shaders/SHADER_underwater.gdshader`:
+  the view from below the surface, unchanged from the original project.
 
-**Everything else that is on screen**
+**Checking it without playing**
 
-- Vegetation: `SCRIPT_veg_scatter.gd` (the trees and understory, as crossed
-  cards in multimeshes, planted from the field and kept off the water) and
-  `SCRIPT_grass_scatter.gd`.
-- Sky: `SCRIPT_sky_cycle_controller.gd` with `data/SKYCYCLE_003_forest.tres`
-  (time of day), `SCRIPT_cloud_sea.gd` (the cloud deck the island floats
-  over), `SCRIPT_horizon_clouds.gd`, `SCRIPT_forest_fog.gd`.
-- The look: `shaders/SHADER_post_dither.gdshader`, an ordered dither onto a
-  fixed palette (`data/palettes/LUT_forest-003.png`), and over it a CRT:
-  slight curvature, scanlines, chroma bleed, dot crawl, ghosting, noise and
-  chromatic aberration. `crt_amount` in `project.godot` turns it off (0.0)
-  and the `crt_tune_*` vectors beside it are its strengths.
+    godot --path . --script res://tests/RENDER_tour.gd -- --out=/some/folder [--hour=17.3] [--weather=storm]
+    godot --path . --script res://tests/RENDER_plants.gd -- --out=/some/folder
+    godot --path . --script res://tests/RENDER_boulders.gd -- --out=/some/folder
 
-**What was written for this project**
-
-- `scenes/SCENE_west_virginia.tscn`: the one scene.
-- `scripts/SCRIPT_explorer.gd`: the body you walk, swim and fly.
-- `scripts/SCRIPT_loading_cover.gd`: the black screen at the start.
-- `tests/RENDER_tour.gd`: runs the scene unattended and saves stills.
-
-The engine files are as they are in the game they came from, so they still
-carry hooks for things that are not here (a golf course generator, ruins, a
-vehicle's wake, burning vegetation). Nothing in this project switches them on.
+After adding textures from the command line, run `tools/set_texture_imports.py`
+(it explains why).
 
 ## Building the executables
 
@@ -122,5 +117,5 @@ a new release is: bump that number, push `main`, push `main:release`.
 
 Open `data/ISLANDFIELD_forest_003_r2.tres` in the editor. `seed` is a
 different island; the `flow_*` block is the water: how many rivers, how wide
-and deep, the mere's size. The water's colour and behaviour are the parameters
-of `materials/MAT_river_water_003_r2.tres`.
+and deep, the mere's size. The water's look is `materials/MAT_water.tres`; the
+light and weather are the exports of the `Enviro` node in the scene.

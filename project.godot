@@ -25,7 +25,6 @@ config/project_settings_override="user://thread_tier_override.cfg"
 
 CorePin="*res://scripts/autoload/AUTOLOAD_core_affinity.gd"
 TerrainBake="*res://scripts/autoload/AUTOLOAD_terrain_bake.gd"
-VegBake="*res://scripts/autoload/AUTOLOAD_veg_bake.gd"
 
 [display]
 
