@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Unpack the sword-in-the-stone model into a game-sized glTF.
 
-    7z x assets/staged/sword/sword_in_stone.7z.001 -o/tmp/sword
-    python3 tools/import_sword_in_stone.py /tmp/sword/sword_in_stone.glb assets/sword_in_stone
+    7z x assets/staged/sword/sword_in_stone_v2.7z.001 -o/tmp/sword
+    python3 tools/import_sword_in_stone.py /tmp/sword/sword_in_stone_v2.glb assets/sword_in_stone
 
 The model as delivered is one 108 MB .glb, nearly all of it three 4K textures on
 the stone (the normal map alone is an 80 MB PNG). This writes the same scene as

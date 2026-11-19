@@ -130,6 +130,7 @@ func _ready() -> void:
 			lods.append(m)
 		meshes[kind[0]] = lods
 	var rocks := layout(field, spacing, chunk_seed)
+	var hulls := {}
 	for rock in rocks:
 		var holder := Node3D.new()
 		holder.position = Vector3(rock["x"], rock["y"], rock["z"])
@@ -137,6 +138,14 @@ func _ready() -> void:
 		holder.basis = turn.scaled_local(Vector3(rock["sx"], rock["sy"], rock["sz"]))
 		add_child(holder)
 		var lods: Array = meshes[rock["name"]]
+		# Solid: a hull of its coarsest mesh, shared by every rock of the kind.
+		if not hulls.has(rock["name"]):
+			hulls[rock["name"]] = (lods[3] as ArrayMesh).create_convex_shape(true, true)
+		var body := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		cs.shape = hulls[rock["name"]]
+		body.add_child(cs)
+		holder.add_child(body)
 		for l in 4:
 			var mi := MeshInstance3D.new()
 			mi.mesh = lods[l]

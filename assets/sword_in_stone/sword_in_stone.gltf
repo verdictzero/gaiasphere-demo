@@ -17,41 +17,15 @@
  "nodes": [
   {
    "mesh": 0,
-   "name": "plaque",
-   "scale": [
-    0.21000000834465027,
-    0.21000000834465027,
-    0.21000000834465027
-   ],
-   "translation": [
-    0,
-    1.2000000476837158,
-    0
-   ]
+   "name": "plaque"
   },
   {
    "mesh": 1,
-   "name": "stone"
+   "name": "stone_altar"
   },
   {
    "mesh": 2,
-   "name": "sword",
-   "rotation": [
-    -1,
-    0,
-    0,
-    4.371138828673793e-08
-   ],
-   "scale": [
-    0.19999998807907104,
-    0.19999998807907104,
-    0.19999998807907104
-   ],
-   "translation": [
-    0,
-    1.9275028705596924,
-    0
-   ]
+   "name": "sword"
   }
  ],
  "materials": [
@@ -117,7 +91,7 @@
    ]
   },
   {
-   "name": "Cube",
+   "name": "Cube.003",
    "primitives": [
     {
      "attributes": {
@@ -222,14 +196,14 @@
    "componentType": 5126,
    "count": 4,
    "max": [
-    -0.8120334148406982,
-    0.4319286346435547,
-    0.9319286346435547
+    -0.17052702605724335,
+    1.1907050609588623,
+    0.19570502638816833
    ],
    "min": [
-    -0.8120334148406982,
-    -1.4319286346435547,
-    -0.9319286346435547
+    -0.17052702605724335,
+    0.7992950677871704,
+    -0.19570502638816833
    ],
    "type": "VEC3"
   },
@@ -254,81 +228,81 @@
   {
    "bufferView": 4,
    "componentType": 5126,
-   "count": 912,
+   "count": 1264,
    "max": [
-    1.1036702394485474,
-    1.4100000858306885,
-    1.1036702394485474
+    1.3083224296569824,
+    1.8317067623138428,
+    1.3083223104476929
    ],
    "min": [
-    -1.1036702394485474,
-    -0.215154230594635,
-    -1.1036702394485474
+    -1.308322787284851,
+    -0.3314927816390991,
+    -1.3083226680755615
    ],
    "type": "VEC3"
   },
   {
    "bufferView": 5,
    "componentType": 5126,
-   "count": 912,
+   "count": 1264,
    "type": "VEC3"
   },
   {
    "bufferView": 6,
    "componentType": 5126,
-   "count": 912,
+   "count": 1264,
    "type": "VEC2"
   },
   {
    "bufferView": 7,
    "componentType": 5126,
-   "count": 912,
+   "count": 1264,
    "type": "VEC2"
   },
   {
    "bufferView": 8,
    "componentType": 5123,
-   "count": 1428,
+   "count": 1908,
    "type": "SCALAR"
   },
   {
    "bufferView": 9,
    "componentType": 5126,
-   "count": 12334,
+   "count": 12336,
    "max": [
-    0.13148510456085205,
-    5.281115531921387,
-    0.6467045545578003
+    0.02629701979458332,
+    2.3067972660064697,
+    0.12934090197086334
    ],
    "min": [
-    -0.13148486614227295,
-    -2.3964734077453613,
-    -0.6467045545578003
+    -0.02629697136580944,
+    0.7712797522544861,
+    -0.12934090197086334
    ],
    "type": "VEC3"
   },
   {
    "bufferView": 10,
    "componentType": 5126,
-   "count": 12334,
+   "count": 12336,
    "type": "VEC3"
   },
   {
    "bufferView": 11,
    "componentType": 5126,
-   "count": 12334,
+   "count": 12336,
    "type": "VEC2"
   },
   {
    "bufferView": 12,
    "componentType": 5126,
-   "count": 12334,
+   "count": 12336,
    "type": "VEC2"
   },
   {
    "bufferView": 13,
    "componentType": 5126,
-   "count": 12334,
+   "count": 12336,
    "type": "VEC2"
   },
   {
@@ -365,68 +339,68 @@
   },
   {
    "buffer": 0,
-   "byteLength": 10944,
+   "byteLength": 15168,
    "byteOffset": 140,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 10944,
-   "byteOffset": 11084,
+   "byteLength": 15168,
+   "byteOffset": 15308,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 7296,
-   "byteOffset": 22028,
+   "byteLength": 10112,
+   "byteOffset": 30476,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 7296,
-   "byteOffset": 29324,
+   "byteLength": 10112,
+   "byteOffset": 40588,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 2856,
-   "byteOffset": 36620,
+   "byteLength": 3816,
+   "byteOffset": 50700,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteLength": 148008,
-   "byteOffset": 39476,
+   "byteLength": 148032,
+   "byteOffset": 54516,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 148008,
-   "byteOffset": 187484,
+   "byteLength": 148032,
+   "byteOffset": 202548,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 98672,
-   "byteOffset": 335492,
+   "byteLength": 98688,
+   "byteOffset": 350580,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 98672,
-   "byteOffset": 434164,
+   "byteLength": 98688,
+   "byteOffset": 449268,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 98672,
-   "byteOffset": 532836,
+   "byteLength": 98688,
+   "byteOffset": 547956,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 58812,
-   "byteOffset": 631508,
+   "byteOffset": 646644,
    "target": 34963
   }
  ],
@@ -439,7 +413,7 @@
  "buffers": [
   {
    "uri": "sword_in_stone.bin",
-   "byteLength": 690320
+   "byteLength": 705456
   }
  ]
 }

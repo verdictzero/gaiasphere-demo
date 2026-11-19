@@ -133,12 +133,16 @@ func _build_layers() -> void:
 		board.surface_set_material(0, _shader_mat("res://shaders/SHADER_impostor.gdshader", {
 			"albedo_tex": load(atlas + "basecolor.png"),
 			"tint": Color(0.6, 0.76, 0.7), "billboard": true}))
-		tree_kinds.append({"lods": lods, "cross": cross, "board": board})
+		# The trunk, to walk into: a post as thick as this fir's foot.
+		var trunk := CylinderShape3D.new()
+		trunk.radius = [0.13, 0.17, 0.26, 0.30, 0.42, 0.46, 0.62, 0.70][FIRS.find(fir)] * 1.2
+		trunk.height = 8.0
+		tree_kinds.append({"lods": lods, "cross": cross, "board": board, "shape": trunk, "shape_lift": 4.0})
 	_layers.append({
 		"name": "trees", "tile": 32.0, "radius": 135.0 * _scale, "stride": STRIDE,
 		"dists": [20.0 * _scale, 52.0 * _scale], "shadow_lods": 3 if quality > 0 else 2,
 		"kinds": tree_kinds, "place": _place_trees, "prefill": true,
-		"cross_reach": 750.0 * _scale, "height": 50.0,
+		"cross_reach": 750.0 * _scale, "height": 50.0, "collide": true,
 	})
 
 	# --- ferns: three meshes, then their own impostors, then nothing
@@ -184,11 +188,11 @@ func _build_layers() -> void:
 			var m := _mesh_of("res://assets/boulder/%s/%s_lod%d.gltf" % [b, b, i])
 			m.surface_set_material(0, rock)
 			lods.append(m)
-		boulder_kinds.append({"lods": lods})
+		boulder_kinds.append({"lods": lods, "shape": (lods[2] as ArrayMesh).create_convex_shape(true, true), "shape_lift": 0.0})
 	_layers.append({
 		"name": "boulders", "tile": 32.0, "radius": 380.0 * _scale, "stride": STRIDE,
 		"dists": [26.0 * _scale, 90.0 * _scale], "shadow_lods": 2,
-		"kinds": boulder_kinds, "place": _place_boulders, "height": 8.0,
+		"kinds": boulder_kinds, "place": _place_boulders, "height": 8.0, "collide": true,
 	})
 
 	# --- grass: crossed quads cut from the clump photos, one atlas, one draw per tile
@@ -644,6 +648,42 @@ static func _tile_distance(key: Vector2i, tile: float, at: Vector3) -> float:
 	return sqrt(dx * dx + dz * dz)
 
 
+## WHAT CAN BE WALKED INTO. Tree trunks and boulders get collision, but only the
+## ones in the tile the camera is in and the eight round it: a few dozen shapes on
+## one static body, rebuilt when the camera crosses into another tile. Seventeen
+## thousand trunks in the physics world would buy nothing.
+func _rebuild_colliders(layer: Dictionary, cam_tile: Vector2i) -> void:
+	var body: StaticBody3D = layer.get("body")
+	if body == null:
+		body = StaticBody3D.new()
+		body.name = "Colliders"
+		(layer["holder"] as Node3D).add_child(body)
+		layer["body"] = body
+	for c in body.get_children():
+		c.queue_free()
+	var cache: Dictionary = layer["cache"]
+	var stride := int(layer["stride"])
+	var kinds: Array = layer["kinds"]
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var bufs: Variant = cache.get(cam_tile + Vector2i(dx, dz))
+			if bufs == null:
+				continue
+			for k in kinds.size():
+				var shape: Shape3D = kinds[k].get("shape")
+				var buf: PackedFloat32Array = bufs[k]
+				if shape == null:
+					continue
+				for i in range(0, buf.size(), stride):
+					var basis := Basis(Vector3(buf[i], buf[i + 4], buf[i + 8]), Vector3(buf[i + 1], buf[i + 5], buf[i + 9]),
+							Vector3(buf[i + 2], buf[i + 6], buf[i + 10]))
+					var cs := CollisionShape3D.new()
+					cs.shape = shape
+					cs.transform = Transform3D(basis, Vector3(buf[i + 3], buf[i + 7], buf[i + 11])
+							+ basis.y * float(kinds[k].get("shape_lift", 0.0)))
+					body.add_child(cs)
+
+
 ## Half the hand-over band, as a share of the distance: SHADERINC_lod_fade's LOD_BAND.
 const LOD_BAND := 0.12
 
@@ -699,6 +739,8 @@ func _update_layer(li: int, at: Vector3) -> void:
 				tiles.erase(key)
 		if layer.has("far"):
 			_repack_far(layer, at, radius)
+		if layer.get("collide", false):
+			_rebuild_colliders(layer, cam_tile)
 	# WHICH LEVELS EACH TILE DRAWS, every frame: usually one, and two while any of
 	# its plants are in the band round a hand-over distance (the shader then picks,
 	# plant by plant and pixel by pixel, which of the two shows).

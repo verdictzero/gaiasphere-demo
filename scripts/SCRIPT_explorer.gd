@@ -239,7 +239,7 @@ func _actions() -> void:
 	_key(&"wv_back", [KEY_S, KEY_DOWN])
 	_key(&"wv_left", [KEY_A, KEY_LEFT])
 	_key(&"wv_right", [KEY_D, KEY_RIGHT])
-	_key(&"wv_up", [KEY_SPACE, KEY_E])
+	_key(&"wv_up", [KEY_SPACE])      # E is the sword (SCRIPT_sword_play.gd)
 	_key(&"wv_down", [KEY_CTRL, KEY_C, KEY_Q])
 	_key(&"wv_run", [KEY_SHIFT])
 	_key(&"wv_fly", [KEY_F])

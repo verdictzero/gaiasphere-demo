@@ -8,7 +8,8 @@ extends Control
 #
 # It drives the same `wv_*` input actions the keyboard and the controller do, so
 # the explorer does not know which of them is in use. Shown only where there is
-# a touchscreen (or with `force` on, to try it with a mouse).
+# a touchscreen (or with `force` on, to try it with a mouse). SWORD takes the sword
+# at the stone, swings it, and held down charges it.
 
 @export var explorer_path: NodePath = ^"../../Explorer"
 @export var force := false
@@ -23,6 +24,7 @@ const BUTTONS := [
 	[&"wv_down", "DOWN", Vector2(-2.7, -0.9), false],
 	[&"wv_run", "RUN", Vector2(-1.1, -2.9), true],
 	[&"wv_fly", "FLY", Vector2(-2.7, -2.5), true],
+	[&"wv_attack", "SWORD", Vector2(-4.1, -1.2), false],
 ]
 const MOVES := [&"wv_left", &"wv_right", &"wv_forward", &"wv_back"]
 

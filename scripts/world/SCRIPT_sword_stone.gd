@@ -6,7 +6,8 @@ extends Node3D
 # under a single shaft of pale light that comes straight down from nowhere: a
 # cone of light with no top (SHADER_light_beam) and a spotlight inside it that
 # does the actual lighting. The model is assets/sword_in_stone, at the size it
-# was made: the stone stands 1.4 m, the pommel a little under 3 m.
+# was made: the altar stands 1.8 m, the pommel 2.3 m. SCRIPT_sword_play.gd lets
+# the player draw the sword out of it.
 
 @export var world_path: NodePath = ^"../IslandWorld"
 ## Radius of the meadow round the stone, metres: grass, no trees.
@@ -45,10 +46,10 @@ func _ready() -> void:
 	var body := StaticBody3D.new()
 	var shape := CollisionShape3D.new()
 	var cyl := CylinderShape3D.new()
-	cyl.radius = 0.95
-	cyl.height = 1.5
+	cyl.radius = 1.25
+	cyl.height = 1.8
 	shape.shape = cyl
-	shape.position.y = 0.7
+	shape.position.y = 0.9
 	body.add_child(shape)
 	model.add_child(body)
 	_build_beam(model.position)
