@@ -218,12 +218,12 @@ func _build_environment() -> void:
 	var cam := CameraAttributesPractical.new()
 	if depth_of_field and quality > 0:
 		cam.dof_blur_far_enabled = true
-		cam.dof_blur_far_distance = 90.0
-		cam.dof_blur_far_transition = 260.0
+		cam.dof_blur_far_distance = 160.0
+		cam.dof_blur_far_transition = 500.0
 		cam.dof_blur_near_enabled = true
 		cam.dof_blur_near_distance = 0.55
 		cam.dof_blur_near_transition = 0.5
-		cam.dof_blur_amount = 0.07
+		cam.dof_blur_amount = 0.04
 	# Not on a phone: the exposure chasing glitter on the water reads as flicker.
 	if eye_adaptation and quality > 0:
 		cam.auto_exposure_enabled = true

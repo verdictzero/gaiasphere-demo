@@ -207,8 +207,13 @@ func _process(_delta: float) -> bool:
 						best = p
 						break
 			_explorer.flying = true
-			_explorer.global_position = Vector3(best.x + 9.0, float(water.world_level_at(best)) - 3.2 - cam.position.y, best.z + 5.0)
-			_look_at(Vector3(best.x, float(water.world_level_at(best)) - 5.0, best.z))
+			# (The mere's level from Flora: the water's own query answers NAN off its mesh,
+			# and a NAN position poisons the whole frame.)
+			var level2 := float(flora._mere_level) if flora != null else 0.0
+			var bed := float(world.height_at(best))
+			_explorer.global_position = Vector3(best.x + 8.0, minf(level2 - 1.2, bed + 2.4) - cam.position.y, best.z + 4.0)
+			_look_at(Vector3(best.x, bed + 1.5, best.z))
+			print("tour: clump at %s, bed %.1f, level %.1f" % [best, bed, level2])
 			_wait = _frames_for(240)
 		12:
 			_shot("12_seaweed")
