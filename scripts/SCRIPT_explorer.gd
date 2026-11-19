@@ -53,6 +53,7 @@ var _pitch := 0.0
 var _fly_scale := 1.0
 var _spot: Node3D
 var _water: Node
+var _torch: SpotLight3D
 var _sea: Node
 var _under := 0.0
 var _ripple := 0.0
@@ -74,6 +75,20 @@ func _ready() -> void:
 	_cam.fov = 75.0
 	add_child(_cam)
 	_cam.make_current()
+	# A FLASHLIGHT (L or V, d-pad up, the LIGHT button on a touchscreen): a warm
+	# spot on the camera, a little off to one side like a held torch, off to start.
+	_torch = SpotLight3D.new()
+	_torch.name = "Flashlight"
+	_torch.light_color = Color(1.0, 0.93, 0.8)
+	_torch.light_energy = 9.0
+	_torch.spot_range = 46.0
+	_torch.spot_angle = 26.0
+	_torch.spot_angle_attenuation = 0.8
+	_torch.spot_attenuation = 0.9
+	_torch.shadow_enabled = not OS.has_feature("mobile")
+	_torch.position = Vector3(0.22, -0.18, 0.0)
+	_torch.visible = false
+	_cam.add_child(_torch)
 	floor_max_angle = deg_to_rad(50.0)
 	floor_snap_length = 0.4
 	_spot = get_node_or_null(landing_spot_path) as Node3D
@@ -136,6 +151,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				else Window.MODE_FULLSCREEN
 	elif not arrived:
 		return
+	elif event.is_action_pressed(&"wv_light"):
+		_torch.visible = not _torch.visible
 	elif event.is_action_pressed(&"wv_fly"):
 		flying = not flying
 		velocity = Vector3.ZERO
@@ -243,6 +260,8 @@ func _actions() -> void:
 	_key(&"wv_down", [KEY_CTRL, KEY_C, KEY_Q])
 	_key(&"wv_run", [KEY_SHIFT])
 	_key(&"wv_fly", [KEY_F])
+	_key(&"wv_light", [KEY_L, KEY_V])
+	_button(&"wv_light", JOY_BUTTON_DPAD_UP)
 	_key(&"wv_home", [KEY_R])
 	_key(&"wv_faster", [KEY_BRACKETRIGHT])
 	_key(&"wv_slower", [KEY_BRACKETLEFT])

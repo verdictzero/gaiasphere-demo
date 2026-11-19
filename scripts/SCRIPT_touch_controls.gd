@@ -25,6 +25,7 @@ const BUTTONS := [
 	[&"wv_run", "RUN", Vector2(-1.1, -2.9), true],
 	[&"wv_fly", "FLY", Vector2(-2.7, -2.5), true],
 	[&"wv_attack", "SWORD", Vector2(-4.1, -1.2), false],
+	[&"wv_light", "LIGHT", Vector2(-4.1, -2.7), true],
 ]
 const MOVES := [&"wv_left", &"wv_right", &"wv_forward", &"wv_back"]
 
@@ -92,7 +93,7 @@ func _input(event: InputEvent) -> void:
 
 func _press(i: int, touch: int) -> void:
 	var action: StringName = BUTTONS[i][0]
-	if action == &"wv_fly":
+	if action == &"wv_fly" or action == &"wv_light":
 		# The explorer toggles flying on the press itself.
 		var ev := InputEventAction.new()
 		ev.action = action

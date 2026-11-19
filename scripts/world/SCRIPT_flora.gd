@@ -43,7 +43,8 @@ var _pool_mutex := Mutex.new()
 var _done: Array = []                  # finished tiles waiting for the main thread
 var _done_mutex := Mutex.new()
 var _prefill_group := -1
-var _prefill_keys: Array[Vector2i] = []
+var _prefill_jobs: Array = []          # [layer index, tile]
+var _prefill_count := 0
 var _prefilled := false
 var _scale := 1.0
 # The islet in the mere: wooded to its shore, with a clearing in the middle for the
@@ -170,7 +171,7 @@ func _build_layers() -> void:
 	_layers.append({
 		"name": "ferns", "tile": 20.0, "radius": 95.0 * _scale, "stride": STRIDE,
 		"dists": [9.0 * _scale, 24.0 * _scale, 50.0 * _scale], "shadow_lods": 1,
-		"kinds": fern_kinds, "place": _place_ferns, "height": 2.0,
+		"kinds": fern_kinds, "prefill": true, "place": _place_ferns, "height": 2.0,
 	})
 
 	# --- bushes: cards cut from the bush photos, crossed and leaned for volume
@@ -188,7 +189,7 @@ func _build_layers() -> void:
 			{"lods": [_bush_mesh(leaves, 5, 4, 11), _bush_mesh(leaves, 3, 1, 11), _bush_mesh(leaves, 2, 0, 11)]},
 			{"lods": [_bush_mesh(leaves, 4, 4, 23), _bush_mesh(leaves, 3, 1, 23), _bush_mesh(leaves, 2, 0, 23)]},
 			{"lods": [_bush_mesh(leaves, 5, 3, 37), _bush_mesh(leaves, 3, 1, 37), _bush_mesh(leaves, 2, 0, 37)]}],
-		"place": _place_bushes, "height": 4.0,
+		"prefill": true, "place": _place_bushes, "height": 4.0,
 	})
 
 	# --- seaweed, under the mere
@@ -201,7 +202,7 @@ func _build_layers() -> void:
 		"name": "seaweed", "tile": 24.0, "radius": 120.0 * _scale, "stride": STRIDE_CUSTOM,
 		"dists": [30.0 * _scale], "shadow_lods": 0,
 		"kinds": [{"lods": [_seaweed_mesh(weed, 6), _seaweed_mesh(weed, 3)]}],
-		"place": _place_seaweed, "height": 8.0,
+		"prefill": true, "place": _place_seaweed, "height": 8.0,
 	})
 
 	# --- boulders
@@ -217,7 +218,7 @@ func _build_layers() -> void:
 	_layers.append({
 		"name": "boulders", "tile": 32.0, "radius": 380.0 * _scale, "stride": STRIDE,
 		"dists": [26.0 * _scale, 90.0 * _scale], "shadow_lods": 2,
-		"kinds": boulder_kinds, "place": _place_boulders, "height": 8.0, "collide": true,
+		"kinds": boulder_kinds, "prefill": true, "place": _place_boulders, "height": 8.0, "collide": true,
 	})
 
 	# --- grass: crossed quads cut from the clump photos, one atlas, one draw per tile
@@ -231,7 +232,7 @@ func _build_layers() -> void:
 	_layers.append({
 		"name": "grass", "tile": 10.0, "radius": reach, "stride": STRIDE_CUSTOM,
 		"dists": [], "shadow_lods": 0,
-		"kinds": [{"lods": [_grass_mesh(blades)]}], "place": _place_grass, "height": 1.5,
+		"kinds": [{"lods": [_grass_mesh(blades)]}], "prefetch": 70.0, "place": _place_grass, "height": 1.5,
 	})
 
 	for layer in _layers:
@@ -706,17 +707,29 @@ func _work(li: int, key: Vector2i) -> void:
 
 
 func _prefill_one(i: int) -> void:
-	_work(0, _prefill_keys[i])
+	var job: Array = _prefill_jobs[i]
+	_work(int(job[0]), job[1])
+	_done_mutex.lock()
+	_prefill_count += 1
+	_done_mutex.unlock()
 
 
-# Leaving while the trees are still being placed: let the workers finish first, or
+# Leaving while plants are still being placed: let the workers finish first, or
 # they run on into a node that is gone.
 func _exit_tree() -> void:
 	if _prefill_group >= 0 and not _prefilled:
 		WorkerThreadPool.wait_for_group_task_completion(_prefill_group)
 
 
-# The loading cover's hooks: place every tree on the island before the first frame.
+# THE LOADING COVER'S HOOKS: everything is planted behind the loading screen, so
+# nothing has to be worked out while the player is moving. Trees, ferns, bushes,
+# seaweed and boulders are placed for the whole island. Grass is the exception:
+# the whole island's grass would be millions of clumps and hundreds of megabytes,
+# so it is placed for `GRASS_PRELOAD` metres round where the player starts, and
+# after that always `prefetch` metres ahead of what is drawn (see _update_layer).
+const GRASS_PRELOAD := 320.0
+
+
 func prefill_covered() -> void:
 	pass
 
@@ -725,32 +738,49 @@ func prefill_step() -> bool:
 	if _prefilled or _layers.is_empty():
 		return true
 	if _prefill_group < 0:
-		var tile := float(_layers[0]["tile"])
-		var n := int(ceil(_extent / tile))
-		for z in range(-n, n):
-			for x in range(-n, n):
-				var c := Vector2((float(x) + 0.5) * tile, (float(z) + 0.5) * tile)
-				if c.length() < _extent + tile:
-					_prefill_keys.append(Vector2i(x, z))
-		_prefill_group = WorkerThreadPool.add_group_task(_prefill_one, _prefill_keys.size(), -1, false, "flora trees")
+		var start := Vector2.ZERO
+		var explorer := get_node_or_null(^"../Explorer") as Node3D
+		if explorer != null:
+			start = Vector2(explorer.global_position.x, explorer.global_position.z)
+		for li in _layers.size():
+			var layer := _layers[li]
+			var whole := bool(layer.get("prefill", false))
+			if not whole and String(layer["name"]) != "grass":
+				continue
+			var tile := float(layer["tile"])
+			var n := int(ceil(_extent / tile))
+			for z in range(-n, n):
+				for x in range(-n, n):
+					var c := Vector2((float(x) + 0.5) * tile, (float(z) + 0.5) * tile)
+					if c.length() > _extent + tile:
+						continue
+					if not whole and c.distance_to(start) > GRASS_PRELOAD:
+						continue
+					_prefill_jobs.append([li, Vector2i(x, z)])
+		_prefill_group = WorkerThreadPool.add_group_task(_prefill_one, _prefill_jobs.size(), -1, false, "flora")
 		return false
 	if not WorkerThreadPool.is_group_task_completed(_prefill_group):
 		return false
 	WorkerThreadPool.wait_for_group_task_completion(_prefill_group)
 	_drain(1 << 30)
 	_prefilled = true
-	var total := 0
-	for bufs in (_layers[0]["cache"] as Dictionary).values():
-		for b in bufs:
-			total += (b as PackedFloat32Array).size() / STRIDE
-	print("[flora] %d trees placed in %d tiles" % [total, _prefill_keys.size()])
+	var report := ""
+	for layer in _layers:
+		var total := 0
+		for bufs in (layer["cache"] as Dictionary).values():
+			for buf in bufs:
+				total += (buf as PackedFloat32Array).size() / int(layer["stride"])
+		report += "%s %d  " % [layer["name"], total]
+	print("[flora] planted: %s(%d tiles)" % [report, _prefill_jobs.size()])
 	return true
 
 
 func prefill_ratio() -> float:
 	if _prefilled:
 		return 1.0
-	return 0.0 if _prefill_group < 0 else 0.5
+	if _prefill_group < 0 or _prefill_jobs.is_empty():
+		return 0.0
+	return float(_prefill_count) / float(_prefill_jobs.size())
 
 
 func prefill_label() -> String:
@@ -854,13 +884,23 @@ func _update_layer(li: int, at: Vector3) -> void:
 		# Tiles are held a band (and a tile) past the radius, so the last level can
 		# dither out, or hand over to the impostors, instead of vanishing.
 		var hold := radius * (1.0 + LOD_BAND) + tile if radius > 0.0 else 0.0
-		var reach := int(ceil(hold / tile)) + 1
+		# Placed further out than it is drawn, so a tile is ready before it is wanted
+		# however fast the player is going.
+		var ahead := hold + float(layer.get("prefetch", 0.0)) if radius > 0.0 else 0.0
+		var reach := int(ceil(ahead / tile)) + 1
 		var wanted := {}
 		if radius > 0.0:
 			for z in range(cam_tile.y - reach, cam_tile.y + reach + 1):
 				for x in range(cam_tile.x - reach, cam_tile.x + reach + 1):
 					var key := Vector2i(x, z)
-					if _tile_distance(key, tile, at) > hold:
+					var away := _tile_distance(key, tile, at)
+					if away > ahead:
+						continue
+					if away > hold:
+						if not cache.has(key) and not asked.has(key) and not layer.get("prefill", false) \
+								and Vector2((float(x) + 0.5) * tile, (float(z) + 0.5) * tile).length() <= _extent + tile:
+							asked[key] = true
+							WorkerThreadPool.add_task(_work.bind(li, key))
 						continue
 					if Vector2((float(x) + 0.5) * tile, (float(z) + 0.5) * tile).length() > _extent + tile:
 						continue

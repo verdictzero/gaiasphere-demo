@@ -18,6 +18,8 @@ var _pollen: GPUParticles3D
 var _bugs: GPUParticles3D
 var _pollen_mat: StandardMaterial3D
 var _bug_mat: StandardMaterial3D
+var _fireflies: GPUParticles3D
+var _fly_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -57,6 +59,31 @@ func _ready() -> void:
 	bm.turbulence_influence_max = 0.8
 	bm.scale_min = 0.6
 	bm.scale_max = 1.2
+	# FIREFLIES, at night: slow wandering lights low over the plants, each blinking
+	# on and off several times in its life.
+	_fly_mat = _dot(Color(0.75, 1.0, 0.25))
+	_fireflies = _cloud(int(150 * few), 9.0, Vector3(22, 2.6, 22), 0.085, _fly_mat)
+	var fm := _fireflies.process_material as ParticleProcessMaterial
+	fm.direction = Vector3(1, 0.3, 0)
+	fm.spread = 180.0
+	fm.initial_velocity_min = 0.1
+	fm.initial_velocity_max = 0.45
+	fm.gravity = Vector3(0, 0.02, 0)
+	fm.turbulence_enabled = true
+	fm.turbulence_noise_strength = 1.2
+	fm.turbulence_noise_scale = 2.0
+	fm.turbulence_influence_min = 0.1
+	fm.turbulence_influence_max = 0.3
+	fm.scale_min = 0.6
+	fm.scale_max = 1.3
+	var blink := Gradient.new()
+	blink.offsets = PackedFloat32Array([0.0, 0.08, 0.2, 0.3, 0.42, 0.56, 0.66, 0.8, 0.9, 1.0])
+	blink.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 0.05), Color(1, 1, 1, 0.05),
+			Color(1, 1, 1, 1), Color(1, 1, 1, 0.05), Color(1, 1, 1, 0.05), Color(1, 1, 1, 1), Color(1, 1, 1, 0.05), Color(1, 1, 1, 0)])
+	var blink_ramp := GradientTexture1D.new()
+	blink_ramp.gradient = blink
+	fm.color_ramp = blink_ramp
+	_fireflies.emitting = false
 
 
 func _dot(c: Color) -> StandardMaterial3D:
@@ -123,6 +150,11 @@ func _process(_dt: float) -> void:
 	_bugs.emitting = here
 	_pollen.global_position = Vector3(at.x, maxf(at.y, ground + 2.5), at.z)
 	_bugs.global_position = Vector3(at.x, ground + 1.6, at.z)
+	# Fireflies come out as the light goes, and stay in in the rain.
+	var night := 1.0 - _enviro.daylight()
+	_fireflies.emitting = here and night > 0.55 and _enviro.wetness < 0.3
+	_fireflies.global_position = Vector3(at.x, ground + 1.8, at.z)
+	_fly_mat.albedo_color = Color(0.75 * 2.4, 1.0 * 2.4, 0.25 * 2.4, 1.0)
 	# Lit by the sun and the sky; less of both in rain.
 	var sun := _enviro.light_color
 	var dry := 1.0 - _enviro.wetness

@@ -19,6 +19,9 @@ var _fail := false
 var _fast := false
 var _quick := false
 var _moon := false
+var _nightfall := false
+var _night_shot := false
+var _torch_shot := false
 var _moon_done := false
 var _hour := -1.0
 var _weather := ""
@@ -28,6 +31,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			_out = a.substr(6)
+		elif a == "--nightfall":
+			_nightfall = true	# after the first still, turn the clock to night and take it again
 		elif a == "--moon":
 			_moon = true		# stop after the shots toward the light
 		elif a == "--quick":
@@ -76,6 +81,27 @@ func _process(_delta: float) -> bool:
 			if not on_floor:
 				_fail = true
 			_shot("0_arrival")
+			if _nightfall:
+				_scene.get_node("Enviro").hour = 23.5
+				_nightfall = false
+				_night_shot = true
+				_wait = _frames_for(160)
+				return false
+			if _night_shot:
+				_shot("0b_nightfall")
+				# and with the flashlight on
+				var torch := _explorer.find_child("Flashlight", true, false) as SpotLight3D
+				if torch != null:
+					torch.visible = true
+				_night_shot = false
+				_torch_shot = true
+				_wait = _frames_for(60)
+				return false
+			if _torch_shot:
+				_shot("0c_flashlight")
+				print("tour: ok")
+				quit(0)
+				return true
 			_explorer.flying = true
 			_explorer.global_position += Vector3.UP * 120.0
 			_look_at(Vector3.ZERO)

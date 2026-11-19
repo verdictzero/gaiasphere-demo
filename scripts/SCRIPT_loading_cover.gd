@@ -14,7 +14,7 @@ extends CanvasLayer
 @export var explorer_path: NodePath
 @export var scatter_paths: Array[NodePath] = []
 ## Seconds the scatters are given to plant the start before the cover lifts anyway.
-@export var scatter_timeout := 120.0
+@export var scatter_timeout := 900.0
 ## Seconds to wait for collision under the start before arriving regardless.
 @export var ground_timeout := 20.0
 @export var fade := 1.2
@@ -89,7 +89,11 @@ func _process(delta: float) -> void:
 					s.call(&"prefill_covered")
 				if not bool(s.call(&"prefill_step")):
 					all_done = false
-			_show(0.85 + (0.12 if all_done else 0.06))
+			var planted := 1.0
+			for s in _scatters:
+				if s.has_method(&"prefill_ratio"):
+					planted = minf(planted, float(s.call(&"prefill_ratio")))
+			_show(0.85 + 0.13 * planted)
 			if all_done or _left <= 0.0:
 				_phase = GROUND
 				_left = ground_timeout
