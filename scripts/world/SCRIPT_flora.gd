@@ -177,7 +177,7 @@ func _build_layers() -> void:
 	var leaves := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
 		"albedo_tex": load("res://assets/bush/textures/bush_atlas_basecolor.png"),
 		"tint": Color(0.72, 0.84, 0.6), "alpha_cut": 0.42, "roughness": 0.6, "specular": 0.12,
-		"wind_bend": 0.1, "wind_flutter": 0.035, "atlas_columns": 4.0,
+		"wind_bend": 0.1, "wind_flutter": 0.035, "atlas_columns": 4.0, "near_gone": 1.3, "near_solid": 4.2,
 		"backlight": Color(0.12, 0.17, 0.04)})
 	_layers.append({
 		"name": "bushes", "tile": 24.0, "radius": 170.0 * _scale, "stride": STRIDE_CUSTOM,

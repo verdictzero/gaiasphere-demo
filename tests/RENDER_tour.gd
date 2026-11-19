@@ -17,6 +17,7 @@ var _step := -1
 var _wait := 0
 var _fail := false
 var _fast := false
+var _quick := false
 var _hour := -1.0
 var _weather := ""
 
@@ -25,6 +26,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			_out = a.substr(6)
+		elif a == "--quick":
+			_quick = true		# only the first two stills
 		elif a == "--fast":
 			_fast = true		# a software renderer: wait a sixth as many frames
 		elif a.begins_with("--hour="):
@@ -75,6 +78,10 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(60)
 		1:
 			_shot("1_from_the_air")
+			if _quick:
+				print("tour: ok")
+				quit(0)
+				return true
 			# The mere's shore: walk in from the middle's islet until there is water.
 			var at := Vector3.ZERO
 			for i in 400:

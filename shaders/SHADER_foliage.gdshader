@@ -32,6 +32,11 @@ uniform float thin_end = 0.0;
 uniform float thin_keep : hint_range(0.0, 1.0) = 0.3;
 uniform float fade_start = 0.0;
 uniform float fade_end = 0.0;
+// A PLANT THE PLAYER WALKS INTO GETS OUT OF THE WAY: it dissolves through a dither
+// as the camera comes within `near_solid` metres of its root and is gone (every
+// pixel culled) by `near_gone`. 0 = stays solid.
+uniform float near_gone = 0.0;
+uniform float near_solid = 0.0;
 
 #include "res://shaders/SHADERINC_wind.gdshaderinc"
 #include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
@@ -39,11 +44,13 @@ global uniform float enviro_wetness;
 
 varying vec3 shade;
 varying float dissolve;
+varying float near_keep;
 
 void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
 	lod_keep = lod_fade_window(root, CAMERA_POSITION_WORLD);
 	dissolve = 0.0;
+	near_keep = near_solid > 0.0 ? smoothstep(near_gone, near_solid, distance(root.xz, CAMERA_POSITION_WORLD.xz)) : 1.0;
 	if (fade_end > 0.0) {
 		float d = distance(root, CAMERA_POSITION_WORLD);
 		dissolve = smoothstep(fade_start, fade_end, d);
@@ -72,6 +79,12 @@ void fragment() {
 	// route shaded these cards black.
 	if (a < alpha_cut || lod_fade_discard(FRAGCOORD.xy)) {
 		discard;
+	}
+	if (near_keep < 1.0) {
+		float door = fract(52.9829189 * fract(dot(FRAGCOORD.xy + 17.0, vec2(0.06711056, 0.00583715))));
+		if (door >= near_keep) {
+			discard;
+		}
 	}
 	if (dissolve > 0.0) {
 		float screen = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));

@@ -94,6 +94,8 @@ global uniform vec4 enviro_light_color;
 global uniform vec4 enviro_ambient;
 global uniform vec4 enviro_wind;
 global uniform float enviro_wetness;
+global uniform vec4 enviro_sky_zenith;
+global uniform vec4 enviro_sky_horizon;
 
 varying vec3 world_pos;
 varying vec4 flow;
@@ -218,6 +220,12 @@ void fragment() {
 	float through_crest = pow(max(dot(-view_w, sun_flat), 0.0), 3.0) * (0.25 + 0.75 * crest);
 	under += scatter_color * enviro_light_color.rgb * through_crest * scatter_strength * (0.3 + h0) * still * 0.5;
 	under *= 1.0 - fresnel * 0.85;
+	// THE SKY IN THE WATER, worked out here: the colour of the sky in the direction
+	// the surface throws the eye. (Not the engine's sky cubemap: see SCRIPT_enviro.gd.)
+	vec3 n_w = normalize((INV_VIEW_MATRIX * vec4(nv, 0.0)).xyz);
+	vec3 thrown = reflect(-view_w, n_w);
+	vec3 sky_seen = mix(enviro_sky_horizon.rgb, enviro_sky_zenith.rgb, pow(clamp(thrown.y, 0.0, 1.0), 0.45));
+	under += sky_seen * fresnel * 0.9;
 
 	// ---- foam
 	float grain = texture(foam_tex, mix(world_pos.xz * 0.35, vec2(UV.x * 0.5 - TIME * pace * 0.5, UV.y * 0.5), running)).r;

@@ -33,9 +33,13 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 ## Hour of the day, 0-24.
 @export_range(0.0, 24.0) var hour := 17.3
 ## Whether time passes on its own. Off: the island is held at golden hour.
-@export var advance := false
+@export var advance := true
 ## Real minutes for one full day.
-@export var day_minutes := 48.0
+@export var day_minutes := 36.0
+## Weather changes by itself every so often (the keys still set it by hand).
+@export var auto_weather := true
+## Real minutes a spell of weather lasts: shortest and longest.
+@export var weather_minutes := Vector2(2.5, 6.0)
 ## Tilt of the sun's path from overhead, degrees.
 @export var latitude := 38.0
 ## Where the moon is in its month: 0 new, 0.5 full.
@@ -89,6 +93,18 @@ var _wind_time := 0.0
 var _flash := 0.0
 var _bolt_wait := 4.0
 var _rng := RandomNumberGenerator.new()
+var _weather_left := 150.0
+# What may follow what, so the sky changes the way weather does: it clouds over
+# before it rains, and clears by stages.
+const WEATHER_NEXT := {
+	"clear": ["cloudy", "cloudy", "golden_fog"],
+	"golden_fog": ["clear", "cloudy", "foggy"],
+	"cloudy": ["clear", "golden_fog", "overcast", "overcast"],
+	"overcast": ["cloudy", "rain", "rain", "foggy"],
+	"foggy": ["golden_fog", "overcast", "cloudy"],
+	"rain": ["overcast", "storm", "cloudy"],
+	"storm": ["rain", "overcast"],
+}
 
 
 func _ready() -> void:
@@ -120,6 +136,7 @@ func set_weather(to: String, seconds := 12.0) -> void:
 	_blend = 0.0
 	_blend_seconds = maxf(seconds, 0.01)
 	weather_changed.emit(to)
+	_weather_left = _rng.randf_range(weather_minutes.x, weather_minutes.y) * 60.0
 
 
 ## How foggy it is, 0 (clear air) to 1 (the thickest preset).
@@ -190,7 +207,13 @@ func _build_environment() -> void:
 	_env.background_mode = Environment.BG_SKY
 	_env.sky = sky
 	_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	_env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	# NO REFLECTIONS FROM THE SKY'S CUBEMAP. The sky changes every frame (clouds
+	# drift, the sun moves), so that cubemap was being rebuilt continuously, a face
+	# and a mip at a time, and anything mirror-smooth showed the half-built steps:
+	# the water flickered light and dark from frame to frame on a phone. The water
+	# works its reflection of the sky out for itself from the colours below, which
+	# is steady and far cheaper.
+	_env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	# AgX: bright, saturated light (a low sun, the beam on the sword) rolls off to
 	# white the way film does instead of clipping to a flat colour. It comes out
 	# flat, and the grade below puts the contrast back.
@@ -371,6 +394,11 @@ func _build_rain() -> void:
 # ------------------------------------------------------------------ each frame
 
 func _process(dt: float) -> void:
+	if auto_weather and advance:
+		_weather_left -= dt
+		if _weather_left <= 0.0:
+			var next: Array = WEATHER_NEXT.get(weather, ["cloudy"])
+			set_weather(next[_rng.randi() % next.size()], 45.0)
 	if advance and day_minutes > 0.0:
 		hour = fposmod(hour + dt * 24.0 / (day_minutes * 60.0), 24.0)
 	if _blend < 1.0:
@@ -501,6 +529,8 @@ func _apply(dt: float) -> void:
 	RenderingServer.global_shader_parameter_set(&"enviro_light_dir", light_dir)
 	RenderingServer.global_shader_parameter_set(&"enviro_light_color", light_color)
 	RenderingServer.global_shader_parameter_set(&"enviro_ambient", _env.ambient_light_color * ambient_energy)
+	RenderingServer.global_shader_parameter_set(&"enviro_sky_zenith", zenith.lerp(ambient, overcast * 0.6))
+	RenderingServer.global_shader_parameter_set(&"enviro_sky_horizon", horizon.lerp(ambient, overcast * 0.4))
 	RenderingServer.global_shader_parameter_set(&"enviro_fog_color", fog_color)
 	RenderingServer.global_shader_parameter_set(&"enviro_wind", Vector4(wv.x, wv.z, wind, _wind_time))
 	RenderingServer.global_shader_parameter_set(&"enviro_wetness", wetness)
