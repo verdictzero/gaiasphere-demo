@@ -11,8 +11,12 @@ uniform vec3 tint : source_color = vec3(1.0);
 uniform float alpha_cut : hint_range(0.0, 1.0) = 0.38;
 uniform float roughness : hint_range(0.0, 1.0) = 0.6;
 uniform float specular : hint_range(0.0, 1.0) = 0.35;
-// Light that comes through the leaf from behind.
+// SUBSURFACE LIGHT: the colour a leaf passes when lit from behind, and how much.
+// Done in light() below, so it is shadowed like any other light.
 uniform vec3 backlight : source_color = vec3(0.16, 0.2, 0.06);
+uniform float sss_strength : hint_range(0.0, 8.0) = 4.5;
+// How far round the back of a leaf the light wraps (0 = hard, like stone).
+uniform float wrap : hint_range(0.0, 1.0) = 0.45;
 // Metres the tips swing in a full wind, and how hard they shiver.
 uniform float wind_bend = 0.5;
 uniform float wind_flutter = 0.03;
@@ -76,8 +80,26 @@ void fragment() {
 	ALBEDO = t.rgb * tint * shade * mix(1.0, 0.8, enviro_wetness);
 	ROUGHNESS = mix(roughness, 0.3, enviro_wetness * 0.7);
 	SPECULAR = specular;
-	BACKLIGHT = backlight;
 	if (!FRONT_FACING) {
 		NORMAL = -NORMAL;
 	}
+}
+
+
+// LEAVES ARE NOT OPAQUE. Three things a plain surface does not do:
+//   wrap      light creeps past the edge of the lit side, so foliage never has the
+//             hard terminator of a solid
+//   through   a leaf lit from behind glows on the side you see, in the colour of
+//             what it is made of
+//   toward    looking at the sun through a crown, the leaves between you and it
+//             light up: the bright rim on a backlit tree
+// All of it is multiplied by the shadow, so a branch in the shade of another
+// stays dark.
+void light() {
+	float ndl = dot(NORMAL, LIGHT);
+	float lit = clamp((ndl + wrap) / (1.0 + wrap), 0.0, 1.0);
+	float through = clamp(-ndl, 0.0, 1.0) * 0.5;
+	float toward = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 3.0);
+	vec3 passed = backlight * sss_strength * (through + toward * 1.4);
+	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (vec3(lit) + passed) / PI;
 }
