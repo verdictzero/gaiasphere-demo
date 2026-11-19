@@ -384,6 +384,10 @@ func _build_rain() -> void:
 	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sm.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
 	sm.albedo_color = Color(0.75, 0.8, 0.85, 0.14)
+	# Drops right in front of the lens fade out: up close they are bars, not rain.
+	sm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+	sm.distance_fade_min_distance = 1.5
+	sm.distance_fade_max_distance = 5.0
 	streak.material = sm
 	_rain.draw_pass_1 = streak
 	_rain.emitting = false
@@ -457,6 +461,11 @@ func _apply(dt: float) -> void:
 	horizon = horizon.lerp(Color(hgrey, hgrey * 1.02, hgrey * 1.05), overcast * 0.8)
 	# Under a closed sky the horizon is no brighter than the cloud above it.
 	horizon = horizon.lerp(zenith * 1.5, overcast * 0.65)
+	# ... and the whole sky behind the cloud is as dark as the cloud: thick cloud
+	# takes the light out of all of it.
+	var gloom := lerpf(1.0, 0.42, overcast * dim)
+	zenith *= gloom
+	horizon *= gloom
 	# The look: a cold green-grey cast over whatever the hour gives.
 	var cast := Color(0.84, 0.98, 1.0).lerp(Color.WHITE, 1.0 - spooky)
 	zenith *= cast
