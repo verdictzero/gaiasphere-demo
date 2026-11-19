@@ -134,7 +134,7 @@ func _draw() -> void:
 		# Where the stick will appear: a faint hint in the lower left.
 		var hint := Vector2(230.0 * k, size.y - 230.0 * k)
 		draw_arc(hint, STICK_RADIUS * k, 0.0, TAU, 48, Color(1, 1, 1, 0.12), 3.0 * k, true)
-	var font := get_theme_default_font()
+	var font: Font = load("res://branding/fonts/RobotoCondensed-Regular.ttf")
 	var fs := int(26.0 * k)
 	for i in BUTTONS.size():
 		var r := _button_rect(i)

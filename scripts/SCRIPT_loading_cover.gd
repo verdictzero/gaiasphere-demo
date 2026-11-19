@@ -37,13 +37,11 @@ func _ready() -> void:
 	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_black)
-	# One small line in the middle of a black screen: LOADING n%, in a narrow face
-	# (the engine's own font, squeezed to seven tenths of its width and let out a
-	# little between the letters).
+	# One small line in the middle of a black screen: LOADING n%, in Roboto Condensed
+	# (branding/fonts, SIL Open Font License), let out a little between the letters.
 	var narrow := FontVariation.new()
-	narrow.base_font = ThemeDB.fallback_font
-	narrow.variation_transform = Transform2D(Vector2(0.68, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
-	narrow.spacing_glyph = 3
+	narrow.base_font = load("res://branding/fonts/RobotoCondensed-Regular.ttf")
+	narrow.spacing_glyph = 2
 	_label = Label.new()
 	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
