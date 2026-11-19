@@ -1,0 +1,30 @@
+// SMOOTH HAND-OVER BETWEEN LEVELS OF DETAIL. Two levels of a plant are both drawn
+// through a band round the distance where one gives way to the other, and each
+// keeps a complementary share of the screen's pixels: the nearer one thins out
+// through a dither exactly as the farther one fills in, plant by plant, by that
+// plant's own distance. No pixel is drawn twice and none is left empty, so there
+// is no pop and no ghosting, and it costs no blending.
+//
+// SCRIPT_flora.gd sets the two distances on each MultiMeshInstance3D:
+//   lod_in   where this level starts taking over from the nearer one (0: it is the nearest)
+//   lod_out  where it hands over to the next, or fades out for good (0: never)
+//
+//   vertex():    lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
+//   fragment():  if (lod_fade_discard(FRAGCOORD.xy)) { discard; }
+instance uniform float lod_in = 0.0;
+instance uniform float lod_out = 0.0;
+
+const float LOD_BAND = 0.12;       // half the band's width, as a share of the distance
+
+varying flat vec2 lod_keep;        // a pixel is kept when lod_keep.x <= dither < lod_keep.y
+
+void lod_fade_vertex(vec3 root, vec3 camera) {
+	float d = distance(root, camera);
+	lod_keep.x = lod_in > 0.0 ? 1.0 - smoothstep(lod_in * (1.0 - LOD_BAND), lod_in * (1.0 + LOD_BAND), d) : 0.0;
+	lod_keep.y = lod_out > 0.0 ? 1.0 - smoothstep(lod_out * (1.0 - LOD_BAND), lod_out * (1.0 + LOD_BAND), d) : 1.0;
+}
+
+bool lod_fade_discard(vec2 pixel) {
+	float dither = fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
+	return dither < lod_keep.x || dither >= lod_keep.y;
+}

@@ -162,6 +162,19 @@ func _build_layers() -> void:
 		"kinds": fern_kinds, "place": _place_ferns, "height": 2.0,
 	})
 
+	# --- bushes: cards cut from the bush photos, crossed and leaned for volume
+	var leaves := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
+		"albedo_tex": load("res://assets/bush/textures/bush_atlas_basecolor.png"),
+		"tint": Color(0.72, 0.84, 0.6), "alpha_cut": 0.42, "roughness": 0.6, "specular": 0.12,
+		"wind_bend": 0.1, "wind_flutter": 0.035, "atlas_columns": 4.0,
+		"backlight": Color(0.12, 0.17, 0.04)})
+	_layers.append({
+		"name": "bushes", "tile": 24.0, "radius": 170.0 * _scale, "stride": STRIDE_CUSTOM,
+		"dists": [22.0 * _scale, 70.0 * _scale], "shadow_lods": 1,
+		"kinds": [{"lods": [_bush_mesh(leaves, 4, 3), _bush_mesh(leaves, 3, 0), _bush_mesh(leaves, 2, 0)]}],
+		"place": _place_bushes, "height": 4.0,
+	})
+
 	# --- boulders
 	var rock: Material = load("res://materials/MAT_boulder.tres")
 	var boulder_kinds: Array[Dictionary] = []
@@ -193,7 +206,7 @@ func _build_layers() -> void:
 	})
 
 	for layer in _layers:
-		layer["tiles"] = {}          # Vector2i -> {bufs, mmis, lod}
+		layer["tiles"] = {}          # Vector2i -> {bufs, lods: {level: [mmi per kind]}}
 		layer["cache"] = {}          # Vector2i -> bufs, kept once placed
 		layer["asked"] = {}
 		layer["cam_tile"] = Vector2i(1 << 30, 0)
@@ -223,6 +236,42 @@ static func _grass_mesh(mat: Material) -> ArrayMesh:
 				st.set_uv2(Vector2(1.0 - uv.y, 0.0))
 				st.set_color(Color.WHITE * (0.6 + 0.4 * (1.0 - uv.y)))
 				st.add_vertex(corners[i][0])
+	var mesh := st.commit()
+	mesh.surface_set_material(0, mat)
+	return mesh
+
+
+## A bush a metre tall and a metre across, rooted at the origin: `upright` cards
+## through its middle, turned evenly, and `leaning` smaller ones tipped outward
+## round it so it has a top when seen from above. Normals swell outward from the
+## bush's heart, so it is lit as a rounded mass and not as flat cards.
+static func _bush_mesh(mat: Material, upright: int, leaning: int) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var heart := Vector3(0, 0.45, 0)
+	var cards: Array = []       # [origin, across, up, size]
+	for k in upright:
+		var a := PI * float(k) / float(upright) + 0.2
+		cards.append([Vector3.ZERO, Vector3(cos(a), 0, sin(a)), Vector3.UP, 1.0])
+	for k in leaning:
+		var a := TAU * float(k) / float(leaning) + 0.7
+		var out := Vector3(cos(a), 0, sin(a))
+		cards.append([out * 0.16 + Vector3(0, 0.12, 0), out.cross(Vector3.UP), (Vector3.UP + out * 0.75).normalized(), 0.72])
+	for card in cards:
+		var o: Vector3 = card[0]
+		var ax: Vector3 = card[1]
+		var up: Vector3 = card[2]
+		var size: float = card[3]
+		var corners := [[o - ax * 0.5 * size, Vector2(0, 1)], [o + ax * 0.5 * size, Vector2(1, 1)],
+				[o + ax * 0.5 * size + up * size, Vector2(1, 0)], [o - ax * 0.5 * size + up * size, Vector2(0, 0)]]
+		for i in [0, 1, 2, 0, 2, 3]:
+			var pos: Vector3 = corners[i][0]
+			var uv: Vector2 = corners[i][1]
+			st.set_normal(((pos - heart).normalized() * 0.7 + Vector3.UP * 0.5).normalized())
+			st.set_uv(uv)
+			st.set_uv2(Vector2(clampf(pos.y, 0.0, 1.0), 0.0))
+			st.set_color(Color.WHITE * (0.55 + 0.45 * clampf(pos.y * 1.3, 0.0, 1.0)))
+			st.add_vertex(pos)
 	var mesh := st.commit()
 	mesh.surface_set_material(0, mat)
 	return mesh
@@ -360,6 +409,44 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 31) * TAU).scaled(Vector3.ONE * size)
 			_push(bufs[kind], basis, Vector3(x, float(s["height"]) - 0.03, z))
 	return bufs
+
+
+func _place_bushes(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
+	var buf := PackedFloat32Array()
+	var grid := 3.2
+	var tile := float(layer["tile"])
+	var x0 := float(key.x) * tile
+	var z0 := float(key.y) * tile
+	var n := int(round(tile / grid))
+	for iz in n:
+		for ix in n:
+			var cx := key.x * n + ix
+			var cz := key.y * n + iz
+			var x := x0 + (float(ix) + _hash(cx, cz, 81)) * grid
+			var z := z0 + (float(iz) + _hash(cx, cz, 82)) * grid
+			# Thickets: bushes crowd together and leave gaps, on two scales.
+			var thicket := _smooth_noise(x / 34.0, z / 34.0, 83) * 0.6 + _smooth_noise(x / 11.0, z / 11.0, 84) * 0.4
+			var open := meadow(x, z)
+			# Thickest at the wood's edge round a meadow, thinner in its middle.
+			var want := (thicket - 0.3) * 1.9 * (1.0 - 0.75 * smoothstep(0.75, 1.0, open)) + 0.35 * open * (1.0 - open) * 4.0
+			if _hash(cx, cz, 85) > want * density:
+				continue
+			if Vector2(x, z).distance_to(_islet) < _clearing * 0.9:
+				continue
+			var s := f.sample(x, z)
+			if not bool(s.get("on_land", false)):
+				continue
+			var surface := String(s.get("surface", ""))
+			if surface == "rock" or surface == "sand" or float(s.get("slope", 0.0)) > 0.55 \
+					or float(s.get("flow_weight", 0.0)) > 0.35 or float(s.get("flatten", 0.0)) > 0.25:
+				continue
+			var variant := float(int(_hash(cx, cz, 86) * 4.0) % 4)
+			var tall := 1.5 + 2.4 * _hash(cx, cz, 87) * _hash(cx, cz, 88)
+			var wide := tall * (1.05 + 0.35 * _hash(cx, cz, 89))
+			var basis := Basis(Vector3.UP, _hash(cx, cz, 90) * TAU).scaled(Vector3(wide, tall, wide))
+			_push(buf, basis, Vector3(x, float(s["height"]) - 0.08, z))
+			buf.append_array([variant, _hash(cx, cz, 91), 1.0, 0.0])
+	return [buf]
 
 
 func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
@@ -557,27 +644,43 @@ static func _tile_distance(key: Vector2i, tile: float, at: Vector3) -> float:
 	return sqrt(dx * dx + dz * dz)
 
 
+## Half the hand-over band, as a share of the distance: SHADERINC_lod_fade's LOD_BAND.
+const LOD_BAND := 0.12
+
+
+## The nearest and farthest a tile's plants can be from the camera.
+func _tile_span(layer: Dictionary, key: Vector2i, at: Vector3) -> Vector2:
+	var tile := float(layer["tile"])
+	var flat := _tile_distance(key, tile, at)
+	var dy := maxf(0.0, at.y - float(layer["height"]))
+	var near := sqrt(flat * flat + dy * dy)
+	return Vector2(near, near + tile * 1.5 + float(layer["height"]))
+
+
 func _update_layer(li: int, at: Vector3) -> void:
 	var layer := _layers[li]
 	var tile := float(layer["tile"])
 	var cam_tile := Vector2i(int(floor(at.x / tile)), int(floor(at.z / tile)))
 	var tiles: Dictionary = layer["tiles"]
-	var moved: bool = cam_tile != layer["cam_tile"]
-	if moved:
+	var radius := float(layer["radius"])
+	# High above the island nothing near the ground is near the camera.
+	if at.y > radius + float(layer["height"]) + 60.0:
+		radius = 0.0
+	if cam_tile != layer["cam_tile"] or radius != float(layer.get("radius_now", -1.0)):
 		layer["cam_tile"] = cam_tile
-		var radius := float(layer["radius"])
-		# High above the island nothing near the ground is near the camera.
-		if at.y > radius + float(layer["height"]) + 60.0:
-			radius = 0.0
+		layer["radius_now"] = radius
 		var cache: Dictionary = layer["cache"]
 		var asked: Dictionary = layer["asked"]
-		var reach := int(ceil(radius / tile)) + 1
+		# Tiles are held a band (and a tile) past the radius, so the last level can
+		# dither out, or hand over to the impostors, instead of vanishing.
+		var hold := radius * (1.0 + LOD_BAND) + tile if radius > 0.0 else 0.0
+		var reach := int(ceil(hold / tile)) + 1
 		var wanted := {}
 		if radius > 0.0:
 			for z in range(cam_tile.y - reach, cam_tile.y + reach + 1):
 				for x in range(cam_tile.x - reach, cam_tile.x + reach + 1):
 					var key := Vector2i(x, z)
-					if _tile_distance(key, tile, at) > radius:
+					if _tile_distance(key, tile, at) > hold:
 						continue
 					if Vector2((float(x) + 0.5) * tile, (float(z) + 0.5) * tile).length() > _extent + tile:
 						continue
@@ -585,42 +688,46 @@ func _update_layer(li: int, at: Vector3) -> void:
 					if tiles.has(key):
 						continue
 					if cache.has(key):
-						_open_tile(layer, key, cache[key])
+						tiles[key] = {"bufs": cache[key], "lods": {}}
 					elif not asked.has(key) and not layer.get("prefill", false):
 						asked[key] = true
 						WorkerThreadPool.add_task(_work.bind(li, key))
 		for key in tiles.keys():
 			if not wanted.has(key):
-				for mmi in tiles[key]["mmis"]:
-					if mmi != null:
-						mmi.queue_free()
+				for lod in tiles[key]["lods"]:
+					_close_level(tiles[key]["lods"][lod])
 				tiles.erase(key)
 		if layer.has("far"):
-			_repack_far(layer, wanted, at)
-	# Level of detail, every frame: a comparison per tile and a mesh swap when it changes.
+			_repack_far(layer, at, radius)
+	# WHICH LEVELS EACH TILE DRAWS, every frame: usually one, and two while any of
+	# its plants are in the band round a hand-over distance (the shader then picks,
+	# plant by plant and pixel by pixel, which of the two shows).
 	var dists: Array = layer["dists"]
-	var kinds: Array = layer["kinds"]
-	var shadow_lods := int(layer["shadow_lods"])
+	var levels := dists.size() + 1
 	for key in tiles:
 		var t: Dictionary = tiles[key]
-		var d := _tile_distance(key, tile, at) + maxf(0.0, at.y - float(layer["height"])) * 0.5
-		var lod := 0
-		while lod < dists.size() and d > float(dists[lod]):
-			lod += 1
-		if lod == int(t["lod"]):
-			continue
-		t["lod"] = lod
-		for k in kinds.size():
-			var mmi: MultiMeshInstance3D = t["mmis"][k]
-			if mmi == null:
-				continue
-			var lods: Array = kinds[k]["lods"]
-			mmi.multimesh.mesh = lods[mini(lod, lods.size() - 1)]
-			mmi.cast_shadow = (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod < shadow_lods
-					else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+		var span := _tile_span(layer, key, at)
+		var held: Dictionary = t["lods"]
+		for lod in levels:
+			var lo := 0.0 if lod == 0 else float(dists[lod - 1])
+			var hi := radius if lod == levels - 1 else float(dists[lod])
+			var need := span.x <= hi * (1.0 + LOD_BAND) and span.y >= lo * (1.0 - LOD_BAND)
+			if need and not held.has(lod):
+				held[lod] = _open_level(layer, key, t["bufs"], lod, lo, hi)
+			elif not need and held.has(lod):
+				_close_level(held[lod])
+				held.erase(lod)
 
 
-func _open_tile(layer: Dictionary, key: Vector2i, bufs: Array) -> void:
+func _close_level(mmis: Array) -> void:
+	for mmi in mmis:
+		if mmi != null:
+			mmi.queue_free()
+
+
+## One level of detail of one tile: a MultiMeshInstance3D per kind of plant in it,
+## told where it takes over (`lo`) and where it gives way (`hi`).
+func _open_level(layer: Dictionary, key: Vector2i, bufs: Array, lod: int, lo: float, hi: float) -> Array:
 	var tile := float(layer["tile"])
 	var stride := int(layer["stride"])
 	var kinds: Array = layer["kinds"]
@@ -634,7 +741,7 @@ func _open_tile(layer: Dictionary, key: Vector2i, bufs: Array) -> void:
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.use_custom_data = stride == STRIDE_CUSTOM
 		var lods: Array = kinds[k]["lods"]
-		mm.mesh = lods[lods.size() - 1]
+		mm.mesh = lods[mini(lod, lods.size() - 1)]
 		mm.instance_count = buf.size() / stride
 		mm.buffer = buf
 		var mmi := MultiMeshInstance3D.new()
@@ -644,57 +751,71 @@ func _open_tile(layer: Dictionary, key: Vector2i, bufs: Array) -> void:
 		var h := float(layer["height"])
 		mmi.custom_aabb = AABB(Vector3(float(key.x) * tile - h * 0.3, y - 30.0, float(key.y) * tile - h * 0.3),
 				Vector3(tile + h * 0.6, h + 60.0, tile + h * 0.6))
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.cast_shadow = (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod < int(layer["shadow_lods"])
+				else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+		mmi.set_instance_shader_parameter(&"lod_in", lo)
+		mmi.set_instance_shader_parameter(&"lod_out", hi)
 		(layer["holder"] as Node3D).add_child(mmi)
 		mmis.append(mmi)
-	(layer["tiles"] as Dictionary)[key] = {"mmis": mmis, "lod": -1}
+	return mmis
 
 
 const FAR_CELL := 512.0
 
 
-## Everything outside the near tiles, as impostors: crossed planes out to
-## `cross_reach`, billboards beyond, merged per kind within each FAR_CELL square.
-func _repack_far(layer: Dictionary, near: Dictionary, at: Vector3) -> void:
+## The trees beyond the near tiles, as impostors: the double cross from `radius`
+## out to `cross_reach`, billboards beyond, merged per kind within each FAR_CELL
+## square. A tile in the band round either distance goes into both sides of it,
+## and the shader hands over between them plant by plant.
+func _repack_far(layer: Dictionary, at: Vector3, radius: float) -> void:
 	var tile := float(layer["tile"])
 	var cross_reach := float(layer["cross_reach"])
 	var kinds: Array = layer["kinds"]
 	var cache: Dictionary = layer["cache"]
-	var lift := maxf(0.0, at.y - 80.0)
 	var packed := {}          # Vector3i(cell x, cell z, kind * 2 + board) -> buffer
 	for key in cache:
-		if near.has(key):
-			continue
-		var bufs: Array = cache[key]
-		var board := 0 if _tile_distance(key, tile, at) + lift < cross_reach else 1
+		var span := _tile_span(layer, key, at)
 		var cx := int(floor((float(key.x) + 0.5) * tile / FAR_CELL))
 		var cz := int(floor((float(key.y) + 0.5) * tile / FAR_CELL))
-		for k in kinds.size():
-			var from: PackedFloat32Array = bufs[k]
-			if from.is_empty():
+		var bufs: Array = cache[key]
+		for board in 2:
+			# A tile's width of slack either way: this is only redone when the camera
+			# crosses into another tile.
+			if board == 0 and (span.y < radius * (1.0 - LOD_BAND) - tile or span.x > cross_reach * (1.0 + LOD_BAND) + tile):
 				continue
-			var slot := Vector3i(cx, cz, k * 2 + board)
-			var into: PackedFloat32Array = packed.get(slot, PackedFloat32Array())
-			into.append_array(from)
-			packed[slot] = into
+			if board == 1 and span.y < cross_reach * (1.0 - LOD_BAND) - tile:
+				continue
+			for k in kinds.size():
+				var from: PackedFloat32Array = bufs[k]
+				if from.is_empty():
+					continue
+				var slot := Vector3i(cx, cz, k * 2 + board)
+				var into: PackedFloat32Array = packed.get(slot, PackedFloat32Array())
+				into.append_array(from)
+				packed[slot] = into
 	var far: Dictionary = layer["far"]
 	var mms: Dictionary = far["mms"]
 	for slot in mms:
+		var mmi: MultiMeshInstance3D = mms[slot]
 		if not packed.has(slot):
-			(mms[slot] as MultiMesh).instance_count = 0
+			mmi.multimesh.instance_count = 0
+		if slot.z % 2 == 0:
+			mmi.set_instance_shader_parameter(&"lod_in", radius)
 	for slot in packed:
-		var mm: MultiMesh = mms.get(slot)
-		if mm == null:
-			mm = MultiMesh.new()
+		var mmi: MultiMeshInstance3D = mms.get(slot)
+		if mmi == null:
+			var mm := MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
 			mm.mesh = kinds[slot.z / 2]["board" if slot.z % 2 == 1 else "cross"]
-			var mmi := MultiMeshInstance3D.new()
+			mmi = MultiMeshInstance3D.new()
 			mmi.multimesh = mm
 			mmi.custom_aabb = AABB(Vector3(slot.x * FAR_CELL - 30.0, -20.0, slot.y * FAR_CELL - 30.0),
 					Vector3(FAR_CELL + 60.0, 140.0, FAR_CELL + 60.0))
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mmi.set_instance_shader_parameter(&"lod_in", cross_reach if slot.z % 2 == 1 else radius)
+			mmi.set_instance_shader_parameter(&"lod_out", 0.0 if slot.z % 2 == 1 else cross_reach)
 			(far["holder"] as Node3D).add_child(mmi)
-			mms[slot] = mm
+			mms[slot] = mmi
 		var buf: PackedFloat32Array = packed[slot]
-		mm.instance_count = buf.size() / STRIDE
-		mm.buffer = buf
+		mmi.multimesh.instance_count = buf.size() / STRIDE
+		mmi.multimesh.buffer = buf

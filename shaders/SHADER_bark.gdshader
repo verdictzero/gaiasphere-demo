@@ -11,13 +11,18 @@ uniform float wind_bend = 0.5;
 uniform float normal_strength : hint_range(0.0, 6.0) = 3.0;
 
 #include "res://shaders/SHADERINC_wind.gdshaderinc"
+#include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 global uniform float enviro_wetness;
 
 void vertex() {
+	lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 	VERTEX += wind_offset(VERTEX, UV2, wind_bend, 0.0);
 }
 
 void fragment() {
+	if (lod_fade_discard(FRAGCOORD.xy)) {
+		discard;
+	}
 	vec3 orm = texture(orm_tex, UV).rgb;
 	ALBEDO = texture(albedo_tex, UV).rgb * tint * mix(1.0, 0.7, enviro_wetness);
 	NORMAL_MAP = texture(normal_tex, UV).xyz;

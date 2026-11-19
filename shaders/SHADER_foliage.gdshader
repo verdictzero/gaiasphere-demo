@@ -30,6 +30,7 @@ uniform float fade_start = 0.0;
 uniform float fade_end = 0.0;
 
 #include "res://shaders/SHADERINC_wind.gdshaderinc"
+#include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 global uniform float enviro_wetness;
 
 varying vec3 shade;
@@ -37,6 +38,7 @@ varying float dissolve;
 
 void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
+	lod_fade_vertex(root, CAMERA_POSITION_WORLD);
 	dissolve = 0.0;
 	if (fade_end > 0.0) {
 		float d = distance(root, CAMERA_POSITION_WORLD);
@@ -62,7 +64,7 @@ void fragment() {
 	float a = t.a * (1.0 + clamp(length(VERTEX) / 40.0, 0.0, 1.6));
 	// A plain discard, not ALPHA + ALPHA_SCISSOR_THRESHOLD: on the Mobile renderer that
 	// route shaded these cards black.
-	if (a < alpha_cut) {
+	if (a < alpha_cut || lod_fade_discard(FRAGCOORD.xy)) {
 		discard;
 	}
 	if (dissolve > 0.0) {

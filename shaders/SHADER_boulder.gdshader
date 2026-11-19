@@ -20,18 +20,23 @@ uniform float macro_variation : hint_range(0.0, 1.0) = 0.5;
 uniform float ground_occlusion_height = 0.35;
 
 #include "res://shaders/SHADERINC_top_moss.gdshaderinc"
+#include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
 varying float foot;
 
 void vertex() {
+	lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	w_nrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	foot = w_pos.y - MODEL_MATRIX[3].y;
 }
 
 void fragment() {
+	if (lod_fade_discard(FRAGCOORD.xy)) {
+		discard;
+	}
 	vec3 n = normalize(w_nrm);
 	vec3 w = pow(abs(n), vec3(triplanar_sharpness));
 	w /= w.x + w.y + w.z;

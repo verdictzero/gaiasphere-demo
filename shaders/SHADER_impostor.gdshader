@@ -15,8 +15,10 @@ uniform float alpha_cut : hint_range(0.0, 1.0) = 0.33;
 uniform bool billboard = false;
 
 global uniform float enviro_wetness;
+#include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 
 void vertex() {
+	lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 	vec3 world;
 	vec3 n = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	if (billboard) {
@@ -38,7 +40,7 @@ void vertex() {
 
 void fragment() {
 	vec4 c = texture(albedo_tex, UV);
-	if (c.a * 1.6 < alpha_cut) {
+	if (c.a * 1.6 < alpha_cut || lod_fade_discard(FRAGCOORD.xy)) {
 		discard;       // see SHADER_foliage: not the ALPHA scissor route
 	}
 	ALBEDO = c.rgb * tint * mix(1.0, 0.8, enviro_wetness);

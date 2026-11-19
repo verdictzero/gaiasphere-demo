@@ -6,7 +6,7 @@
            key_magenta.py card SRC DST --base X,Y --tip X,Y [--size 1024x512]
   clump  an upright plant: cropped, scaled to fit and stood on the bottom edge
          with its root centred, for billboards.
-           key_magenta.py clump SRC DST [--size 1024x1024]
+           key_magenta.py clump SRC DST [--size 1024x1024] [--main-only]
   --edge N  de-pink a rim N texels wide along the silhouette (default 2, 0 = off)
 
 All outputs are despilled and have their RGB bled into the transparent area so
@@ -20,7 +20,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 
-def key(path, edge=2):
+def key(path, edge=2, main_only=False):
     """-> float RGBA array (0..1) with magenta removed.
 
     `edge`: width in texels of a rim along the silhouette where red and blue are capped
@@ -39,7 +39,10 @@ def key(path, edge=2):
     lab, n = ndi.label(ndi.binary_dilation(solid, iterations=3))
     if n > 1:
         sizes = ndi.sum(solid, lab, range(1, n + 1))
-        alpha = alpha * np.isin(lab, 1 + np.flatnonzero(sizes > 0.002 * sizes.max()))
+        # main_only: nothing but the one plant (photos with stray leaves or smudges
+        # elsewhere on the backdrop)
+        keep = [int(np.argmax(sizes))] if main_only else np.flatnonzero(sizes > 0.002 * sizes.max())
+        alpha = alpha * np.isin(lab, 1 + np.asarray(keep))
 
     # despill: remove the magenta component left on semi-transparent edges
     spill = np.clip(np.minimum(r, b) - g, 0, None)
@@ -99,9 +102,9 @@ def card(src, dst, base, tip, size, edge):
                           stem_v_from_top=round(float(stem_v), 3))))
 
 
-def clump(src, dst, size, edge):
+def clump(src, dst, size, edge, main_only=False):
     W, H = size
-    im = to_image(key(src, edge))
+    im = to_image(key(src, edge, main_only))
     x0, y0, x1, y1 = bbox(im)
     a = np.asarray(im)[..., 3]
     rows = a[y1 - max(4, (y1 - y0) // 40):y1]                 # the root: lowest rows
@@ -129,9 +132,10 @@ if __name__ == "__main__":
     ap.add_argument("--base", type=pair(",", float))
     ap.add_argument("--tip", type=pair(",", float))
     ap.add_argument("--size", type=pair("x", int))
+    ap.add_argument("--main-only", action="store_true", help="keep only the largest plant in the photo")
     ap.add_argument("--edge", type=int, default=2, help="rim width to de-pink, in texels (0 = off)")
     a = ap.parse_args()
     if a.mode == "card":
         card(a.src, a.dst, a.base, a.tip, a.size or (1024, 512), a.edge)
     else:
-        clump(a.src, a.dst, a.size or (1024, 1024), a.edge)
+        clump(a.src, a.dst, a.size or (1024, 1024), a.edge, a.main_only)
