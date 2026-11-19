@@ -80,9 +80,9 @@ func _ready() -> void:
 	_torch = SpotLight3D.new()
 	_torch.name = "Flashlight"
 	_torch.light_color = Color(1.0, 0.93, 0.8)
-	_torch.light_energy = 9.0
-	_torch.spot_range = 46.0
-	_torch.spot_angle = 26.0
+	_torch.light_energy = 18.0
+	_torch.spot_range = 60.0
+	_torch.spot_angle = 32.0
 	_torch.spot_angle_attenuation = 0.8
 	_torch.spot_attenuation = 0.9
 	_torch.shadow_enabled = not OS.has_feature("mobile")
