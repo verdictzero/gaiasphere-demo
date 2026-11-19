@@ -25,7 +25,7 @@ const WEATHERS := {
 	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.01, "wind": 0.70, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
 	# The island as it is meant to be seen: broken cloud that lets a low sun through,
 	# fog thick enough to carry its shafts.
-	"golden_fog": {"coverage": 0.56, "density": 0.06, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
+	"golden_fog": {"coverage": 0.6, "density": 0.07, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
 	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.008, "wind": 1.00, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
 }
 const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "rain", "storm"]
@@ -177,10 +177,18 @@ func _build_environment() -> void:
 	_env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	_env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	_env.tonemap_white = 6.0
-	_env.glow_enabled = quality > 0
-	_env.glow_intensity = 0.35
-	_env.glow_bloom = 0.04
-	_env.glow_hdr_threshold = 1.1
+	# Bloom: what is brighter than white (the sun's disc and glare, glitter on the
+	# water, the beam on the sword) spreads into a glow.
+	_env.glow_enabled = true
+	_env.glow_intensity = 0.9
+	_env.glow_strength = 1.15
+	_env.glow_bloom = 0.06
+	_env.glow_hdr_threshold = 1.0
+	_env.glow_hdr_scale = 2.0
+	_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
+	for level in 7:
+		_env.set_glow_level(level + 1, [0.0, 0.6, 1.0, 1.0, 0.8, 0.5, 0.0][level] if quality > 0
+				else [0.0, 0.8, 1.0, 0.0, 0.0, 0.0, 0.0][level])
 	_env.fog_enabled = true
 	_env.fog_aerial_perspective = 0.35
 	_env.fog_sky_affect = 0.0

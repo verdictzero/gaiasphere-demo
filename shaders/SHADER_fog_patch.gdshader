@@ -53,11 +53,11 @@ void fragment() {
 	float here = -VERTEX.z;
 	a *= clamp((behind - here) / soft_depth, 0.0, 1.0);
 	a *= 1.0 - smoothstep(far_start, far_end, here);
-	// Close to: the bank thins out through a screen-door dither and is gone
-	// (culled, pixel by pixel) by the time the camera is in it.
-	float near = smoothstep(near_fade * 0.3, near_fade, here);
-	float screen = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));
-	if (a < 0.004 || near <= screen) {
+	// Close to, the bank thins away and is gone (culled) by the time the camera is in
+	// it. A smooth fade, not a screen-door dither: on a sheet that is already
+	// translucent, a dither shows as a field of dots.
+	a *= smoothstep(near_fade * 0.3, near_fade, here);
+	if (a < 0.004) {
 		discard;
 	}
 	// Fog between the eye and the sun glows; fog with the sun behind the eye is flat.

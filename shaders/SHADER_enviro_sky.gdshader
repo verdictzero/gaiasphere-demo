@@ -51,17 +51,23 @@ float cloud_at(vec3 p, bool cheap) {
 	float weather = texture(cloud_weather, q.xz / 14000.0).r * 0.65
 			+ texture(cloud_weather, q.xz / 4300.0 + 0.37).r * 0.35;
 	float shape = texture(cloud_shape, q / 3100.0).r;
-	// Flat bases, rounded tops.
-	float profile = smoothstep(0.0, 0.1, h) * smoothstep(1.0, 0.35, h);
+	float billow = texture(cloud_shape, q / 1250.0 + 0.19).r;
+	// Flat bases, rounded tops; and a cloud is as tall as it is dense, so the
+	// big ones tower and the small ones stay low.
+	float tall = mix(0.4, 1.0, smoothstep(0.35, 0.8, weather));
+	float profile = smoothstep(0.0, 0.07, h) * smoothstep(tall, tall * 0.3, h);
 	// The deck breaks toward the low sun, far out, so it shines in under the cloud.
 	float toward = dot(normalize(p.xz), normalize(sun_dir.xz + vec2(1e-4)));
 	float gap = smoothstep(0.55, 0.97, toward) * smoothstep(2500.0, 9000.0, length(p.xz)) * sun_gap;
-	float d = (weather * 0.62 + shape * 0.38) - (1.0 - (cloud_coverage - gap * 0.5) * 1.08);
-	d = clamp(d * 1.5, 0.0, 1.0);
-	d = d * d * (3.0 - 2.0 * d) * profile;
+	float d = (weather * 0.52 + shape * 0.3 + billow * 0.18) - (1.0 - (cloud_coverage - gap * 0.5) * 1.08);
+	// A long soft ramp at the edge (wisps) into a dense core (the body).
+	d = clamp(d * 1.25, 0.0, 1.0);
+	d = pow(d, 1.35) * profile;
 	if (!cheap && d > 0.0) {
 		float detail = texture(cloud_shape, q / 620.0 + cloud_wind / 2600.0).r;
-		d = clamp(d - detail * 0.34 * (1.0 - d), 0.0, 1.0);
+		// Eaten away at the edges, more toward the base, left solid in the middle.
+		float fray = texture(cloud_shape, q / 240.0 - cloud_wind / 900.0).r;
+		d = clamp(d - (detail * 0.42 + fray * 0.16) * (1.0 - d) * (1.15 - 0.5 * h), 0.0, 1.0);
 	}
 	return d * cloud_density;
 }
@@ -80,7 +86,11 @@ vec3 atmosphere(vec3 dir) {
 vec3 bodies(vec3 dir) {
 	vec3 col = vec3(0.0);
 	float sd = dot(dir, sun_dir);
-	col += sun_color * sun_energy * 40.0 * smoothstep(0.99985, 0.99993, sd);
+	col += sun_color * sun_energy * 60.0 * smoothstep(0.99982, 0.99993, sd);
+	// The glare round the disc: a tight hot ring and a wider soft one, bright
+	// enough for the glow pass to bloom.
+	float off = max(sd, 0.0);
+	col += sun_color * sun_energy * (pow(off, 4000.0) * 9.0 + pow(off, 600.0) * 1.6 + pow(off, 90.0) * 0.25);
 	float md = dot(dir, moon_dir);
 	if (md > 0.9993 && moon_energy > 0.0) {
 		// The disc as a little lit sphere: the phase moves its terminator.
@@ -139,10 +149,13 @@ vec4 clouds(vec3 origin, vec3 dir, float jitter) {
 			for (int j = 1; j <= cloud_light_steps; j++) {
 				shade += cloud_at(p + cloud_light_dir * lstep * float(j), true);
 			}
-			float sun_t = exp(-shade * lstep * 0.45);
+			// Light gets deeper into cloud than one bounce allows: a second, slower falloff
+			// stands in for the many scatterings that keep the lit side from going grey.
+			float od = shade * lstep * 0.45;
+			float sun_t = exp(-od) * 0.72 + exp(-od * 0.22) * 0.28;
 			float powder = 1.0 - exp(-d * dt * 2.0);
 			float h = (p.y - cloud_base) / (cloud_top - cloud_base);
-			vec3 amb = cloud_ambient * (0.45 + 0.75 * h) + vec3(0.7, 0.75, 1.0) * flash * 2.5;
+			vec3 amb = cloud_ambient * (0.28 + 0.95 * h * h) + vec3(0.7, 0.75, 1.0) * flash * 2.5;
 			vec3 s = cloud_light_color * sun_t * min(phase, 1.4) * (0.6 + 1.2 * powder) * 1.5 + amb;
 			float a = 1.0 - exp(-d * dt);
 			light += s * a * trans;

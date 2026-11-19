@@ -315,6 +315,12 @@ const CAUSEWAY_HALF := 2.1        ## half the width of its flat top, metres
 const CAUSEWAY_BANK := 4.0        ## metres its sides take to fall to the bed
 const CAUSEWAY_RISE := 1.1        ## its top, metres over the water
 
+## A LEVEL SPOT at the middle of the islet, so what stands there (the sword in the
+## stone) sits even: flat out to FLAT_RADIUS, eased back into the ground beyond.
+const FLAT_RADIUS := 8.0
+const FLAT_EASE := 13.0
+var _flat_h := 0.0
+
 var _cw_dir := Vector2.ZERO
 var _cw_in := 0.0
 var _cw_out := 0.0
@@ -361,6 +367,9 @@ func lagoon(x: float, z: float, g: float) -> float:
 	if not _lagoon:
 		return g
 	var carved := _lagoon_carve(x, z, g)
+	var from_middle := Vector2(x, z).distance_to(_lag_c)
+	if from_middle < FLAT_RADIUS + FLAT_EASE:
+		return lerpf(_flat_h, carved, smoothstep(FLAT_RADIUS, FLAT_RADIUS + FLAT_EASE, from_middle))
 	var cw := causeway_weight(x, z)
 	if cw <= 0.0:
 		return carved
@@ -818,6 +827,10 @@ func _place_lagoon(field: IslandField, isl, zones: Array) -> void:
 			field.zone_at(q.x, q.y, zones, zi)
 			low = minf(low, field.base_height(q.x, q.y, m, isl, zi[4], zi[1], false) - isl.base_y)
 	_lag_level = low - 0.6
+	# The ground at the middle of the islet, for the level spot the stone stands on.
+	var mc := field.mask_for(isl, _lag_c.x, _lag_c.y)
+	field.zone_at(_lag_c.x, _lag_c.y, zones, zi)
+	_flat_h = field.base_height(_lag_c.x, _lag_c.y, mc, isl, zi[4], zi[1], false) - isl.base_y
 	_place_causeway()
 
 
