@@ -44,7 +44,8 @@ void fragment() {
 	}
 	// Squared: the shafts stand out from the general glow instead of washing the frame.
 	float shaft = lit / float(samples);
-	vec3 col = ray_color * (shaft * shaft * 1.6 + shaft * 0.1) * intensity;
+	// Squared and cubed: the shafts cut hard against the shade between them.
+	vec3 col = ray_color * (shaft * shaft * 1.5 + shaft * shaft * shaft * 1.2 + shaft * 0.08) * intensity;
 	if (flare > 0.001) {
 		// How much of the sun's disc is clear of trees and hills: nine depth taps round it.
 		float seen = 0.0;
@@ -73,7 +74,7 @@ void fragment() {
 			// 0 is on the sun, 1 the middle of the frame, 2 the sun mirrored through it.
 			float r = length(here + axis * (1.0 - along));
 			float disc = smoothstep(size, size * 0.6, r) * (0.5 + 0.5 * smoothstep(size * 0.4, size, r));
-			lens += mix(flare_color, ray_color, float(g) / 3.0) * disc * 0.06;
+			lens += mix(flare_color, ray_color, float(g) / 3.0) * disc * 0.018;
 		}
 		col += lens * flare * seen;
 	}

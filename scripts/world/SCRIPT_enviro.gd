@@ -46,6 +46,13 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 ## Cold, slightly drained colour: the look of the place. 0 turns the grade off.
 @export_range(0.0, 1.0) var spooky := 0.5
 @export var god_rays := true
+## The camera: depth of field, the eye adjusting to light and dark, and the lens
+## pass (grade, vignette, fringing, grain). Each can be turned off.
+@export var depth_of_field := true
+@export var eye_adaptation := true
+@export var lens_effects := true
+## Black bars for a 2.39:1 cinema frame.
+@export var letterbox := false
 ## The anamorphic lens flare on the sun (0 turns it off).
 @export_range(0.0, 2.0) var flare_strength := 0.85
 ## How far the fog turns gold when the sun is low (0 leaves it grey).
@@ -200,6 +207,40 @@ func _build_environment() -> void:
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = _env
+	# THE CAMERA. The far distance goes soft, and so does whatever is right against
+	# the lens; the exposure drifts toward what is in view, so walking out of the
+	# trees into the sun dazzles and then settles, and the deep wood opens up.
+	var cam := CameraAttributesPractical.new()
+	if depth_of_field and quality > 0:
+		cam.dof_blur_far_enabled = true
+		cam.dof_blur_far_distance = 90.0
+		cam.dof_blur_far_transition = 260.0
+		cam.dof_blur_near_enabled = true
+		cam.dof_blur_near_distance = 0.55
+		cam.dof_blur_near_transition = 0.5
+		cam.dof_blur_amount = 0.07
+	if eye_adaptation:
+		cam.auto_exposure_enabled = true
+		cam.auto_exposure_scale = 0.38
+		cam.auto_exposure_speed = 0.7
+		cam.auto_exposure_min_sensitivity = 60.0
+		cam.auto_exposure_max_sensitivity = 520.0
+	we.camera_attributes = cam
+	if lens_effects:
+		var layer := CanvasLayer.new()
+		layer.name = "Lens"
+		layer.layer = 5
+		var rect := ColorRect.new()
+		rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var lens := ShaderMaterial.new()
+		lens.shader = load("res://shaders/SHADER_lens.gdshader")
+		lens.set_shader_parameter("letterbox_aspect", 2.39 if letterbox else 0.0)
+		if quality == 0:
+			lens.set_shader_parameter("fringe", 0.0)
+		rect.material = lens
+		layer.add_child(rect)
+		add_child(layer)
 	add_child(we)
 
 
@@ -229,7 +270,7 @@ func _build_rays() -> void:
 	_rays_mat = ShaderMaterial.new()
 	_rays_mat.shader = load("res://shaders/SHADER_god_rays.gdshader")
 	_rays_mat.render_priority = 100
-	_rays_mat.set_shader_parameter("samples", [14, 24, 36][quality])
+	_rays_mat.set_shader_parameter("samples", [16, 32, 48][quality])
 	var quad := QuadMesh.new()
 	quad.size = Vector2(2, 2)
 	_rays = MeshInstance3D.new()
@@ -439,4 +480,4 @@ func _apply(dt: float) -> void:
 		_rays_mat.set_shader_parameter("flare", flare_strength * smoothstep(0.0, 0.3, facing)
 				* smoothstep(0.0, 0.08, light_dir.y) * minf(energy, 1.6) * (1.0 if use_sun else 0.3))
 		_rays_mat.set_shader_parameter("ray_color", Color(tint.r, tint.g, tint.b))
-		_rays_mat.set_shader_parameter("intensity", strength * (0.3 if use_sun else 0.16) * lerpf(1.0, 0.2, smoothstep(40.0, 300.0, cam.global_position.y)) * minf(energy + 0.15, 1.0))
+		_rays_mat.set_shader_parameter("intensity", strength * (0.52 if use_sun else 0.26) * lerpf(1.0, 0.2, smoothstep(40.0, 300.0, cam.global_position.y)) * minf(energy + 0.15, 1.0))
