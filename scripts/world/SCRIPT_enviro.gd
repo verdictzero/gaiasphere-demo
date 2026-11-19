@@ -45,6 +45,8 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 @export_range(0, 2) var quality := 1
 ## Cold, slightly drained colour: the look of the place. 0 turns the grade off.
 @export_range(0.0, 1.0) var spooky := 0.5
+## Share of the screen's resolution the 3D world is drawn at on a phone.
+@export_range(0.25, 1.0) var mobile_render_scale := 0.5
 @export var god_rays := true
 ## The camera: depth of field, the eye adjusting to light and dark, and the lens
 ## pass (grade, vignette, fringing, grain). Each can be turned off.
@@ -88,6 +90,9 @@ var _rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	if OS.has_feature("mobile"):
 		quality = 0
+		# Phones draw the 3D world at half resolution each way (a quarter of the pixels)
+		# and scale it up; the controls and text over it stay sharp.
+		get_viewport().scaling_3d_scale = mobile_render_scale
 	_rng.seed = 152
 	_to = WEATHERS.get(weather, WEATHERS["clear"]).duplicate()
 	_from = _to.duplicate()
