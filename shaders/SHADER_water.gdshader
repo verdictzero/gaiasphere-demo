@@ -75,7 +75,7 @@ uniform float flow_speed = 0.9;
 group_uniforms foam;
 uniform sampler2D foam_tex : filter_linear_mipmap, repeat_enable;
 uniform vec3 foam_color : source_color = vec3(0.86, 0.9, 0.88);
-uniform float shore_foam = 1.3;         // metres of water the foam reaches out over
+uniform float shore_foam = 1.0;         // metres of water the foam reaches out over
 uniform float foam_strength : hint_range(0.0, 2.0) = 1.25;
 uniform float crest_foam : hint_range(0.0, 1.0) = 0.75;
 uniform float rapids_foam = 1.0;
@@ -159,6 +159,7 @@ void fragment() {
 	vec3 slope_w = normalize(vec3((h0 - hx) / 0.35 * amp, 1.0, (h0 - hz) / 0.35 * amp));
 	vec3 lean = mat3(VIEW_MATRIX) * slope_w - mat3(VIEW_MATRIX) * vec3(0.0, 1.0, 0.0);
 	float crest = smoothstep(0.5, 0.9, h0) * still;
+	float tip = smoothstep(0.78, 0.98, h0) * still;        // only the very top of a peak breaks
 
 	// The surface's normal in view space: ripples in the mesh's frame, the swell on top.
 	vec3 up = normalize(NORMAL);
@@ -213,7 +214,7 @@ void fragment() {
 	float shore = clamp(max(line, band) * foam_strength, 0.0, 1.0);
 	float rapids = smoothstep(0.35, 0.9, steep * rapids_foam) * smoothstep(0.4, 0.75, grain);
 	// On the crests: broken by the foam texture, a little always, more in a wind.
-	float whitecap = crest * crest_foam * smoothstep(0.35, 0.7, grain * 0.6 + fine * 0.4 + crest * 0.35) * (0.45 + 0.9 * wind);
+	float whitecap = tip * crest_foam * smoothstep(0.5, 0.75, grain * 0.5 + fine * 0.5 + tip * 0.25) * (0.3 + 0.9 * wind);
 	float foam = clamp(shore + rapids + whitecap, 0.0, 1.0);
 
 	ALBEDO = foam_color * foam;

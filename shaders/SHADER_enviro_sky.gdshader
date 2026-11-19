@@ -61,13 +61,13 @@ float cloud_at(vec3 p, bool cheap) {
 	float gap = smoothstep(0.55, 0.97, toward) * smoothstep(2500.0, 9000.0, length(p.xz)) * sun_gap;
 	float d = (weather * 0.52 + shape * 0.3 + billow * 0.18) - (1.0 - (cloud_coverage - gap * 0.5) * 1.08);
 	// A long soft ramp at the edge (wisps) into a dense core (the body).
-	d = clamp(d * 1.25, 0.0, 1.0);
-	d = pow(d, 1.35) * profile;
+	d = clamp(d * 1.7, 0.0, 1.0);
+	d = pow(d, 1.15) * profile;
 	if (!cheap && d > 0.0) {
 		float detail = texture(cloud_shape, q / 620.0 + cloud_wind / 2600.0).r;
 		// Eaten away at the edges, more toward the base, left solid in the middle.
 		float fray = texture(cloud_shape, q / 240.0 - cloud_wind / 900.0).r;
-		d = clamp(d - (detail * 0.42 + fray * 0.16) * (1.0 - d) * (1.15 - 0.5 * h), 0.0, 1.0);
+		d = clamp(d - (detail * 0.28 + fray * 0.1) * (1.0 - d) * (1.15 - 0.5 * h), 0.0, 1.0);
 	}
 	return d * cloud_density;
 }
@@ -131,7 +131,7 @@ vec4 clouds(vec3 origin, vec3 dir, float jitter) {
 	float n = float(cloud_steps);
 	float dt = (t1 - t0) / n;
 	// A little jitter hides the slices; a lot of it is the speckle.
-	float t = t0 + dt * (0.25 + 0.5 * jitter);
+	float t = t0 + dt * (0.35 + 0.3 * jitter);
 	float trans = 1.0;
 	vec3 light = vec3(0.0);
 	float cosang = dot(dir, cloud_light_dir);
