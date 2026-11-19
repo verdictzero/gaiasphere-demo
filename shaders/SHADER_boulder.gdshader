@@ -27,7 +27,7 @@ varying vec3 w_nrm;
 varying float foot;
 
 void vertex() {
-	lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
+	lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	w_nrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	foot = w_pos.y - MODEL_MATRIX[3].y;

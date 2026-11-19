@@ -38,7 +38,7 @@ varying float dissolve;
 
 void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
-	lod_fade_vertex(root, CAMERA_POSITION_WORLD);
+	lod_keep = lod_fade_window(root, CAMERA_POSITION_WORLD);
 	dissolve = 0.0;
 	if (fade_end > 0.0) {
 		float d = distance(root, CAMERA_POSITION_WORLD);

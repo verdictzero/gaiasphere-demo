@@ -9,7 +9,7 @@
 //   lod_in   where this level starts taking over from the nearer one (0: it is the nearest)
 //   lod_out  where it hands over to the next, or fades out for good (0: never)
 //
-//   vertex():    lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
+//   vertex():    lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 //   fragment():  if (lod_fade_discard(FRAGCOORD.xy)) { discard; }
 instance uniform float lod_in = 0.0;
 instance uniform float lod_out = 0.0;
@@ -18,10 +18,12 @@ const float LOD_BAND = 0.12;       // half the band's width, as a share of the d
 
 varying flat vec2 lod_keep;        // a pixel is kept when lod_keep.x <= dither < lod_keep.y
 
-void lod_fade_vertex(vec3 root, vec3 camera) {
+// (A varying can only be assigned in vertex() itself, so this returns the window.)
+vec2 lod_fade_window(vec3 root, vec3 camera) {
 	float d = distance(root, camera);
-	lod_keep.x = lod_in > 0.0 ? 1.0 - smoothstep(lod_in * (1.0 - LOD_BAND), lod_in * (1.0 + LOD_BAND), d) : 0.0;
-	lod_keep.y = lod_out > 0.0 ? 1.0 - smoothstep(lod_out * (1.0 - LOD_BAND), lod_out * (1.0 + LOD_BAND), d) : 1.0;
+	return vec2(
+			lod_in > 0.0 ? 1.0 - smoothstep(lod_in * (1.0 - LOD_BAND), lod_in * (1.0 + LOD_BAND), d) : 0.0,
+			lod_out > 0.0 ? 1.0 - smoothstep(lod_out * (1.0 - LOD_BAND), lod_out * (1.0 + LOD_BAND), d) : 1.0);
 }
 
 bool lod_fade_discard(vec2 pixel) {

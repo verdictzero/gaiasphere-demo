@@ -187,7 +187,7 @@ func _build_environment() -> void:
 	_env.glow_hdr_scale = 2.0
 	_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	for level in 7:
-		_env.set_glow_level(level + 1, [0.0, 0.6, 1.0, 1.0, 0.8, 0.5, 0.0][level] if quality > 0
+		_env.set_glow_level(level, [0.0, 0.6, 1.0, 1.0, 0.8, 0.5, 0.0][level] if quality > 0
 				else [0.0, 0.8, 1.0, 0.0, 0.0, 0.0, 0.0][level])
 	_env.fog_enabled = true
 	_env.fog_aerial_perspective = 0.35

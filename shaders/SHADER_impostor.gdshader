@@ -18,7 +18,7 @@ global uniform float enviro_wetness;
 #include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 
 void vertex() {
-	lod_fade_vertex(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
+	lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 	vec3 world;
 	vec3 n = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	if (billboard) {
