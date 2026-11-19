@@ -18,6 +18,8 @@ var _wait := 0
 var _fail := false
 var _fast := false
 var _quick := false
+var _moon := false
+var _moon_done := false
 var _hour := -1.0
 var _weather := ""
 
@@ -26,6 +28,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			_out = a.substr(6)
+		elif a == "--moon":
+			_moon = true		# stop after the shots toward the light
 		elif a == "--quick":
 			_quick = true		# only the first two stills
 		elif a == "--fast":
@@ -110,6 +114,9 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		4:
 			_shot("4_island")
+			if _moon:
+				# (falls through to the next step: the shot toward the light, which at night is the moon)
+				pass
 			# Into the low sun through the trees, from where the tour began: the shafts.
 			var enviro := _scene.get_node_or_null("Enviro")
 			_explorer.flying = false
@@ -120,6 +127,19 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		5:
 			_shot("5_into_the_sun")
+			if _moon:
+				# and once more, looking straight up the moon's beams
+				var e2 := _scene.get_node("Enviro")
+				_look_at(_explorer.global_position + (e2.light_dir as Vector3) * 100.0)
+				_moon = false
+				_moon_done = true
+				_wait = _frames_for(120)
+				return false
+			if _moon_done:
+				_shot("5b_at_the_moon")
+				print("tour: ok")
+				quit(0)
+				return true
 			# The island's edge from just off it: the rock set into the wall, and the cloud at its foot.
 			var coast := 1600.0
 			while coast > 200.0 and not world.is_land(Vector3(coast, 0.0, 0.0)):
