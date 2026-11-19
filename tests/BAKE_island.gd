@@ -28,6 +28,11 @@ func _initialize() -> void:
 func _process(_delta: float) -> bool:
 	if not _done:
 		return false
+	# The planting next: every plant on the island, placed once and written out
+	# beside the terrain (see Flora.save_bake).
+	var flora := _scene.get_node_or_null("Flora")
+	if flora != null and not bool(flora.call(&"prefill_step")):
+		return false
 	var bake := root.get_node("TerrainBake")
 	var world := _scene.get_node("IslandWorld")
 	var sig := String(world.get("_bake_sig"))
@@ -45,6 +50,15 @@ func _process(_delta: float) -> bool:
 	var table := {}
 	for src in bake._SOURCES:
 		table[String(src)] = FileAccess.get_sha256(String(src))
+	if flora != null:
+		for src in flora.SOURCES:
+			table[String(src)] = FileAccess.get_sha256(String(src))
+		var fpath := dir.path_join(BakeStore.file_name(flora.BAKE_STORE, String(flora.call(&"bake_signature"))))
+		var tiles: int = flora.save_bake(fpath)
+		print("bake: %d planted tiles -> %s (%.1f MB)" % [tiles, fpath, FileAccess.get_file_as_bytes(fpath).size() / 1048576.0])
+		if tiles <= 0:
+			quit(1)
+			return true
 	var f := FileAccess.open(BakeStore.DIGEST_TABLE, FileAccess.WRITE)
 	f.store_string(JSON.stringify(table, "\t"))
 	f.close()

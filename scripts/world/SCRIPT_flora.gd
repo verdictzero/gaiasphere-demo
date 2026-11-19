@@ -734,9 +734,85 @@ func prefill_covered() -> void:
 	pass
 
 
+## THE PLANTING IS BAKED INTO THE BUILD, like the terrain. Working out where
+## every plant on the island stands takes minutes on a desktop and far longer on
+## a phone, and the answer never changes: it is a pure function of the island's
+## settings and this code. `tests/BAKE_island.gd` runs it once and writes
+## data/bake/flora_<signature>.bake; the game reads that back in a second or two
+## and only places whatever the file does not hold. No file, or one whose
+## signature no longer matches, and it is all worked out here as before.
+const BAKE_STORE := "flora"
+const BAKE_VERSION := 1
+const SOURCES := [
+	"res://scripts/world/SCRIPT_flora.gd",
+	"res://scripts/world/SCRIPT_island_field.gd",
+	"res://scripts/world/SCRIPT_flow_terrain.gd",
+	"res://scripts/world/SCRIPT_sword_stone.gd",
+]
+
+var _bake_tried := false
+var _bake_task := -1
+var _bake_read: Dictionary = {}
+var bake_source := ""
+
+
+## Only declared settings and the code go in: nothing computed, so a phone and
+## the machine that baked arrive at the same name.
+func bake_signature() -> String:
+	return BakeStore.signature_for(BAKE_VERSION, [_field, {
+		"density": density, "seed": world_seed,
+		"code": BakeStore.source_digest(SOURCES),
+	}])
+
+
+## Write every tile placed so far. Returns the number of tiles, or -1.
+func save_bake(path: String) -> int:
+	var out := {}
+	var n := 0
+	for layer in _layers:
+		out[String(layer["name"])] = layer["cache"]
+		n += (layer["cache"] as Dictionary).size()
+	var f := FileAccess.open_compressed(path, FileAccess.WRITE, FileAccess.COMPRESSION_ZSTD)
+	if f == null:
+		return -1
+	f.store_var(out)
+	f.close()
+	return n
+
+
+func _read_bake(path: String) -> void:
+	var f := FileAccess.open_compressed(path, FileAccess.READ, FileAccess.COMPRESSION_ZSTD)
+	if f == null:
+		return
+	var v: Variant = f.get_var()
+	f.close()
+	if v is Dictionary:
+		_bake_read = v
+
+
 func prefill_step() -> bool:
 	if _prefilled or _layers.is_empty():
 		return true
+	if not _bake_tried:
+		_bake_tried = true
+		var path := BakeStore.find_bake(BAKE_STORE, bake_signature())
+		if path != "":
+			bake_source = path
+			_bake_task = WorkerThreadPool.add_task(_read_bake.bind(path), false, "flora bake")
+	if _bake_task >= 0:
+		if not WorkerThreadPool.is_task_completed(_bake_task):
+			return false
+		WorkerThreadPool.wait_for_task_completion(_bake_task)
+		_bake_task = -1
+		var held := 0
+		for layer in _layers:
+			var got: Variant = _bake_read.get(String(layer["name"]))
+			if got is Dictionary:
+				layer["cache"] = got
+				layer["cam_tile"] = Vector2i(1 << 30, 0)
+				held += (got as Dictionary).size()
+		_bake_read = {}
+		print("[flora] read %d planted tiles from %s" % [held, bake_source])
 	if _prefill_group < 0:
 		var start := Vector2.ZERO
 		var explorer := get_node_or_null(^"../Explorer") as Node3D
@@ -747,6 +823,7 @@ func prefill_step() -> bool:
 			var whole := bool(layer.get("prefill", false))
 			if not whole and String(layer["name"]) != "grass":
 				continue
+			var cache: Dictionary = layer["cache"]
 			var tile := float(layer["tile"])
 			var n := int(ceil(_extent / tile))
 			for z in range(-n, n):
@@ -756,7 +833,12 @@ func prefill_step() -> bool:
 						continue
 					if not whole and c.distance_to(start) > GRASS_PRELOAD:
 						continue
+					if cache.has(Vector2i(x, z)):
+						continue
 					_prefill_jobs.append([li, Vector2i(x, z)])
+		if _prefill_jobs.is_empty():
+			_prefilled = true
+			return true
 		_prefill_group = WorkerThreadPool.add_group_task(_prefill_one, _prefill_jobs.size(), -1, false, "flora")
 		return false
 	if not WorkerThreadPool.is_group_task_completed(_prefill_group):
@@ -778,6 +860,8 @@ func prefill_step() -> bool:
 func prefill_ratio() -> float:
 	if _prefilled:
 		return 1.0
+	if _bake_task >= 0:
+		return 0.5
 	if _prefill_group < 0 or _prefill_jobs.is_empty():
 		return 0.0
 	return float(_prefill_count) / float(_prefill_jobs.size())
