@@ -43,7 +43,7 @@ uniform vec3 trail_tint : source_color = vec3(0.8, 0.76, 0.7);
 uniform vec3 sand_tint : source_color = vec3(0.7, 0.68, 0.62);
 uniform vec3 bed_tint : source_color = vec3(0.6, 0.62, 0.58);
 // Dry sand on the mere's beaches, as a multiple of the (damp, dark) sand scan.
-uniform vec3 beach_tint : source_color = vec3(2.3, 2.05, 1.6);
+uniform vec3 beach_tint : source_color = vec3(1.3, 1.2, 1.0);
 uniform vec3 rock_tint : source_color = vec3(0.85, 0.88, 0.86);
 // The scans are dark; this lifts the whole ground.
 uniform float brightness = 1.7;

@@ -363,7 +363,7 @@ func _build_rays() -> void:
 func _build_rain() -> void:
 	_rain = GPUParticles3D.new()
 	_rain.name = "Rain"
-	_rain.amount = [2500, 5000, 9000][quality]
+	_rain.amount = [4000, 9000, 14000][quality]
 	_rain.lifetime = 0.9
 	_rain.preprocess = 0.9
 	_rain.visibility_aabb = AABB(Vector3(-30, -30, -30), Vector3(60, 60, 60))
@@ -378,12 +378,12 @@ func _build_rain() -> void:
 	pm.gravity = Vector3(0, -6, 0)
 	_rain.process_material = pm
 	var streak := QuadMesh.new()
-	streak.size = Vector2(0.018, 0.7)
+	streak.size = Vector2(0.009, 0.42)
 	var sm := StandardMaterial3D.new()
 	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sm.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
-	sm.albedo_color = Color(0.75, 0.8, 0.85, 0.28)
+	sm.albedo_color = Color(0.75, 0.8, 0.85, 0.14)
 	streak.material = sm
 	_rain.draw_pass_1 = streak
 	_rain.emitting = false
@@ -429,7 +429,7 @@ func _apply(dt: float) -> void:
 	var sun_energy := smoothstep(-0.03, 0.1, sun_dir.y) * lerpf(3.4, 2.0, smoothstep(0.1, 0.5, sun_dir.y))
 	var moon_tint := Color(0.55, 0.68, 1.0)
 	var moon_lit := 1.0 - absf(moon_phase - 0.5) * 2.0
-	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.12 + 0.3 * moon_lit)
+	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.3 + 0.45 * moon_lit)
 
 	# One shadowed light: whichever is stronger owns it, and it dips through zero
 	# at the hand-over so the shadows never jump.
@@ -455,6 +455,8 @@ func _apply(dt: float) -> void:
 	zenith = zenith.lerp(Color(grey, grey * 1.02, grey * 1.06), overcast * 0.85)
 	var hgrey := (horizon.r + horizon.g + horizon.b) / 3.0
 	horizon = horizon.lerp(Color(hgrey, hgrey * 1.02, hgrey * 1.05), overcast * 0.8)
+	# Under a closed sky the horizon is no brighter than the cloud above it.
+	horizon = horizon.lerp(zenith * 1.5, overcast * 0.65)
 	# The look: a cold green-grey cast over whatever the hour gives.
 	var cast := Color(0.84, 0.98, 1.0).lerp(Color.WHITE, 1.0 - spooky)
 	zenith *= cast
@@ -473,7 +475,7 @@ func _apply(dt: float) -> void:
 	var fog_lum := (fog_color.r + fog_color.g + fog_color.b) / 3.0
 	fog_color = fog_color.lerp(Color(1.0, 0.68, 0.36) * fog_lum * 1.5, gold)
 
-	_env.ambient_light_color = ambient + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
+	_env.ambient_light_color = ambient + Color(0.03, 0.045, 0.075) * (1.0 - day) + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
 	_env.ambient_light_energy = ambient_energy
 	_env.fog_light_color = fog_color
 	# Fog is a layer on the ground: seen from high above, the island shows through it.
