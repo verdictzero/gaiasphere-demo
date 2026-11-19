@@ -171,8 +171,10 @@ func _cut(charged: bool) -> void:
 
 # ------------------------------------------------------------------ the crescent
 
-## A crescent in the XY plane, horns up and down the cut, bright along its leading
-## edge and fading back; drawn additively, unlit.
+## A crescent: an arc bulging forward, standing up as a band so it is seen from
+## behind as well as from the side (a flat arc would be edge-on to whoever threw
+## it). Widest in the middle, pointed at the horns, bright along its middle line
+## and fading to both edges; drawn additively, unlit.
 func _crescent_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -180,19 +182,19 @@ func _crescent_mesh() -> ArrayMesh:
 	var rows: Array = []
 	for i in steps + 1:
 		var f := float(i) / float(steps)
-		var a := lerpf(-1.25, 1.25, f)                       # along the arc, radians
-		var thick := 0.42 * pow(sin(f * PI), 0.75)           # fat in the middle, pointed at the horns
-		var out := Vector3(sin(a), 0.0, -cos(a))             # bulging forward (-Z)
-		rows.append([out * 1.5, out * (1.5 - thick), out * (1.5 - thick * 0.45)])
+		var a := lerpf(-1.2, 1.2, f)                          # along the arc, radians
+		var half := 0.34 * pow(sin(f * PI), 0.75)             # half the band's height here
+		var p := Vector3(sin(a) * 1.5, 0.0, 1.5 - cos(a) * 1.5)   # the leading point at the origin
+		rows.append([p + Vector3.UP * half, p, p - Vector3.UP * half])
 	for i in steps:
-		for band in [[0, 2, 1.0, 0.55], [2, 1, 0.55, 0.0]]:
+		for band in [[0, 1, 0.0, 1.0], [1, 2, 1.0, 0.0]]:
 			var a0: Vector3 = rows[i][band[0]]
 			var a1: Vector3 = rows[i + 1][band[0]]
 			var b0: Vector3 = rows[i][band[1]]
 			var b1: Vector3 = rows[i + 1][band[1]]
 			for v in [[a0, band[2]], [a1, band[2]], [b1, band[3]], [a0, band[2]], [b1, band[3]], [b0, band[3]]]:
 				st.set_color(Color(1, 1, 1, v[1]))
-				st.add_vertex(v[0] + Vector3(0, 0, 1.5))        # the leading edge at the origin
+				st.add_vertex(v[0])
 	return st.commit()
 
 
