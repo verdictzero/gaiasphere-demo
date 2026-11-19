@@ -25,7 +25,6 @@ var _phase := WORLD
 var _left := 0.0
 var _black: ColorRect
 var _label: Label
-var _logo: TextureRect
 var _shown := 0.0
 var _scatters: Array[Node] = []
 var _explorer: Node3D
@@ -38,26 +37,20 @@ func _ready() -> void:
 	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_black)
-	# The logo, as large as fits with room under it, and one line beneath: LOADING n%.
-	_logo = TextureRect.new()
-	_logo.texture = load("res://branding/logo.png")
-	_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_logo.anchor_left = 0.14
-	_logo.anchor_right = 0.86
-	_logo.anchor_top = 0.08
-	_logo.anchor_bottom = 0.78
-	_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_logo)
+	# One small line in the middle of a black screen: LOADING n%, in a narrow face
+	# (the engine's own font, squeezed to seven tenths of its width and let out a
+	# little between the letters).
+	var narrow := FontVariation.new()
+	narrow.base_font = ThemeDB.fallback_font
+	narrow.variation_transform = Transform2D(Vector2(0.68, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	narrow.spacing_glyph = 3
 	_label = Label.new()
-	_label.anchor_left = 0.0
-	_label.anchor_right = 1.0
-	_label.anchor_top = 0.8
-	_label.anchor_bottom = 0.92
+	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_label.add_theme_font_override(&"font", narrow)
 	_label.add_theme_color_override(&"font_color", Color(0.62, 0.95, 0.8))
-	_label.add_theme_font_size_override(&"font_size", 34)
+	_label.add_theme_font_size_override(&"font_size", 18)
 	add_child(_label)
 	_show(0.0)
 	_explorer = get_node_or_null(explorer_path) as Node3D
@@ -113,7 +106,6 @@ func _process(delta: float) -> void:
 		FADE:
 			_left -= delta
 			_black.color.a = clampf(_left / maxf(fade, 0.01), 0.0, 1.0)
-			_logo.modulate.a = _black.color.a
 			_label.modulate.a = _black.color.a
 			if _left <= 0.0:
 				_phase = DONE
