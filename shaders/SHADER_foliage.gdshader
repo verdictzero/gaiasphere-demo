@@ -57,7 +57,9 @@ void vertex() {
 	shade = COLOR.rgb;
 	// Only an atlas has per-instance data; without it INSTANCE_CUSTOM is not defined.
 	if (atlas_columns > 1.5) {
-		UV.x = (UV.x + floor(INSTANCE_CUSTOM.x + 0.5)) / atlas_columns;
+		// The whole part of the mesh's U is that card's own picture; the plant's
+		// variant shifts every card along by the same number of columns.
+		UV.x = (mod(floor(UV.x) + floor(INSTANCE_CUSTOM.x + 0.5), atlas_columns) + fract(UV.x)) / atlas_columns;
 		shade *= 0.8 + 0.4 * INSTANCE_CUSTOM.y;
 	}
 }

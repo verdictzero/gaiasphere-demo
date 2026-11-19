@@ -224,7 +224,8 @@ func _build_environment() -> void:
 		cam.dof_blur_near_distance = 0.55
 		cam.dof_blur_near_transition = 0.5
 		cam.dof_blur_amount = 0.07
-	if eye_adaptation:
+	# Not on a phone: the exposure chasing glitter on the water reads as flicker.
+	if eye_adaptation and quality > 0:
 		cam.auto_exposure_enabled = true
 		cam.auto_exposure_scale = 0.38
 		cam.auto_exposure_speed = 0.7

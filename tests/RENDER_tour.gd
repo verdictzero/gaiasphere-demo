@@ -193,6 +193,25 @@ func _process(_delta: float) -> bool:
 			_wait = 5
 		11:
 			_shot("11_crescent")
+			# Under the mere: the weed and the rocks on its bed.
+			var flora := _scene.get_node_or_null("Flora")
+			var mid: Vector3 = _scene.get_node("SwordStone/SwordInStone").global_position
+			var best := Vector3.ZERO
+			if flora != null:
+				# The first good clump along a ring through the deep water.
+				for i in 720:
+					var ang := TAU * float(i) / 720.0
+					var p := Vector3(mid.x + cos(ang) * 235.0, 0.0, mid.z + sin(ang) * 235.0)
+					var c: Vector3 = Flora.clump_at(p.x, p.z)
+					if c.y > 6.0 and c.x < 1.5 and c.z > 0.7:
+						best = p
+						break
+			_explorer.flying = true
+			_explorer.global_position = Vector3(best.x + 9.0, float(water.world_level_at(best)) - 3.2 - cam.position.y, best.z + 5.0)
+			_look_at(Vector3(best.x, float(water.world_level_at(best)) - 5.0, best.z))
+			_wait = _frames_for(240)
+		12:
+			_shot("12_seaweed")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true

@@ -28,7 +28,9 @@
 shader_type spatial;
 render_mode blend_mix, cull_disabled, depth_draw_never, shadows_disabled, specular_schlick_ggx;
 
-uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap, repeat_disable;
+// No mipmaps on the screen: building them every frame is costly on a phone and
+// this never reads below the top level.
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear, repeat_disable;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
 
 // Read by the mesher to lay the mere's rows out; kept so its numbers stand.
@@ -55,17 +57,18 @@ uniform sampler2D wave_b : hint_normal, filter_linear_mipmap_anisotropic, repeat
 uniform float wave_size = 3.2;
 uniform float wave_strength : hint_range(0.0, 2.0) = 0.6;
 uniform float surface_roughness : hint_range(0.0, 1.0) = 0.03;
-// Ripples reach `1 + far_scale` times their size, and `1 + far_chop` times their
-// strength, by `far_distance` metres from the camera.
+// Ripples are `1 + far_chop` times as strong by `far_distance` metres from the camera.
 uniform float far_distance = 260.0;
-uniform float far_scale = 5.0;
-uniform float far_chop = 1.6;
+uniform float far_chop = 0.5;
+// Metres at which the ripples first double in size; they double again at each
+// doubling of the distance.
+uniform float far_step = 40.0;
 
 group_uniforms swell;
 // The middle of the mere (SCRIPT_bridge.gd sets it): the swell runs outward from it.
 uniform vec2 mere_centre = vec2(0.0);
 uniform sampler2D swell_noise : filter_linear_mipmap, repeat_enable;
-uniform float wave_height = 0.26;
+uniform float wave_height = 0.42;
 uniform float wave_length = 13.0;
 uniform float wave_pace = 2.6;
 
@@ -75,7 +78,7 @@ uniform float flow_speed = 0.9;
 group_uniforms foam;
 uniform sampler2D foam_tex : filter_linear_mipmap, repeat_enable;
 uniform vec3 foam_color : source_color = vec3(0.86, 0.9, 0.88);
-uniform float shore_foam = 1.0;         // metres of water the foam reaches out over
+uniform float shore_foam = 1.6;         // metres of water the foam reaches out over
 uniform float foam_strength : hint_range(0.0, 2.0) = 1.25;
 uniform float crest_foam : hint_range(0.0, 1.0) = 0.75;
 uniform float rapids_foam = 1.0;
@@ -138,17 +141,29 @@ void fragment() {
 	float wind = enviro_wind.z;
 
 	// ---- ripples: two layers of normal map, the river's in its own frame
-	float far = clamp(length(VERTEX) / far_distance, 0.0, 1.0);
-	float grow = 1.0 + far_scale * far;
+	// FAR WATER HAS BIGGER RIPPLES, IN STEPS. The size doubles at fixed distances
+	// and the two neighbouring sizes are cross-faded between them, the way mipmaps
+	// are. (Scaling the pattern smoothly by each pixel's own distance made the whole
+	// surface slide and shimmer whenever the camera moved: every pixel's scale was
+	// changing under it.)
+	float dist = length(VERTEX);
+	float far = clamp(dist / far_distance, 0.0, 1.0);
+	float level = max(log2(max(dist, 1.0) / far_step), 0.0);
+	float size0 = exp2(floor(level));
+	float size1 = size0 * 2.0;
+	float blend = fract(level);
 	float chop = wave_strength * (0.55 + 0.6 * wind + 0.9 * steep + 0.5 * enviro_wetness) * (1.0 + far_chop * far);
 	float pace = flow_speed * (1.0 + 2.5 * steep);
-	vec2 r1 = vec2(UV.x - TIME * pace, UV.y) / (wave_size * grow);
-	vec2 r2 = vec2(UV.x * 0.7 - TIME * pace * 1.6, UV.y * 0.7 + 3.1) / (wave_size * 0.43);
 	vec2 drift = enviro_wind.xy * TIME * 0.12;
-	vec2 s1 = (world_pos.xz + drift) / (wave_size * 1.7 * grow);
-	vec2 s2 = (world_pos.zx * vec2(1.0, -1.0) - drift * 1.6) / (wave_size * 0.6 * grow);
-	vec3 n = mix(texture(wave_a, s1).xyz + texture(wave_b, s2).xyz,
-			texture(wave_a, r1).xyz + texture(wave_b, r2).xyz, running) - 1.0;
+	vec2 ru = vec2(UV.x - TIME * pace, UV.y) / wave_size;
+	vec2 ru2 = vec2(UV.x * 0.7 - TIME * pace * 1.6, UV.y * 0.7 + 3.1) / (wave_size * 0.43);
+	vec2 su = (world_pos.xz + drift) / (wave_size * 1.7);
+	vec2 su2 = (world_pos.zx * vec2(1.0, -1.0) - drift * 1.6) / (wave_size * 0.6);
+	vec3 n_still = mix(texture(wave_a, su / size0).xyz + texture(wave_b, su2 / size0).xyz,
+			texture(wave_a, su / size1).xyz + texture(wave_b, su2 / size1).xyz, blend);
+	vec3 n_run = mix(texture(wave_a, ru / size0).xyz + texture(wave_b, ru2).xyz,
+			texture(wave_a, ru / size1).xyz + texture(wave_b, ru2).xyz, blend);
+	vec3 n = mix(n_still, n_run, running) - 1.0;
 	n = normalize(vec3(n.xy * chop, 1.0));
 
 	// ---- the swell's own slope, by differences, and how near a crest this is
@@ -159,7 +174,11 @@ void fragment() {
 	vec3 slope_w = normalize(vec3((h0 - hx) / 0.35 * amp, 1.0, (h0 - hz) / 0.35 * amp));
 	vec3 lean = mat3(VIEW_MATRIX) * slope_w - mat3(VIEW_MATRIX) * vec3(0.0, 1.0, 0.0);
 	float crest = smoothstep(0.5, 0.9, h0) * still;
-	float tip = smoothstep(0.78, 0.98, h0) * still;        // only the very top of a peak breaks
+	// WHITECAPS: the top of a peak breaks, and the foam it leaves trails down its
+	// back (the side the wave has just passed, toward the islet).
+	float tip = smoothstep(0.66, 0.92, h0) * still;
+	vec2 back = normalize(mere_centre - world_pos.xz + vec2(1e-4));
+	float trail = smoothstep(0.55, 0.9, swell(world_pos.xz - back * 1.6, TIME)) * still;
 
 	// The surface's normal in view space: ripples in the mesh's frame, the swell on top.
 	vec3 up = normalize(NORMAL);
@@ -208,18 +227,25 @@ void fragment() {
 	// water lies in front of what is behind the surface, so whatever stands in the
 	// water gets it without being told.
 	float near = 1.0 - smoothstep(0.0, shore_foam, thick);
-	float lap = sin(thick * 7.0 / shore_foam - TIME * 1.7 + grain * 5.0) * 0.5 + 0.5;
-	float band = smoothstep(0.42, 0.62, near * (0.55 + 0.45 * lap) + (grain - 0.5) * 0.5 * near + (fine - 0.5) * 0.3 * near);
-	float line = 1.0 - smoothstep(0.0, shore_foam * 0.14, thick);
-	float shore = clamp(max(line, band) * foam_strength, 0.0, 1.0);
+	// Three bands come in to the shore one after another and die there; between
+	// them the foam they left thins out into lace.
+	float run_in = thick / shore_foam * 2.6 + TIME * 0.55 + grain * 0.9;
+	float wave_in = pow(1.0 - abs(fract(run_in) * 2.0 - 1.0), 3.0);
+	float wash = near * near * smoothstep(0.3, 0.62, fine * 0.55 + grain * 0.45 + near * 0.25);
+	float band = near * wave_in * smoothstep(0.2, 0.55, fine + near * 0.4);
+	float line = 1.0 - smoothstep(0.0, shore_foam * 0.1, thick + (fine - 0.5) * 0.05);
+	float shore = clamp((max(line, band) + wash * 0.75) * foam_strength, 0.0, 1.0);
 	float rapids = smoothstep(0.35, 0.9, steep * rapids_foam) * smoothstep(0.4, 0.75, grain);
 	// On the crests: broken by the foam texture, a little always, more in a wind.
-	float whitecap = tip * crest_foam * smoothstep(0.5, 0.75, grain * 0.5 + fine * 0.5 + tip * 0.25) * (0.3 + 0.9 * wind);
+	float lace = smoothstep(0.38, 0.62, fine * 0.6 + grain * 0.4);        // foam is holes and strands, not a sheet
+	float whitecap = crest_foam * (tip * smoothstep(0.25, 0.6, lace + tip * 0.5) + trail * 0.45 * lace) * (0.55 + 0.7 * wind);
 	float foam = clamp(shore + rapids + whitecap, 0.0, 1.0);
 
 	ALBEDO = foam_color * foam;
 	EMISSION = under * (1.0 - foam);
-	ROUGHNESS = mix(surface_roughness + 0.05 * far, 0.7, foam);
+	// Rougher with distance: a mirror-smooth surface of ripples too small to see
+	// sparkles and crawls, worst of all at a phone's half resolution.
+	ROUGHNESS = mix(surface_roughness + 0.22 * far, 0.75, foam);
 	METALLIC = 0.0;
 	SPECULAR = 0.5;
 	NORMAL = nv;

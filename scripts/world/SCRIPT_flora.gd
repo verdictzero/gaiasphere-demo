@@ -51,6 +51,9 @@ var _scale := 1.0
 var _islet := Vector2.ZERO
 var _islet_radius := 0.0
 var _clearing := SwordStone.MEADOW
+# The mere's surface (world metres) and how far from its middle it can reach.
+var _mere_level := -1e9
+var _mere_reach := 0.0
 
 
 func _ready() -> void:
@@ -68,6 +71,10 @@ func _ready() -> void:
 		quality = 0
 	_scale = [0.7, 1.0, 1.35][quality]
 	_islet = SwordStone.site(_field)
+	var flows: Variant = _field.flows_for(isl) if isl != null else null
+	if flows != null and flows.has_lagoon():
+		_mere_level = float(isl.base_y) + float(flows.lagoon_level())
+		_mere_reach = float(_field.get("flow_lagoon_radius")) * 1.25
 	_islet_radius = float(_field.get("flow_lagoon_islet")) * 0.86 if _field.get("flow_lagoon_islet") != null else 0.0
 	_build_layers()
 
@@ -175,8 +182,26 @@ func _build_layers() -> void:
 	_layers.append({
 		"name": "bushes", "tile": 24.0, "radius": 170.0 * _scale, "stride": STRIDE_CUSTOM,
 		"dists": [22.0 * _scale, 70.0 * _scale], "shadow_lods": 1,
-		"kinds": [{"lods": [_bush_mesh(leaves, 4, 3), _bush_mesh(leaves, 3, 0), _bush_mesh(leaves, 2, 0)]}],
+		# Three differently built bushes; every card in each shows a different photo,
+		# some mirrored, at its own turn, lean and size, so nothing reads as a cross.
+		"kinds": [
+			{"lods": [_bush_mesh(leaves, 5, 4, 11), _bush_mesh(leaves, 3, 1, 11), _bush_mesh(leaves, 2, 0, 11)]},
+			{"lods": [_bush_mesh(leaves, 4, 4, 23), _bush_mesh(leaves, 3, 1, 23), _bush_mesh(leaves, 2, 0, 23)]},
+			{"lods": [_bush_mesh(leaves, 5, 3, 37), _bush_mesh(leaves, 3, 1, 37), _bush_mesh(leaves, 2, 0, 37)]}],
 		"place": _place_bushes, "height": 4.0,
+	})
+
+	# --- seaweed, under the mere
+	var weed := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
+		"albedo_tex": load("res://assets/seaweed/textures/seaweed_atlas_basecolor.png"),
+		"tint": Color(0.8, 0.9, 0.62), "alpha_cut": 0.4, "roughness": 0.35, "specular": 0.3,
+		"wind_bend": 0.55, "wind_flutter": 0.05, "atlas_columns": 2.0,
+		"backlight": Color(0.14, 0.2, 0.05)})
+	_layers.append({
+		"name": "seaweed", "tile": 24.0, "radius": 120.0 * _scale, "stride": STRIDE_CUSTOM,
+		"dists": [30.0 * _scale], "shadow_lods": 0,
+		"kinds": [{"lods": [_seaweed_mesh(weed, 5), _seaweed_mesh(weed, 2)]}],
+		"place": _place_seaweed, "height": 8.0,
 	})
 
 	# --- boulders
@@ -230,8 +255,8 @@ static func _grass_mesh(mat: Material) -> ArrayMesh:
 	for k in 2:
 		var a := PI * 0.5 * k + 0.3
 		var dx := Vector3(cos(a), 0, sin(a)) * 0.5
-		var corners := [[-dx, Vector2(0, 1)], [dx, Vector2(1, 1)],
-				[dx + Vector3.UP, Vector2(1, 0)], [-dx + Vector3.UP, Vector2(0, 0)]]
+		var corners := [[-dx, Vector2(0.001, 1)], [dx, Vector2(0.999, 1)],
+				[dx + Vector3.UP, Vector2(0.999, 0)], [-dx + Vector3.UP, Vector2(0.001, 0)]]
 		for order in [[0, 1, 2, 0, 2, 3]]:
 			for i in order:
 				var uv: Vector2 = corners[i][1]
@@ -246,28 +271,40 @@ static func _grass_mesh(mat: Material) -> ArrayMesh:
 
 
 ## A bush a metre tall and a metre across, rooted at the origin: `upright` cards
-## through its middle, turned evenly, and `leaning` smaller ones tipped outward
-## round it so it has a top when seen from above. Normals swell outward from the
-## bush's heart, so it is lit as a rounded mass and not as flat cards.
-static func _bush_mesh(mat: Material, upright: int, leaning: int) -> ArrayMesh:
+## through its middle and `leaning` smaller ones tipped outward round it, so it has
+## a top when seen from above. NOTHING IS REGULAR: each card has its own turn, its
+## own lean, size and place off the middle, shows its own photo from the atlas
+## (the whole part of its U picks the column; the shader adds the plant's own
+## variant to that), and may be mirrored. Normals swell outward from the bush's
+## heart, so it is lit as a rounded mass and not as flat cards.
+static func _bush_mesh(mat: Material, upright: int, leaning: int, seed_value: int) -> ArrayMesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var heart := Vector3(0, 0.45, 0)
-	var cards: Array = []       # [origin, across, up, size]
+	var cards: Array = []       # [origin, across, up, size, column, mirrored]
 	for k in upright:
-		var a := PI * float(k) / float(upright) + 0.2
-		cards.append([Vector3.ZERO, Vector3(cos(a), 0, sin(a)), Vector3.UP, 1.0])
+		var a := PI * (float(k) + rng.randf_range(-0.38, 0.38)) / float(upright) + rng.randf() * 0.5
+		var across := Vector3(cos(a), 0, sin(a))
+		var up := (Vector3.UP + Vector3(rng.randf_range(-0.14, 0.14), 0, rng.randf_range(-0.14, 0.14))).normalized()
+		cards.append([Vector3(rng.randf_range(-0.1, 0.1), 0, rng.randf_range(-0.1, 0.1)), across, up,
+				rng.randf_range(0.8, 1.08), rng.randi() % 4, rng.randf() < 0.5])
 	for k in leaning:
-		var a := TAU * float(k) / float(leaning) + 0.7
+		var a := TAU * (float(k) + rng.randf_range(-0.3, 0.3)) / float(maxi(leaning, 1)) + rng.randf() * 1.5
 		var out := Vector3(cos(a), 0, sin(a))
-		cards.append([out * 0.16 + Vector3(0, 0.12, 0), out.cross(Vector3.UP), (Vector3.UP + out * 0.75).normalized(), 0.72])
+		cards.append([out * rng.randf_range(0.1, 0.22) + Vector3(0, rng.randf_range(0.06, 0.2), 0), out.cross(Vector3.UP),
+				(Vector3.UP + out * rng.randf_range(0.55, 0.95)).normalized(), rng.randf_range(0.6, 0.82),
+				rng.randi() % 4, rng.randf() < 0.5])
 	for card in cards:
 		var o: Vector3 = card[0]
 		var ax: Vector3 = card[1]
 		var up: Vector3 = card[2]
 		var size: float = card[3]
-		var corners := [[o - ax * 0.5 * size, Vector2(0, 1)], [o + ax * 0.5 * size, Vector2(1, 1)],
-				[o + ax * 0.5 * size + up * size, Vector2(1, 0)], [o - ax * 0.5 * size + up * size, Vector2(0, 0)]]
+		var u0 := float(card[4]) + (0.999 if card[5] else 0.001)
+		var u1 := float(card[4]) + (0.001 if card[5] else 0.999)
+		var corners := [[o - ax * 0.5 * size, Vector2(u0, 1)], [o + ax * 0.5 * size, Vector2(u1, 1)],
+				[o + ax * 0.5 * size + up * size, Vector2(u1, 0)], [o - ax * 0.5 * size + up * size, Vector2(u0, 0)]]
 		for i in [0, 1, 2, 0, 2, 3]:
 			var pos: Vector3 = corners[i][0]
 			var uv: Vector2 = corners[i][1]
@@ -281,7 +318,54 @@ static func _bush_mesh(mat: Material, upright: int, leaning: int) -> ArrayMesh:
 	return mesh
 
 
-func _far_instances(_layer: Dictionary, holder: Node3D) -> Dictionary:
+## A frond of seaweed a metre tall and half a metre across, rooted at the origin:
+## two crossed cards, cut into bands up their height so they can sway.
+static func _seaweed_mesh(mat: Material, bands: int) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for k in 2:
+		var a := PI * 0.5 * float(k) + 0.4
+		var ax := Vector3(cos(a), 0, sin(a)) * 0.25
+		for i in bands:
+			var y0 := float(i) / float(bands)
+			var y1 := float(i + 1) / float(bands)
+			var c := [[-ax + Vector3.UP * y0, Vector2(0.001, 1.0 - y0)], [ax + Vector3.UP * y0, Vector2(0.999, 1.0 - y0)],
+					[ax + Vector3.UP * y1, Vector2(0.999, 1.0 - y1)], [-ax + Vector3.UP * y1, Vector2(0.001, 1.0 - y1)]]
+			for j in [0, 1, 2, 0, 2, 3]:
+				var pos: Vector3 = c[j][0]
+				st.set_normal(Vector3(0, 1, 0))
+				st.set_uv(c[j][1])
+				st.set_uv2(Vector2(pos.y * pos.y, 0.0))        # the tip swings, the root holds
+				st.set_color(Color.WHITE * (0.6 + 0.4 * pos.y))
+				st.add_vertex(pos)
+	var mesh := st.commit()
+	mesh.surface_set_material(0, mat)
+	return mesh
+
+
+## UNDER THE MERE: where the seaweed and the sunken rocks gather. Clumps sit on a
+## loose lattice (some cells empty), each with its own middle, reach and vigour.
+## Returns (metres from the nearest clump's middle, that clump's reach, its vigour
+## 0..1), or a reach of 0 where there is none near.
+static func clump_at(x: float, z: float) -> Vector3:
+	var cell := 17.0
+	var cx := int(floor(x / cell))
+	var cz := int(floor(z / cell))
+	var best := Vector3(1e9, 0.0, 0.0)
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var ix := cx + dx
+			var iz := cz + dz
+			if _hash(ix, iz, 101) > 0.62:
+				continue
+			var mid := Vector2((float(ix) + 0.15 + 0.7 * _hash(ix, iz, 102)) * cell, (float(iz) + 0.15 + 0.7 * _hash(ix, iz, 103)) * cell)
+			var d := mid.distance_to(Vector2(x, z))
+			if d < best.x:
+				best = Vector3(d, 3.0 + 6.5 * _hash(ix, iz, 104), 0.35 + 0.65 * _hash(ix, iz, 105))
+	return best
+
+
+func _far_instances(func _far_instances(_layer: Dictionary, holder: Node3D) -> Dictionary:
 	# Filled by `_repack_far`: one MultiMesh per (kind, impostor, FAR_CELL square of
 	# island), each with that square's bounds, so the far forest is frustum- and
 	# occlusion-culled square by square instead of being one island-wide draw.
@@ -416,7 +500,7 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 
 
 func _place_bushes(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
-	var buf := PackedFloat32Array()
+	var bufs := [PackedFloat32Array(), PackedFloat32Array(), PackedFloat32Array()]
 	var grid := 3.2
 	var tile := float(layer["tile"])
 	var x0 := float(key.x) * tile
@@ -448,8 +532,48 @@ func _place_bushes(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var tall := 1.5 + 2.4 * _hash(cx, cz, 87) * _hash(cx, cz, 88)
 			var wide := tall * (1.05 + 0.35 * _hash(cx, cz, 89))
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 90) * TAU).scaled(Vector3(wide, tall, wide))
+			var buf: PackedFloat32Array = bufs[int(_hash(cx, cz, 92) * 3.0) % 3]
 			_push(buf, basis, Vector3(x, float(s["height"]) - 0.08, z))
 			buf.append_array([variant, _hash(cx, cz, 91), 1.0, 0.0])
+	return bufs
+
+
+func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
+	var buf := PackedFloat32Array()
+	if _mere_reach <= 0.0:
+		return [buf]
+	var grid := 0.75
+	var tile := float(layer["tile"])
+	var x0 := float(key.x) * tile
+	var z0 := float(key.y) * tile
+	if Vector2(x0 + tile * 0.5, z0 + tile * 0.5).distance_to(_islet) > _mere_reach + tile:
+		return [buf]
+	var n := int(round(tile / grid))
+	for iz in n:
+		for ix in n:
+			var cx := key.x * n + ix
+			var cz := key.y * n + iz
+			var x := x0 + (float(ix) + _hash(cx, cz, 111)) * grid
+			var z := z0 + (float(iz) + _hash(cx, cz, 112)) * grid
+			var c := clump_at(x, z)
+			if c.y <= 0.0 or c.x > c.y:
+				continue
+			# Thick in the middle of a clump, thinning to nothing at its edge; and the
+			# fronds themselves shorten the same way, tall at the heart, small outside.
+			var inward := 1.0 - c.x / c.y
+			if _hash(cx, cz, 113) > inward * inward * 1.2 * c.z * density + 0.02:
+				continue
+			var ground := f.height_at(x, z, 1e9)
+			var depth := _mere_level - ground
+			if depth < 1.1:
+				continue
+			var tall := (0.6 + 4.6 * inward * c.z) * (0.7 + 0.6 * _hash(cx, cz, 114))
+			tall = minf(tall, depth * 0.92)
+			var wide := tall * (0.55 + 0.35 * _hash(cx, cz, 115)) * 2.0 * 0.5
+			var basis := Basis(Vector3.UP, _hash(cx, cz, 116) * TAU)
+			basis = Basis(Vector3(1, 0, 0), (_hash(cx, cz, 117) - 0.5) * 0.3) * basis
+			_push(buf, basis.scaled_local(Vector3(wide, tall, wide)), Vector3(x, ground - 0.05, z))
+			buf.append_array([float(int(_hash(cx, cz, 118) * 2.0) % 2), _hash(cx, cz, 119), 1.0, 0.0])
 	return [buf]
 
 
@@ -471,6 +595,19 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				continue
 			var w: Color = s.get("weights", Color(1, 0, 0, 0))
 			var flow := float(s.get("flow_weight", 0.0))
+			# On the bed of the mere: rocks among the weed, more where a clump is.
+			var sunk := _mere_reach > 0.0 and float(s["height"]) < _mere_level - 1.0 \
+					and Vector2(x, z).distance_to(_islet) < _mere_reach
+			if sunk:
+				var c := clump_at(x, z)
+				var among := 1.0 - clampf(c.x / maxf(c.y * 1.4, 0.01), 0.0, 1.0) if c.y > 0.0 else 0.0
+				if _hash(cx, cz, 49) > (0.1 + 0.75 * among) * density:
+					continue
+				var kind_u := int(_hash(cx, cz, 44) * 5.0) % 5
+				var size_u := 0.4 + _hash(cx, cz, 45) * _hash(cx, cz, 50) * 2.6
+				var turn := Basis(Vector3.UP, _hash(cx, cz, 46) * TAU) * Basis(Vector3(1, 0, 0), (_hash(cx, cz, 47) - 0.5) * 0.9)
+				_push(bufs[kind_u], turn.scaled(Vector3.ONE * size_u), Vector3(x, float(s["height"]) - 0.12 * size_u, z))
+				continue
 			if flow > 0.55:
 				continue
 			# More of them where the ground is already rock, and along the rivers.
