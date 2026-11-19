@@ -207,13 +207,13 @@ func _throw() -> void:
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = Color(blast_color.r * 3.0, blast_color.g * 3.0, blast_color.b * 3.0, 1.0)
+	mat.albedo_color = Color(blast_color.r * 1.3, blast_color.g * 1.3, blast_color.b * 1.3, 1.0)
 	mat.disable_fog = true
 	blast.material_override = mat
 	blast.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var lamp := OmniLight3D.new()
 	lamp.light_color = blast_color
-	lamp.light_energy = 5.0
+	lamp.light_energy = 2.5
 	lamp.omni_range = 16.0
 	blast.add_child(lamp)
 	add_child(blast)

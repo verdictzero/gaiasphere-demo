@@ -64,7 +64,7 @@ uniform float cobble_size = 2.2;
 uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
 uniform sampler2D caustic_tex : filter_linear_mipmap_anisotropic, repeat_enable;
-uniform float caustic_size = 7.0;
+uniform float caustic_size = 15.0;
 uniform float caustic_speed = 1.0;
 uniform float caustic_strength : hint_range(0.0, 4.0) = 1.5;
 // The mere's surface, world metres (SCRIPT_bridge.gd sets it).
@@ -210,7 +210,7 @@ void fragment() {
 			float t = TIME * caustic_speed;
 			vec3 web = vec3(0.0);
 			for (int k = 0; k < 3; k++) {
-				vec2 o = vec2(float(k) - 1.0) * 0.006;
+				vec2 o = vec2(float(k) - 1.0) * 0.0015;
 				// Each layer is smooth noise, warped by the other; its bright lines are
 				// where it crosses its middle value: closed, wandering loops.
 				float a1 = textureGrad(caustic_tex, cp + o + vec2(t * 0.031, t * 0.017), dFdx(cp), dFdy(cp)).r;
