@@ -168,6 +168,31 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		9:
 			_shot("9_shallows")
+			# The sword in the hand, and the crescent it throws.
+			var play := _scene.get_node_or_null("SwordPlay")
+			var stone2 := _scene.get_node_or_null("SwordStone/SwordInStone") as Node3D
+			if play == null or stone2 == null:
+				_fail = true
+			else:
+				_explorer.flying = false
+				_explorer.global_position = stone2.global_position + Vector3(2.4, 0.3, 0.0)
+				_look_at(stone2.global_position + Vector3(-30.0, 3.0, 12.0))
+				if not play._find_parts():
+					push_error("tour: the sword could not be found in the stone")
+					_fail = true
+				else:
+					play._take()
+			_wait = _frames_for(160)
+		10:
+			_shot("10_sword_in_hand")
+			var play2 := _scene.get_node_or_null("SwordPlay")
+			if play2 != null and play2.held:
+				play2._throw()
+			else:
+				_fail = true
+			_wait = 5
+		11:
+			_shot("11_crescent")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true
