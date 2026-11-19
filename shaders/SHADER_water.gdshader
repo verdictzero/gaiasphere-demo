@@ -79,7 +79,7 @@ group_uniforms foam;
 uniform sampler2D foam_tex : filter_linear_mipmap, repeat_enable;
 uniform vec3 foam_color : source_color = vec3(0.86, 0.9, 0.88);
 uniform float shore_foam = 1.6;         // metres of water the foam reaches out over
-uniform float foam_strength : hint_range(0.0, 2.0) = 1.25;
+uniform float foam_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float crest_foam : hint_range(0.0, 1.0) = 0.75;
 uniform float rapids_foam = 1.0;
 
@@ -231,14 +231,16 @@ void fragment() {
 	// them the foam they left thins out into lace.
 	float run_in = thick / shore_foam * 2.6 + TIME * 0.55 + grain * 0.9;
 	float wave_in = pow(1.0 - abs(fract(run_in) * 2.0 - 1.0), 3.0);
-	float wash = near * near * smoothstep(0.3, 0.62, fine * 0.55 + grain * 0.45 + near * 0.25);
-	float band = near * wave_in * smoothstep(0.2, 0.55, fine + near * 0.4);
-	float line = 1.0 - smoothstep(0.0, shore_foam * 0.1, thick + (fine - 0.5) * 0.05);
-	float shore = clamp((max(line, band) + wash * 0.75) * foam_strength, 0.0, 1.0);
+	float wash = near * near * smoothstep(0.48, 0.7, fine * 0.55 + grain * 0.45 + near * 0.12);
+	float band = near * wave_in * smoothstep(0.4, 0.68, fine * 0.7 + grain * 0.3 + near * 0.15);
+	float line = 1.0 - smoothstep(0.0, shore_foam * 0.045, thick + (fine - 0.5) * 0.06);
+	float shore = clamp((max(line, band) + wash * 0.6) * foam_strength, 0.0, 1.0);
 	float rapids = smoothstep(0.35, 0.9, steep * rapids_foam) * smoothstep(0.4, 0.75, grain);
 	// On the crests: broken by the foam texture, a little always, more in a wind.
 	float lace = smoothstep(0.38, 0.62, fine * 0.6 + grain * 0.4);        // foam is holes and strands, not a sheet
-	float whitecap = crest_foam * (tip * smoothstep(0.25, 0.6, lace + tip * 0.5) + trail * 0.45 * lace) * (0.55 + 0.7 * wind);
+	// Gusts: whitecaps come in patches tens of metres across that drift, not everywhere.
+	float gust = smoothstep(0.42, 0.68, texture(swell_noise, world_pos.xz * 0.006 + enviro_wind.xy * TIME * 0.004).r);
+	float whitecap = crest_foam * (tip * smoothstep(0.25, 0.6, lace + tip * 0.5) + trail * 0.45 * lace) * (0.55 + 0.7 * wind) * (0.12 + 0.88 * gust);
 	float foam = clamp(shore + rapids + whitecap, 0.0, 1.0);
 
 	ALBEDO = foam_color * foam;

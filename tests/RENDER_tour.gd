@@ -187,10 +187,11 @@ func _process(_delta: float) -> bool:
 			_shot("10_sword_in_hand")
 			var play2 := _scene.get_node_or_null("SwordPlay")
 			if play2 != null and play2.held:
+				play2.blast_speed = 1.5        # slow, so a still can catch it
 				play2._throw()
 			else:
 				_fail = true
-			_wait = 5
+			_wait = 3
 		11:
 			_shot("11_crescent")
 			# Under the mere: the weed and the rocks on its bed.

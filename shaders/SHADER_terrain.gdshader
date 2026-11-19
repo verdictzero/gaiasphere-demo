@@ -64,7 +64,7 @@ uniform float cobble_size = 2.2;
 uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
 uniform sampler2D caustic_tex : filter_linear_mipmap_anisotropic, repeat_enable;
-uniform float caustic_size = 5.5;
+uniform float caustic_size = 7.0;
 uniform float caustic_speed = 1.0;
 uniform float caustic_strength : hint_range(0.0, 4.0) = 1.5;
 // The mere's surface, world metres (SCRIPT_bridge.gd sets it).
@@ -211,13 +211,18 @@ void fragment() {
 			vec3 web = vec3(0.0);
 			for (int k = 0; k < 3; k++) {
 				vec2 o = vec2(float(k) - 1.0) * 0.006;
+				// Each layer is smooth noise, warped by the other; its bright lines are
+				// where it crosses its middle value: closed, wandering loops.
 				float a1 = textureGrad(caustic_tex, cp + o + vec2(t * 0.031, t * 0.017), dFdx(cp), dFdy(cp)).r;
-				float a2 = textureGrad(caustic_tex, cp * 1.37 - o + vec2(-t * 0.023, t * 0.029) + 0.41, dFdx(cp) * 1.37, dFdy(cp) * 1.37).r;
-				web[k] = pow(min(a1, a2), 3.0);
+				float a2 = textureGrad(caustic_tex, cp * 1.37 - o + vec2(-t * 0.023, t * 0.029) + 0.41 + (a1 - 0.5) * 0.12,
+						dFdx(cp) * 1.37, dFdy(cp) * 1.37).r;
+				float l1 = pow(1.0 - abs(a1 * 2.0 - 1.0), 9.0);
+				float l2 = pow(1.0 - abs(a2 * 2.0 - 1.0), 9.0);
+				web[k] = l1 * 0.55 + l2 * 0.55 + l1 * l2 * 1.5;
 			}
 			// Sharpest in the shallows; in deep water the web blurs out and dims.
-			float deep = mere ? clamp((mere_level - world_pos.y) / 9.0, 0.0, 1.0) : 0.0;
-			caustic = web * caustic_strength * lit_bed * mix(1.0, 0.25, deep) * detail_fade;
+			float deep = mere ? clamp((mere_level - world_pos.y) / 14.0, 0.0, 1.0) : 0.0;
+			caustic = web * caustic_strength * lit_bed * mix(1.0, 0.45, deep) * detail_fade;
 		}
 	}
 

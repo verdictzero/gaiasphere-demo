@@ -135,11 +135,11 @@ func _build_layers() -> void:
 		var cross := _mesh_of("res://assets/fir/%s/%s_lod3_cross.gltf" % [fir, fir])
 		cross.surface_set_material(0, _shader_mat("res://shaders/SHADER_impostor.gdshader", {
 			"albedo_tex": load(atlas + "basecolor.png"),
-			"tint": Color(0.6, 0.76, 0.7)}))
+			"tint": Color(0.44, 0.57, 0.5)}))
 		var board := _mesh_of("res://assets/fir/%s/%s_lod4_billboard.gltf" % [fir, fir])
 		board.surface_set_material(0, _shader_mat("res://shaders/SHADER_impostor.gdshader", {
 			"albedo_tex": load(atlas + "basecolor.png"),
-			"tint": Color(0.6, 0.76, 0.7), "billboard": true}))
+			"tint": Color(0.44, 0.57, 0.5), "billboard": true}))
 		# The trunk, to walk into: a post as thick as this fir's foot.
 		var trunk := CylinderShape3D.new()
 		trunk.radius = [0.13, 0.17, 0.26, 0.30, 0.42, 0.46, 0.62, 0.70][FIRS.find(fir)] * 1.2
@@ -194,13 +194,13 @@ func _build_layers() -> void:
 	# --- seaweed, under the mere
 	var weed := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
 		"albedo_tex": load("res://assets/seaweed/textures/seaweed_atlas_basecolor.png"),
-		"tint": Color(0.8, 0.9, 0.62), "alpha_cut": 0.4, "roughness": 0.35, "specular": 0.3,
-		"wind_bend": 0.55, "wind_flutter": 0.05, "atlas_columns": 2.0,
-		"backlight": Color(0.14, 0.2, 0.05)})
+		"tint": Color(0.4, 0.5, 0.26), "alpha_cut": 0.4, "roughness": 0.22, "specular": 0.45,
+		"wind_bend": 1.5, "wind_flutter": 0.08, "atlas_columns": 2.0,
+		"backlight": Color(0.1, 0.16, 0.04)})
 	_layers.append({
 		"name": "seaweed", "tile": 24.0, "radius": 120.0 * _scale, "stride": STRIDE_CUSTOM,
 		"dists": [30.0 * _scale], "shadow_lods": 0,
-		"kinds": [{"lods": [_seaweed_mesh(weed, 5), _seaweed_mesh(weed, 2)]}],
+		"kinds": [{"lods": [_seaweed_mesh(weed, 6), _seaweed_mesh(weed, 3)]}],
 		"place": _place_seaweed, "height": 8.0,
 	})
 
@@ -329,13 +329,16 @@ static func _seaweed_mesh(mat: Material, bands: int) -> ArrayMesh:
 		for i in bands:
 			var y0 := float(i) / float(bands)
 			var y1 := float(i + 1) / float(bands)
-			var c := [[-ax + Vector3.UP * y0, Vector2(0.001, 1.0 - y0)], [ax + Vector3.UP * y0, Vector2(0.999, 1.0 - y0)],
-					[ax + Vector3.UP * y1, Vector2(0.999, 1.0 - y1)], [-ax + Vector3.UP * y1, Vector2(0.001, 1.0 - y1)]]
+			# The frond arcs over as it rises (the current has leaned it), so it is not a post.
+			var b0 := Vector3(0.34 * y0 * y0, 0.0, 0.1 * sin(y0 * 4.0))
+			var b1 := Vector3(0.34 * y1 * y1, 0.0, 0.1 * sin(y1 * 4.0))
+			var c := [[-ax + Vector3.UP * y0 + b0, Vector2(0.001, 1.0 - y0)], [ax + Vector3.UP * y0 + b0, Vector2(0.999, 1.0 - y0)],
+					[ax + Vector3.UP * y1 + b1, Vector2(0.999, 1.0 - y1)], [-ax + Vector3.UP * y1 + b1, Vector2(0.001, 1.0 - y1)]]
 			for j in [0, 1, 2, 0, 2, 3]:
 				var pos: Vector3 = c[j][0]
 				st.set_normal(Vector3(0, 1, 0))
 				st.set_uv(c[j][1])
-				st.set_uv2(Vector2(pos.y * pos.y, 0.0))        # the tip swings, the root holds
+				st.set_uv2(Vector2(clampf(pos.y, 0.0, 1.0) * clampf(pos.y, 0.0, 1.0), 0.0))        # the tip swings, the root holds
 				st.set_color(Color.WHITE * (0.6 + 0.4 * pos.y))
 				st.add_vertex(pos)
 	var mesh := st.commit()
@@ -542,7 +545,7 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 	var buf := PackedFloat32Array()
 	if _mere_reach <= 0.0:
 		return [buf]
-	var grid := 0.75
+	var grid := 0.5
 	var tile := float(layer["tile"])
 	var x0 := float(key.x) * tile
 	var z0 := float(key.y) * tile
@@ -561,7 +564,7 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			# Thick in the middle of a clump, thinning to nothing at its edge; and the
 			# fronds themselves shorten the same way, tall at the heart, small outside.
 			var inward := 1.0 - c.x / c.y
-			if _hash(cx, cz, 113) > inward * inward * 1.2 * c.z * density + 0.02:
+			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * c.z * density + 0.015:
 				continue
 			var ground := f.height_at(x, z, 1e9)
 			var depth := _mere_level - ground
@@ -571,7 +574,7 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			tall = minf(tall, depth * 0.92)
 			var wide := tall * (0.55 + 0.35 * _hash(cx, cz, 115)) * 2.0 * 0.5
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 116) * TAU)
-			basis = Basis(Vector3(1, 0, 0), (_hash(cx, cz, 117) - 0.5) * 0.3) * basis
+			basis = Basis(Vector3(1, 0, 0), (_hash(cx, cz, 117) - 0.5) * 0.7) * Basis(Vector3(0, 0, 1), (_hash(cx, cz, 120) - 0.5) * 0.7) * basis
 			_push(buf, basis.scaled_local(Vector3(wide, tall, wide)), Vector3(x, ground - 0.05, z))
 			buf.append_array([float(int(_hash(cx, cz, 118) * 2.0) % 2), _hash(cx, cz, 119), 1.0, 0.0])
 	return [buf]

@@ -67,6 +67,8 @@ var light_dir := Vector3.UP
 var light_color := Color.WHITE
 var fog_color := Color(0.4, 0.45, 0.5)
 var wetness := 0.0
+## True while the camera is under water (SCRIPT_underwater_view.gd sets it).
+var submerged := false
 
 var _env: Environment
 var _sky_mat: ShaderMaterial
@@ -483,7 +485,7 @@ func _apply(dt: float) -> void:
 			var size := get_viewport().get_visible_rect().size
 			uv = Vector2(sp.x / size.x, sp.y / size.y)
 		_rays_mat.set_shader_parameter("light_uv", uv)
-		_rays_mat.set_shader_parameter("flare", flare_strength * smoothstep(0.0, 0.3, facing)
+		_rays_mat.set_shader_parameter("flare", (0.0 if submerged else flare_strength) * smoothstep(0.0, 0.3, facing)
 				* smoothstep(0.0, 0.08, light_dir.y) * minf(energy, 1.6) * (1.0 if use_sun else 0.3))
 		_rays_mat.set_shader_parameter("ray_color", Color(tint.r, tint.g, tint.b))
-		_rays_mat.set_shader_parameter("intensity", strength * (0.52 if use_sun else 0.26) * lerpf(1.0, 0.2, smoothstep(40.0, 300.0, cam.global_position.y)) * minf(energy + 0.15, 1.0))
+		_rays_mat.set_shader_parameter("intensity", strength * (0.3 if submerged else 1.0) * (0.52 if use_sun else 0.26) * lerpf(1.0, 0.2, smoothstep(40.0, 300.0, cam.global_position.y)) * minf(energy + 0.15, 1.0))

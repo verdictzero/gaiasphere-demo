@@ -210,7 +210,7 @@ void fragment() {
 		// ---- the water between ---------------------------------------------
 		vec3 water_c = mix(shallow_color, deep_color,
 				clamp((under + max(-ray2.y, 0.0) * min(path, 20.0)) / max(depth_dark, 0.01), 0.0, 1.0))
-				* (tod_haze_tint.rgb * day);
+				* (vec3(dot(tod_haze_tint.rgb, vec3(0.333))) * day * 1.6);
 		col *= exp(-absorb * path);
 		col = mix(col, water_c, 1.0 - exp(-path / max(clarity, 0.01)));
 		// Light shafts, slanting down toward the sun, brighter looking up.

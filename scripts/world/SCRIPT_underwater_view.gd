@@ -17,7 +17,7 @@ extends MeshInstance3D
 ## No eye further under than this, metres, is in the water: the deepest of it is
 ## the lagoon's 2.2 m. Below that it is under the ground (the ruins run under the
 ## rivers), where the water over the map is nothing to do with it.
-@export var max_depth := 4.0
+@export var max_depth := 200.0
 
 var _water: RiverWater = null
 var _mat: ShaderMaterial = null
@@ -37,6 +37,10 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	visible = _wanted()
+	# The sky's lens flare and bloom have no business under water.
+	var enviro := get_node_or_null(^"../Enviro")
+	if enviro != null:
+		enviro.set(&"submerged", visible)
 
 
 # Whether any of the picture is under, and the shader told where the water is.
