@@ -198,14 +198,23 @@ func _process(_delta: float) -> bool:
 			var mid: Vector3 = _scene.get_node("SwordStone/SwordInStone").global_position
 			var best := Vector3.ZERO
 			if flora != null:
-				# The first good clump along a ring through the deep water.
-				for i in 720:
-					var ang := TAU * float(i) / 720.0
-					var p := Vector3(mid.x + cos(ang) * 235.0, 0.0, mid.z + sin(ang) * 235.0)
-					var c: Vector3 = Flora.clump_at(p.x, p.z)
-					if c.y > 6.0 and c.x < 1.5 and c.z > 0.7:
-						best = p
+				# The first good clump in the deep water: rings from the islet's shore out.
+				var found := false
+				for ring in 9:
+					for i in 360:
+						var ang := TAU * float(i) / 360.0
+						var rr := 175.0 + 18.0 * float(ring)
+						var p := Vector3(mid.x + cos(ang) * rr, 0.0, mid.z + sin(ang) * rr)
+						var c: Vector3 = Flora.clump_at(p.x, p.z)
+						if c.y > 5.0 and c.x < 2.0 and float(world.height_at(p)) < float(flora._mere_level) - 5.0:
+							best = p
+							found = true
+							break
+					if found:
 						break
+				if not found:
+					push_error("tour: no seaweed clump found in deep water")
+					_fail = true
 			_explorer.flying = true
 			# (The mere's level from Flora: the water's own query answers NAN off its mesh,
 			# and a NAN position poisons the whole frame.)
