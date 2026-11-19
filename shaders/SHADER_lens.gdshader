@@ -5,7 +5,8 @@
 shader_type canvas_item;
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear, repeat_disable;
-uniform float grade : hint_range(0.0, 1.0) = 0.55;
+// (The film grade proper is the Environment's lookup table; this is a light touch.)
+uniform float grade : hint_range(0.0, 1.0) = 0.15;
 uniform vec3 shadow_tint : source_color = vec3(0.86, 0.98, 1.1);
 uniform vec3 highlight_tint : source_color = vec3(1.1, 1.0, 0.86);
 uniform float vignette : hint_range(0.0, 1.0) = 0.42;

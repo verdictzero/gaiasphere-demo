@@ -47,6 +47,8 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 @export_range(0.0, 1.0) var spooky := 0.5
 ## Share of the screen's resolution the 3D world is drawn at on a phone.
 @export_range(0.25, 1.0) var mobile_render_scale := 0.5
+## The film grade (a 3D colour lookup table built in _grade_lut): 0 off, 1 full.
+@export_range(0.0, 1.0) var cinematic_grade := 0.85
 @export var god_rays := true
 ## The camera: depth of field, the eye adjusting to light and dark, and the lens
 ## pass (grade, vignette, fringing, grain). Each can be turned off.
@@ -189,8 +191,12 @@ func _build_environment() -> void:
 	_env.sky = sky
 	_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	_env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	_env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	_env.tonemap_white = 6.0
+	# AgX: bright, saturated light (a low sun, the beam on the sword) rolls off to
+	# white the way film does instead of clipping to a flat colour. It comes out
+	# flat, and the grade below puts the contrast back.
+	_env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	_env.tonemap_white = 8.0
+	_env.tonemap_exposure = 1.15
 	# Bloom: what is brighter than white (the sun's disc and glare, glitter on the
 	# water, the beam on the sword) spreads into a glow.
 	_env.glow_enabled = true
@@ -208,9 +214,11 @@ func _build_environment() -> void:
 	_env.fog_sky_affect = 0.0
 	# The pooled mist lies below the island's rim, on the cloud sea, not over the wall.
 	_env.fog_height = -30.0
-	_env.adjustment_enabled = spooky > 0.0
-	_env.adjustment_saturation = lerpf(1.0, 0.86, spooky)
-	_env.adjustment_contrast = lerpf(1.0, 1.22, spooky)
+	_env.adjustment_enabled = true
+	_env.adjustment_saturation = lerpf(1.0, 0.94, spooky)
+	_env.adjustment_contrast = 1.0
+	if cinematic_grade > 0.0:
+		_env.adjustment_color_correction = _grade_lut(cinematic_grade)
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = _env
@@ -250,6 +258,44 @@ func _build_environment() -> void:
 		layer.add_child(rect)
 		add_child(layer)
 	add_child(we)
+
+
+## THE GRADE, as a lookup table: every colour the picture can hold, mapped to the
+## colour it should be. A film print's S-curve (deep toe, soft shoulder); shadows
+## pushed toward teal and highlights toward amber, which is the look of dusk on
+## film; the darkest tones a little lifted and drained, the mid-tones a little
+## richer.
+func _grade_lut(amount: float) -> Texture3D:
+	var n := 24
+	var slices: Array[Image] = []
+	for b in n:
+		var img := Image.create(n, n, false, Image.FORMAT_RGB8)
+		for g in n:
+			for r in n:
+				var c := Vector3(r, g, b) / float(n - 1)
+				var lum := c.dot(Vector3(0.2126, 0.7152, 0.0722))
+				# the S-curve, per channel
+				var s := Vector3(_film(c.x), _film(c.y), _film(c.z))
+				# split tone
+				var shadow := 1.0 - smoothstep(0.0, 0.45, lum)
+				var high := smoothstep(0.45, 1.0, lum)
+				s += Vector3(-0.022, 0.012, 0.03) * shadow + Vector3(0.035, 0.012, -0.03) * high
+				# saturation: thin in the shadows, fuller in the middle
+				var l2 := s.dot(Vector3(0.2126, 0.7152, 0.0722))
+				var sat := lerpf(0.82, 1.14, smoothstep(0.05, 0.5, lum)) * lerpf(1.0, 0.92, high)
+				s = Vector3(l2, l2, l2).lerp(s, sat)
+				s = c.lerp(s, amount)
+				img.set_pixel(r, g, Color(clampf(s.x, 0.0, 1.0), clampf(s.y, 0.0, 1.0), clampf(s.z, 0.0, 1.0)))
+		slices.append(img)
+	var lut := ImageTexture3D.new()
+	lut.create(Image.FORMAT_RGB8, n, n, n, false, slices)
+	return lut
+
+
+static func _film(x: float) -> float:
+	# a toe that holds the blacks down, a shoulder that eases the whites in
+	var t := x * x * (3.0 - 2.0 * x)
+	return lerpf(x, t, 0.55) * 0.97 + 0.012
 
 
 func _build_light() -> void:

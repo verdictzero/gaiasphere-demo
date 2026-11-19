@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_island_world.gd" id="world"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_enviro.gd" id="enviro"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_flora.gd" id="flora"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_forest_motes.gd" id="motes"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_bridge.gd" id="bridge"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_terrain_occluders.gd" id="occl"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_stone.gd" id="sword"]
@@ -58,6 +59,9 @@ script = ExtResource("bridge")
 
 [node name="SwordPlay" type="Node3D" parent="."]
 script = ExtResource("swordplay")
+
+[node name="ForestMotes" type="Node3D" parent="."]
+script = ExtResource("motes")
 
 [node name="LandingSpot" type="Node3D" parent="."]
 script = ExtResource("landing")
