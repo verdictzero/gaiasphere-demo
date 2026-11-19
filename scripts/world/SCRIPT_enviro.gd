@@ -463,7 +463,7 @@ func _apply(dt: float) -> void:
 	horizon = horizon.lerp(zenith * 1.5, overcast * 0.65)
 	# ... and the whole sky behind the cloud is as dark as the cloud: thick cloud
 	# takes the light out of all of it.
-	var gloom := lerpf(1.0, 0.42, overcast * dim)
+	var gloom := lerpf(1.0, 0.6, overcast * dim)
 	zenith *= gloom
 	horizon *= gloom
 	# The look: a cold green-grey cast over whatever the hour gives.
