@@ -53,6 +53,8 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 @export_range(0.25, 1.0) var mobile_render_scale := 0.5
 ## The film grade (a 3D colour lookup table built in _grade_lut): 0 off, 1 full.
 @export_range(0.0, 1.0) var cinematic_grade := 0.85
+## How bright the night's own light is, as a multiple of a dark, starlit night.
+@export_range(0.0, 10.0) var night_ambient := 4.0
 @export var god_rays := true
 ## The camera: depth of field, the eye adjusting to light and dark, and the lens
 ## pass (grade, vignette, fringing, grain). Each can be turned off.
@@ -263,7 +265,7 @@ func _build_environment() -> void:
 		cam.auto_exposure_scale = 0.38
 		cam.auto_exposure_speed = 0.7
 		cam.auto_exposure_min_sensitivity = 60.0
-		cam.auto_exposure_max_sensitivity = 520.0
+		cam.auto_exposure_max_sensitivity = 800.0
 	we.camera_attributes = cam
 	if lens_effects:
 		var layer := CanvasLayer.new()
@@ -484,7 +486,7 @@ func _apply(dt: float) -> void:
 	var fog_lum := (fog_color.r + fog_color.g + fog_color.b) / 3.0
 	fog_color = fog_color.lerp(Color(1.0, 0.68, 0.36) * fog_lum * 1.5, gold)
 
-	_env.ambient_light_color = ambient + Color(0.03, 0.045, 0.075) * (1.0 - day) + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
+	_env.ambient_light_color = ambient + Color(0.03, 0.045, 0.075) * night_ambient * (1.0 - day) + Color(0.012, 0.016, 0.02) + Color(0.7, 0.75, 1.0) * _flash * 0.6
 	_env.ambient_light_energy = ambient_energy
 	_env.fog_light_color = fog_color
 	# Fog is a layer on the ground: seen from high above, the island shows through it.
