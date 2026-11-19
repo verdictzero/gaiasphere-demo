@@ -54,7 +54,7 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 ## The film grade (a 3D colour lookup table built in _grade_lut): 0 off, 1 full.
 @export_range(0.0, 1.0) var cinematic_grade := 0.85
 ## How bright the night's own light is, as a multiple of a dark, starlit night.
-@export_range(0.0, 10.0) var night_ambient := 4.0
+@export_range(0.0, 10.0) var night_ambient := 14.0
 @export var god_rays := true
 ## The camera: depth of field, the eye adjusting to light and dark, and the lens
 ## pass (grade, vignette, fringing, grain). Each can be turned off.
@@ -377,6 +377,7 @@ func _build_rain() -> void:
 	_rain.preprocess = 0.9
 	_rain.visibility_aabb = AABB(Vector3(-30, -30, -30), Vector3(60, 60, 60))
 	_rain.local_coords = false
+	_rain.transform_align = GPUParticles3D.TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY
 	var pm := ParticleProcessMaterial.new()
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 	pm.emission_box_extents = Vector3(22, 0.5, 22)
@@ -391,7 +392,8 @@ func _build_rain() -> void:
 	var sm := StandardMaterial3D.new()
 	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sm.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+	# No billboard in the material: the particles themselves turn to face the camera
+	# with their length along the way they are falling, so driven rain slants.
 	sm.albedo_color = Color(0.75, 0.8, 0.85, 0.14)
 	# Drops right in front of the lens fade out: up close they are bars, not rain.
 	sm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
@@ -453,7 +455,7 @@ func _apply(dt: float) -> void:
 	var sun_energy := smoothstep(-0.03, 0.1, sun_dir.y) * lerpf(3.4, 2.0, smoothstep(0.1, 0.5, sun_dir.y))
 	var moon_tint := Color(0.55, 0.68, 1.0)
 	var moon_lit := 1.0 - absf(moon_phase - 0.5) * 2.0
-	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.3 + 0.45 * moon_lit)
+	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.7 + 0.8 * moon_lit)
 
 	# One shadowed light: whichever is stronger owns it, and it dips through zero
 	# at the hand-over so the shadows never jump.
