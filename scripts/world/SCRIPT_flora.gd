@@ -365,7 +365,7 @@ static func clump_at(x: float, z: float) -> Vector3:
 	return best
 
 
-func _far_instances(func _far_instances(_layer: Dictionary, holder: Node3D) -> Dictionary:
+func _far_instances(_layer: Dictionary, holder: Node3D) -> Dictionary:
 	# Filled by `_repack_far`: one MultiMesh per (kind, impostor, FAR_CELL square of
 	# island), each with that square's bounds, so the far forest is frustum- and
 	# occlusion-culled square by square instead of being one island-wide draw.
