@@ -128,7 +128,7 @@ void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	flow = CUSTOM0;
 	float still = 1.0 - clamp(UV2.y, 0.0, 1.0);
-	VERTEX.y += (swell(world_pos.xz, TIME) - 0.35) * wave_height * still * (0.6 + enviro_wind.z);
+	VERTEX.y += (swell(world_pos.xz, TIME) - 0.35) * wave_height * still * (0.6 + min(enviro_wind.z, 2.4));
 }
 
 float linear_depth(vec2 uv, mat4 inv_proj) {
@@ -169,7 +169,7 @@ void fragment() {
 	n = normalize(vec3(n.xy * chop, 1.0));
 
 	// ---- the swell's own slope, by differences, and how near a crest this is
-	float amp = wave_height * (0.6 + wind) * still;
+	float amp = wave_height * (0.6 + min(wind, 2.4)) * still;
 	float h0 = swell(world_pos.xz, TIME);
 	float hx = swell(world_pos.xz + vec2(0.35, 0.0), TIME);
 	float hz = swell(world_pos.xz + vec2(0.0, 0.35), TIME);

@@ -22,11 +22,11 @@ const WEATHERS := {
 	"cloudy":   {"coverage": 0.50, "density": 0.036, "fog": 0.00022, "mist": 0.003, "wind": 0.40, "rain": 0.0, "dim": 0.25, "bolts": 0.0},
 	"overcast": {"coverage": 0.86, "density": 0.050, "fog": 0.00045, "mist": 0.006, "wind": 0.50, "rain": 0.0, "dim": 0.70, "bolts": 0.0},
 	"foggy":    {"coverage": 0.60, "density": 0.040, "fog": 0.0042, "mist": 0.03, "wind": 0.15, "rain": 0.0, "dim": 0.45, "bolts": 0.0},
-	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.01, "wind": 0.70, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
+	"rain":     {"coverage": 0.92, "density": 0.058, "fog": 0.0011, "mist": 0.01, "wind": 1.05, "rain": 0.6, "dim": 0.80, "bolts": 0.0},
 	# The island as it is meant to be seen: broken cloud that lets a low sun through,
 	# fog thick enough to carry its shafts.
 	"golden_fog": {"coverage": 0.66, "density": 0.07, "fog": 0.0019, "mist": 0.035, "wind": 0.38, "rain": 0.0, "dim": 0.08, "bolts": 0.0},
-	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.008, "wind": 1.00, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
+	"storm":    {"coverage": 1.00, "density": 0.075, "fog": 0.0016, "mist": 0.008, "wind": 1.9, "rain": 1.0, "dim": 0.92, "bolts": 7.0},
 }
 const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "rain", "storm"]
 
@@ -151,8 +151,15 @@ func daylight() -> float:
 	return smoothstep(-0.08, 0.22, sun_dir.y)
 
 
+## The wind right now, gusts included: its direction times its strength (a breeze
+## is about 0.3, a gale about 2). The direction backs and veers a little.
 func wind_vector() -> Vector3:
-	return Vector3(0.8, 0.0, 0.6) * float(_now["wind"])
+	return Vector3(0.8, 0.0, 0.6).rotated(Vector3.UP, _veer) * wind_strength
+
+
+## The wind's strength right now.
+var wind_strength := 0.3
+var _veer := 0.0
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -419,7 +426,18 @@ func _apply(dt: float) -> void:
 	var coverage := float(_now["coverage"])
 	var dim := float(_now["dim"])
 	var rain := float(_now["rain"])
-	var wind := float(_now["wind"])
+	# GUSTS. The weather sets the wind's mean; it blows in gusts and lulls round
+	# that, and the harder it blows the gustier it is: a breeze is steady, a gale
+	# slams and slackens. Everything that answers to wind reads this one number
+	# (the trees and bushes and grass, the waves and their foam, the rain's slant,
+	# the clouds, the fog banks, the pollen).
+	var mean := float(_now["wind"])
+	var gusty := smoothstep(0.5, 1.6, mean)
+	var gt := Time.get_ticks_msec() * 0.001
+	var gust := sin(gt * 0.31) * 0.5 + sin(gt * 0.83 + 1.7) * 0.3 + sin(gt * 2.1 + 0.4) * 0.2
+	wind_strength = maxf(0.02, mean * (1.0 + gust * lerpf(0.12, 0.5, gusty)))
+	_veer = sin(gt * 0.11) * lerpf(0.1, 0.45, gusty)
+	var wind := wind_strength
 
 	# Where the sun and moon are.
 	var ang := hour / 24.0 * TAU - PI * 0.5
@@ -560,6 +578,10 @@ func _apply(dt: float) -> void:
 	# Rain rides above the camera.
 	_rain.global_position = cam.global_position + Vector3(0, 14, 0) - cam.global_basis.z * 6.0
 	_rain.emitting = rain > 0.02
+	# Rain is driven by the wind: near upright in still air, slanting hard in a gale.
+	var rain_pm := _rain.process_material as ParticleProcessMaterial
+	rain_pm.direction = Vector3(wv.x * 0.45, -1.0, wv.z * 0.45).normalized()
+	rain_pm.gravity = Vector3(wv.x * 9.0, -6.0, wv.z * 9.0)
 	_rain.amount_ratio = clampf(rain, 0.05, 1.0)
 
 	# God rays: where the light sits on screen, and how much of it gets through.

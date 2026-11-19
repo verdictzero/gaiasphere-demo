@@ -146,6 +146,9 @@ func _process(_dt: float) -> void:
 	if _world != null:
 		ground = float(_world.call(&"height_at", at, at.y - 1.6))
 	var here: bool = not _enviro.submerged and at.y - ground < 40.0
+	# The wind carries the pollen: a drift in a breeze, a streaming in a gale.
+	var blow := _enviro.wind_vector()
+	(_pollen.process_material as ParticleProcessMaterial).gravity = Vector3(blow.x * 0.6, -0.012, blow.z * 0.6)
 	_pollen.emitting = here
 	_bugs.emitting = here
 	_pollen.global_position = Vector3(at.x, maxf(at.y, ground + 2.5), at.z)
