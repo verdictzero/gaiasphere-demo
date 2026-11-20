@@ -209,7 +209,7 @@ func _take() -> void:
 ## arrive. They live in the hand's space, so they stay with the sword.
 func _gather_motes() -> GPUParticles3D:
 	var p := GPUParticles3D.new()
-	p.amount = 90
+	p.amount = 140
 	p.lifetime = 0.62
 	p.emitting = false
 	p.local_coords = true
@@ -217,10 +217,10 @@ func _gather_motes() -> GPUParticles3D:
 	p.visibility_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
 	var m := ParticleProcessMaterial.new()
 	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE_SURFACE
-	m.emission_sphere_radius = 1.15
+	m.emission_sphere_radius = 0.62
 	m.gravity = Vector3.ZERO
-	m.radial_velocity_min = -1.95
-	m.radial_velocity_max = -1.55
+	m.radial_velocity_min = -1.05
+	m.radial_velocity_max = -0.85
 	m.orbit_velocity_min = -0.6
 	m.orbit_velocity_max = 0.6
 	m.scale_min = 0.5
@@ -253,7 +253,7 @@ func _gather_motes() -> GPUParticles3D:
 	mat.disable_fog = true
 	mat.no_depth_test = true
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.055, 0.055)
+	quad.size = Vector2(0.028, 0.028)
 	quad.material = mat
 	p.draw_pass_1 = quad
 	return p
