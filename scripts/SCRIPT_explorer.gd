@@ -79,12 +79,12 @@ func _ready() -> void:
 	# spot on the camera, a little off to one side like a held torch, off to start.
 	_torch = SpotLight3D.new()
 	_torch.name = "Flashlight"
-	_torch.light_color = Color(1.0, 0.93, 0.8)
+	_torch.light_color = Color(1.0, 0.96, 0.9)
 	# The beam's shape is the cookie's: a hot centre, the reflector's rings and a
 	# dim spill out to the bezel. The cone itself is left nearly flat so the two do
 	# not fall off twice.
 	_torch.light_projector = load("res://assets/ui/flashlight_cookie.png")
-	_torch.light_energy = 46.0
+	_torch.light_energy = 90.0
 	_torch.spot_range = 60.0
 	_torch.spot_angle = 38.0
 	_torch.spot_angle_attenuation = 0.12
