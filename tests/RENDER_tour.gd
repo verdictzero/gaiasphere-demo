@@ -324,26 +324,11 @@ func _process(_delta: float) -> bool:
 			print("tour: %d logs lying, %d gathered" % [wood2._logs.size(), bag.count_of("log")])
 			if wood2._logs.size() + bag.count_of("log") < 2:
 				_fail = true
-			bag.add("log", 7)
-			bag.add("planks", 12)
-			bag.add("sticks", 8)
+			bag.add("log", 70)
+			if bag.count_of("log") < 70:
+				push_error("tour: the bag did not take the logs")
+				_fail = true
 			bag.set_open(true)
-			bag.slots[Inventory.BAG] = ["log", 3]
-			var made: Variant = bag.crafted()
-			if made == null or made[0] != "planks" or int(made[1]) != 4:
-				push_error("tour: a log in the grid did not make planks")
-				_fail = true
-			bag._take_result(true)
-			if bag.count_of("planks") != 24:
-				push_error("tour: crafting all gave %d planks, not 24" % bag.count_of("planks"))
-				_fail = true
-			bag.slots[Inventory.BAG] = ["log", 2]
-			bag.slots[Inventory.BAG + 1] = ["sticks", 2]
-			bag.slots[Inventory.BAG + 2] = ["log", 1]
-			bag.slots[Inventory.BAG + 3] = ["sticks", 1]
-			if bag.crafted() == null or bag.crafted()[0] != "campfire":
-				push_error("tour: logs and sticks did not make a campfire")
-				_fail = true
 			_wait = 6
 		15:
 			_shot("15_bag")

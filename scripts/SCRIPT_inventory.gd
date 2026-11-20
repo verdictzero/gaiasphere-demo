@@ -1,45 +1,35 @@
 class_name Inventory
 extends CanvasLayer
 
-# THE HOTBAR, THE BAG AND THE START OF CRAFTING.
+# THE HOTBAR AND THE BAG.
 #
 # Nine slots along the bottom of the screen, always shown; 1-9 (or a tap) picks
-# one. TAB or I (pad Start, the BAG touch button) opens the bag: twenty-seven more
-# slots, and a two-by-two crafting grid with its result.
+# one. TAB or I (pad Start, the BAG touch button) opens the bag: twenty-seven
+# more slots.
 #
 #   left click     pick a stack up, put it down, swap, or add to a like stack
 #   right click    take half a stack, or put one down
-#   the result     click to take what the grid makes (shift-click: all it can)
 #
-# Recipes are shapeless: what is in the grid's cells, one from each, whatever
-# cells they are in. They are the `RECIPES` table below and nothing else; add a
-# line to add one. Nothing made here can be placed in the world yet.
+# There is nothing to craft yet: this holds what is gathered, and that is all.
 
 const STACK := 64
 const HOTBAR := 9
 const BAG := 36          # the hotbar's nine and twenty-seven more
-const GRID := 4          # slots 36..39: the crafting grid
-const RESULT := 40
 
 const ITEMS := {
 	"log": {"name": "Fir Log", "icon": "res://assets/ui/item_log.png"},
-	"planks": {"name": "Planks", "icon": "res://assets/ui/item_planks.png"},
-	"sticks": {"name": "Sticks", "icon": "res://assets/ui/item_sticks.png"},
-	"workbench": {"name": "Workbench", "icon": "res://assets/ui/item_workbench.png"},
-	"campfire": {"name": "Campfire", "icon": "res://assets/ui/item_campfire.png"},
 }
-## What goes in (one from each of that many cells) and what comes out.
-const RECIPES := [
-	{"in": {"log": 1}, "out": ["planks", 4]},
-	{"in": {"planks": 2}, "out": ["sticks", 4]},
-	{"in": {"planks": 4}, "out": ["workbench", 1]},
-	{"in": {"log": 2, "sticks": 2}, "out": ["campfire", 1]},
-]
+
+const PANEL := Color(0.075, 0.085, 0.1, 0.9)
+const SLOT := Color(1, 1, 1, 0.065)
+const EDGE := Color(1, 1, 1, 0.14)
+const ACCENT := Color(0.56, 0.86, 1.0)
+const INK := Color(0.93, 0.95, 0.97)
 
 ## True while the bag is open: the sword and the look stand down.
 static var menu_open := false
 
-var slots: Array = []        # BAG + GRID entries, each null or [id, count]
+var slots: Array = []        # BAG entries, each null or [id, count]
 var selected := 0
 var _held: Variant = null    # the stack on the cursor
 var _view: Control
@@ -47,12 +37,13 @@ var _icons := {}
 var _font: Font
 var _hover := -1
 var _was_captured := false
+var _shown := 0.0            # 0 shut .. 1 open, eased
 
 
 func _ready() -> void:
 	layer = 30
 	menu_open = false
-	slots.resize(BAG + GRID)
+	slots.resize(BAG)
 	for id in ITEMS:
 		_icons[id] = load(ITEMS[id]["icon"])
 	_font = load("res://branding/fonts/RobotoCondensed-Regular.ttf")
@@ -68,7 +59,7 @@ func _ready() -> void:
 	_view = Control.new()
 	_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_view.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_view.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_view.draw.connect(_draw_view)
 	_view.gui_input.connect(_on_gui_input)
 	add_child(_view)
@@ -76,6 +67,13 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	menu_open = false
+
+
+func _process(delta: float) -> void:
+	var want := 1.0 if menu_open else 0.0
+	if _shown != want:
+		_shown = move_toward(_shown, want, delta * 7.0)
+		_view.queue_redraw()
 
 
 # ------------------------------------------------------------------ the stacks
@@ -110,28 +108,6 @@ func count_of(id: String) -> int:
 	return n
 
 
-## What the grid makes at the moment: [id, count], or null.
-func crafted() -> Variant:
-	var have := {}
-	for i in range(BAG, BAG + GRID):
-		if slots[i] != null:
-			have[slots[i][0]] = int(have.get(slots[i][0], 0)) + 1
-	if have.is_empty():
-		return null
-	for recipe in RECIPES:
-		if (recipe["in"] as Dictionary).hash() == have.hash() and recipe["in"] == have:
-			return recipe["out"]
-	return null
-
-
-func _spend_grid() -> void:
-	for i in range(BAG, BAG + GRID):
-		if slots[i] != null:
-			slots[i][1] = int(slots[i][1]) - 1
-			if int(slots[i][1]) <= 0:
-				slots[i] = null
-
-
 # ------------------------------------------------------------------ open and shut
 
 func set_open(open: bool) -> void:
@@ -143,14 +119,11 @@ func set_open(open: bool) -> void:
 		_was_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
-		# Nothing is left behind in the grid or on the cursor.
-		for i in range(BAG, BAG + GRID):
-			if slots[i] != null:
-				add(slots[i][0], int(slots[i][1]))
-				slots[i] = null
+		# Nothing is left on the cursor.
 		if _held != null:
 			add(_held[0], int(_held[1]))
 			_held = null
+		_hover = -1
 		if _was_captured and not DisplayServer.is_touchscreen_available():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_view.queue_redraw()
@@ -189,35 +162,29 @@ func _k() -> float:
 
 func _panel_rect() -> Rect2:
 	var k := _k()
-	var cell := 78.0 * k
-	var w := cell * 9.0 + 48.0 * k
-	var h := cell * 6.0 + 150.0 * k
+	var cell := 84.0 * k
+	var w := cell * 9.0 + 56.0 * k
+	var h := cell * 4.0 + 132.0 * k
 	return Rect2((_view.size - Vector2(w, h)) * 0.5, Vector2(w, h))
 
 
 func _slot_rect(i: int) -> Rect2:
 	var k := _k()
-	var cell := 78.0 * k
-	var s := Vector2(72.0, 72.0) * k
+	var cell := 84.0 * k
+	var s := Vector2(74.0, 74.0) * k
 	if not menu_open:
 		var x0 := (_view.size.x - cell * 9.0) * 0.5
-		return Rect2(Vector2(x0 + cell * float(i) + 3.0 * k, _view.size.y - cell - 22.0 * k), s)
+		return Rect2(Vector2(x0 + cell * float(i) + 5.0 * k, _view.size.y - cell - 26.0 * k), s)
 	var p := _panel_rect()
-	var left := p.position.x + 24.0 * k + 3.0 * k
+	var left := p.position.x + 28.0 * k + 5.0 * k
 	if i < HOTBAR:
-		return Rect2(Vector2(left + cell * float(i), p.end.y - cell - 20.0 * k), s)
-	if i < BAG:
-		var j := i - HOTBAR
-		return Rect2(Vector2(left + cell * float(j % 9), p.end.y - cell * 4.0 - 38.0 * k + cell * float(j / 9)), s)
-	var top := p.position.y + 62.0 * k
-	if i < BAG + GRID:
-		var j := i - BAG
-		return Rect2(Vector2(left + cell * (1.0 + float(j % 2)), top + cell * float(j / 2)), s)
-	return Rect2(Vector2(left + cell * 4.3, top + cell * 0.5), s)
+		return Rect2(Vector2(left + cell * float(i), p.end.y - cell - 22.0 * k), s)
+	var j := i - HOTBAR
+	return Rect2(Vector2(left + cell * float(j % 9), p.position.y + 76.0 * k + cell * float(j / 9)), s)
 
 
 func _slot_at(at: Vector2) -> int:
-	for i in RESULT + 1:
+	for i in BAG:
 		if _slot_rect(i).has_point(at):
 			return i
 	return -1
@@ -239,9 +206,7 @@ func _on_gui_input(event: InputEvent) -> void:
 		if not _panel_rect().has_point(mb.position) and _held == null:
 			set_open(false)       # a click outside shuts the bag
 		return
-	if i == RESULT:
-		_take_result(mb.shift_pressed)
-	elif mb.button_index == MOUSE_BUTTON_LEFT:
+	if mb.button_index == MOUSE_BUTTON_LEFT:
 		if i < HOTBAR:
 			selected = i
 		var there: Variant = slots[i]
@@ -273,60 +238,52 @@ func _on_gui_input(event: InputEvent) -> void:
 	_view.queue_redraw()
 
 
-func _take_result(all: bool) -> void:
-	for round_ in 256:
-		var out: Variant = crafted()
-		if out == null:
-			return
-		if all:
-			if add(out[0], int(out[1])) > 0:
-				return
-		elif _held == null:
-			_held = [out[0], int(out[1])]
-		elif _held[0] == out[0] and int(_held[1]) + int(out[1]) <= STACK:
-			_held[1] = int(_held[1]) + int(out[1])
-		else:
-			return
-		_spend_grid()
-		if not all:
-			return
-
-
 # ------------------------------------------------------------------ drawing
 
-func _text(at: Vector2, text: String, px: float, color: Color) -> void:
+func _box(r: Rect2, fill: Color, radius: float, edge := Color(0, 0, 0, 0), width := 0.0) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = fill
+	sb.set_corner_radius_all(int(radius * _k()))
+	sb.corner_detail = 10
+	sb.anti_aliasing = true
+	if width > 0.0:
+		sb.set_border_width_all(maxi(1, int(round(width * _k()))))
+		sb.border_color = edge
+	_view.draw_style_box(sb, r)
+
+
+func _label(at: Vector2, text: String, px: float, color: Color, centred := false) -> void:
 	var fs := int(px * _k())
-	_view.draw_string(_font, at + Vector2(2, 2) * _k(), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, color.a * 0.7))
+	if centred:
+		at.x -= _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x * 0.5
 	_view.draw_string(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, color)
 
 
-func _draw_stack(r: Rect2, stack: Variant) -> void:
+func _draw_stack(r: Rect2, stack: Variant, fade := 1.0) -> void:
 	if stack == null:
 		return
-	_view.draw_texture_rect(_icons[stack[0]], r.grow(-6.0 * _k()), false)
-	if int(stack[1]) > 1:
-		var label := str(int(stack[1]))
-		var fs := int(26.0 * _k())
-		var w := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		_text(r.end - Vector2(w + 5.0 * _k(), 5.0 * _k()), label, 26.0, Color.WHITE)
-
-
-## A sunk square, the way a slot is cut into the panel.
-func _draw_slot(r: Rect2, i: int) -> void:
 	var k := _k()
-	if menu_open:
-		_view.draw_rect(r, Color(0.545, 0.545, 0.545))
-		_view.draw_rect(Rect2(r.position, Vector2(r.size.x, 3.0 * k)), Color(0.22, 0.22, 0.22))
-		_view.draw_rect(Rect2(r.position, Vector2(3.0 * k, r.size.y)), Color(0.22, 0.22, 0.22))
-		_view.draw_rect(Rect2(r.position + Vector2(0, r.size.y - 3.0 * k), Vector2(r.size.x, 3.0 * k)), Color(1, 1, 1))
-		_view.draw_rect(Rect2(r.position + Vector2(r.size.x - 3.0 * k, 0), Vector2(3.0 * k, r.size.y)), Color(1, 1, 1))
-		if i == _hover:
-			_view.draw_rect(r.grow(-3.0 * k), Color(1, 1, 1, 0.3))
-	else:
-		_view.draw_rect(r, Color(0.05, 0.05, 0.05, 0.5))
-		_view.draw_rect(r, Color(0.55, 0.55, 0.55, 0.85), false, 3.0 * k)
-	if i == selected and i < HOTBAR:
-		_view.draw_rect(r.grow(3.0 * k), Color(1, 1, 1, 0.95), false, 5.0 * k)
+	_view.draw_texture_rect(_icons[stack[0]], r.grow(-5.0 * k), false, Color(1, 1, 1, fade))
+	if int(stack[1]) > 1:
+		# The count, on a small dark pill in the corner.
+		var label := str(int(stack[1]))
+		var fs := int(20.0 * k)
+		var w := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var pill := Rect2(r.end - Vector2(w + 16.0 * k, 28.0 * k), Vector2(w + 12.0 * k, 24.0 * k))
+		_box(pill, Color(0.03, 0.04, 0.05, 0.82 * fade), 12.0)
+		_view.draw_string(_font, pill.position + Vector2(6.0, 18.5) * k, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+				Color(INK.r, INK.g, INK.b, fade))
+
+
+func _draw_slot(r: Rect2, i: int, in_panel: bool) -> void:
+	var picked := i == selected and i < HOTBAR
+	var fill := SLOT if in_panel else Color(0.06, 0.07, 0.085, 0.62)
+	if in_panel and i == _hover:
+		fill = Color(1, 1, 1, 0.16)
+	_box(r, fill, 14.0, ACCENT if picked else EDGE, 3.0 if picked else 1.5)
+	if picked:
+		# A short bar under the slot in hand.
+		_box(Rect2(Vector2(r.get_center().x - 14.0 * _k(), r.end.y + 6.0 * _k()), Vector2(28.0, 4.0) * _k()), ACCENT, 2.0)
 
 
 func _draw_view() -> void:
@@ -334,55 +291,41 @@ func _draw_view() -> void:
 	if not menu_open:
 		for i in HOTBAR:
 			var r := _slot_rect(i)
-			_draw_slot(r, i)
+			_draw_slot(r, i, false)
 			_draw_stack(r, slots[i])
 		if slots[selected] != null:
-			var name: String = ITEMS[slots[selected][0]]["name"]
-			var w := _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, int(24.0 * k)).x
-			_text(Vector2((_view.size.x - w) * 0.5, _slot_rect(0).position.y - 14.0 * k), name, 24.0, Color(1, 1, 1, 0.9))
+			_label(Vector2(_view.size.x * 0.5, _slot_rect(0).position.y - 16.0 * k), ITEMS[slots[selected][0]]["name"],
+					22.0, Color(INK.r, INK.g, INK.b, 0.9), true)
 		return
-	_view.draw_rect(Rect2(Vector2.ZERO, _view.size), Color(0, 0, 0, 0.45))
+	var ease_in := 1.0 - pow(1.0 - _shown, 3.0)
+	_view.draw_rect(Rect2(Vector2.ZERO, _view.size), Color(0.0, 0.01, 0.02, 0.55 * ease_in))
+	_view.draw_set_transform(Vector2(0.0, (1.0 - ease_in) * 26.0 * k))
 	var p := _panel_rect()
-	_view.draw_rect(p, Color(0.776, 0.776, 0.776))
-	_view.draw_rect(Rect2(p.position, Vector2(p.size.x, 5.0 * k)), Color(1, 1, 1))
-	_view.draw_rect(Rect2(p.position, Vector2(5.0 * k, p.size.y)), Color(1, 1, 1))
-	_view.draw_rect(Rect2(p.position + Vector2(0, p.size.y - 5.0 * k), Vector2(p.size.x, 5.0 * k)), Color(0.33, 0.33, 0.33))
-	_view.draw_rect(Rect2(p.position + Vector2(p.size.x - 5.0 * k, 0), Vector2(5.0 * k, p.size.y)), Color(0.33, 0.33, 0.33))
-	_view.draw_rect(p, Color(0, 0, 0), false, 2.0 * k)
-	var ink := Color(0.25, 0.25, 0.25)
-	var fs := int(28.0 * k)
-	_view.draw_string(_font, p.position + Vector2(27.0, 44.0) * k, "CRAFTING", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
-	_view.draw_string(_font, Vector2(p.position.x + 27.0 * k, _slot_rect(HOTBAR).position.y - 12.0 * k), "INVENTORY",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
-	# The arrow from the grid to what it makes.
-	var a := _slot_rect(RESULT)
-	var mid := Vector2(a.position.x - 62.0 * k, a.get_center().y)
-	_view.draw_rect(Rect2(mid - Vector2(34.0, 5.0) * k, Vector2(48.0, 10.0) * k), ink)
-	_view.draw_colored_polygon(PackedVector2Array([mid + Vector2(14, -18) * k, mid + Vector2(40, 0) * k, mid + Vector2(14, 18) * k]), ink)
-	# What can be made, written out: this is the whole of the crafting so far.
-	var x := a.end.x + 22.0 * k
-	var y := p.position.y + 44.0 * k
-	_view.draw_string(_font, Vector2(x, y), "RECIPES", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
-	for recipe in RECIPES:
-		y += 34.0 * k
-		var parts: Array = []
-		for id in recipe["in"]:
-			parts.append("%d %s" % [int(recipe["in"][id]), ITEMS[id]["name"]])
-		_view.draw_string(_font, Vector2(x, y), "%s  >  %d %s" % [" + ".join(parts), int(recipe["out"][1]), ITEMS[recipe["out"][0]]["name"]],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, int(20.0 * k), ink)
-	for i in RESULT + 1:
+	_box(p.grow(10.0 * k), Color(0, 0, 0, 0.22 * ease_in), 34.0)          # a soft shadow
+	_box(p, Color(PANEL.r, PANEL.g, PANEL.b, PANEL.a * ease_in), 26.0, EDGE, 1.5)
+	_label(p.position + Vector2(33.0, 50.0) * k, "INVENTORY", 26.0, Color(INK.r, INK.g, INK.b, 0.92 * ease_in))
+	var used := 0
+	for i in BAG:
+		if slots[i] != null:
+			used += 1
+	var tally := "%d / %d" % [used, BAG]
+	var tw := _font.get_string_size(tally, HORIZONTAL_ALIGNMENT_LEFT, -1, int(20.0 * k)).x
+	_label(Vector2(p.end.x - 33.0 * k - tw, p.position.y + 48.0 * k), tally, 20.0, Color(INK.r, INK.g, INK.b, 0.5 * ease_in))
+	# A hairline between the bag and the hotbar's row.
+	var rule_y := _slot_rect(0).position.y - 12.0 * k
+	_view.draw_rect(Rect2(Vector2(p.position.x + 33.0 * k, rule_y), Vector2(p.size.x - 66.0 * k, maxf(1.0, 1.5 * k))),
+			Color(1, 1, 1, 0.1 * ease_in))
+	for i in BAG:
 		var r := _slot_rect(i)
-		_draw_slot(r, i)
-		_draw_stack(r, crafted() if i == RESULT else slots[i])
+		_draw_slot(r, i, true)
+		_draw_stack(r, slots[i], ease_in)
 	var mouse := _view.get_local_mouse_position()
 	if _held != null:
-		_draw_stack(Rect2(mouse - Vector2(36, 36) * k, Vector2(72, 72) * k), _held)
-	elif _hover >= 0:
-		var under: Variant = crafted() if _hover == RESULT else slots[_hover]
-		if under != null:
-			var name: String = ITEMS[under[0]]["name"]
-			var w := _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, int(24.0 * k)).x
-			var box := Rect2(mouse + Vector2(18, -40) * k, Vector2(w + 20.0 * k, 36.0 * k))
-			_view.draw_rect(box, Color(0.08, 0.02, 0.12, 0.92))
-			_view.draw_rect(box, Color(0.3, 0.1, 0.6), false, 2.0 * k)
-			_view.draw_string(_font, box.position + Vector2(10, 26) * k, name, HORIZONTAL_ALIGNMENT_LEFT, -1, int(24.0 * k), Color.WHITE)
+		_draw_stack(Rect2(mouse - Vector2(40, 40) * k, Vector2(80, 80) * k), _held)
+	elif _hover >= 0 and slots[_hover] != null:
+		var name: String = ITEMS[slots[_hover][0]]["name"]
+		var w := _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, int(21.0 * k)).x
+		var tip := Rect2(mouse + Vector2(18, -46) * k, Vector2(w + 28.0 * k, 38.0 * k))
+		_box(tip, Color(0.03, 0.04, 0.05, 0.95), 12.0, EDGE, 1.5)
+		_label(tip.position + Vector2(14, 26) * k, name, 21.0, INK)
+	_view.draw_set_transform(Vector2.ZERO)

@@ -46,6 +46,7 @@ func _ready() -> void:
 	_bark.normal_scale = 1.6
 	_bark.orm_texture = load("res://assets/fir/textures/pine_bark_orm.jpg")
 	_bark.roughness = 1.0
+	_bark.metallic_specular = 0.2
 	_end = StandardMaterial3D.new()
 	_end.albedo_texture = load("res://assets/log/log_end.jpg")
 	_end.roughness = 0.85
@@ -138,7 +139,7 @@ func _log_mesh(radius: float) -> ArrayMesh:
 		return _meshes[cm]
 	var r := maxf(float(cm) / 100.0, 0.04)
 	var half := LOG_LENGTH * 0.5
-	var sides := 14 if r < 0.3 else 20
+	var sides := 16 if r < 0.2 else 28
 	var wraps := maxf(1.0, round(TAU * r / 1.3))
 	var mesh := ArrayMesh.new()
 	var st := SurfaceTool.new()
