@@ -122,7 +122,7 @@ func _find_parts() -> bool:
 
 func _process(delta: float) -> void:
 	_fly_blasts(delta)
-	if not _find_parts() or Inventory.menu_open:
+	if not _find_parts() or Inventory.menu_open or GraphicsMenu.menu_open:
 		return
 	if not held:
 		var near: bool = _explorer.global_position.distance_to(_stone.get_child(0).global_position) < reach

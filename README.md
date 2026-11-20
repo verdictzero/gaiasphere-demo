@@ -37,6 +37,7 @@ To run it from source, open the folder in Godot 4.7-dev5 and press play.
 | Charge the sword (release to throw a crescent) | hold right mouse | hold left trigger |
 | Hotbar slot | 1 - 9 | |
 | Bag | Tab or I | Start |
+| Graphics menu (draw distances, LOD, grass, shadows, effects) | O or F10 | |
 | Back to the start | R | Back |
 | Free the mouse | Esc (click to take it again) | |
 | Full screen | F11 | |

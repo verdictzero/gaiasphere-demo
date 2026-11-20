@@ -81,6 +81,7 @@ var submerged := false
 var _env: Environment
 var _sky_mat: ShaderMaterial
 var _light: DirectionalLight3D
+var _cam_attr: CameraAttributesPractical
 var _flash_light: DirectionalLight3D
 var _rays: MeshInstance3D
 var _rays_mat: ShaderMaterial
@@ -174,6 +175,45 @@ func _unhandled_input(event: InputEvent) -> void:
 			set_weather(WEATHER_KEYS[k - KEY_F1], 8.0)
 
 
+# ------------------------------------------------------------------ the graphics menu
+
+## What the menu starts from: the state this machine was given at start-up.
+func graphics_now() -> Dictionary:
+	return {
+		"dof": _cam_attr != null and _cam_attr.dof_blur_far_enabled,
+		"bloom": _env != null and _env.glow_enabled,
+		"god_rays": god_rays,
+		"shadow_distance": _light.directional_shadow_max_distance if _light != null else 200.0,
+		"clouds": float(quality),
+		"render_scale": get_viewport().scaling_3d_scale,
+	}
+
+
+func apply_graphics(g: Dictionary) -> void:
+	if _cam_attr != null:
+		var dof := bool(g.get("dof", true))
+		_cam_attr.dof_blur_far_enabled = dof
+		_cam_attr.dof_blur_near_enabled = dof
+		if dof:
+			_cam_attr.dof_blur_far_distance = 160.0
+			_cam_attr.dof_blur_far_transition = 500.0
+			_cam_attr.dof_blur_near_distance = 0.55
+			_cam_attr.dof_blur_near_transition = 0.5
+			_cam_attr.dof_blur_amount = 0.04
+	if _env != null:
+		_env.glow_enabled = bool(g.get("bloom", true))
+	god_rays = bool(g.get("god_rays", true))
+	if _rays != null:
+		_rays.visible = god_rays
+	if _light != null:
+		_light.directional_shadow_max_distance = float(g.get("shadow_distance", 220.0))
+	if _sky_mat != null:
+		var q := clampi(int(round(float(g.get("clouds", 1.0)))), 0, 2)
+		_sky_mat.set_shader_parameter("cloud_steps", [32, 80, 112][q])
+		_sky_mat.set_shader_parameter("cloud_light_steps", [3, 5, 6][q])
+	get_viewport().scaling_3d_scale = clampf(float(g.get("render_scale", 1.0)), 0.25, 1.0)
+
+
 # ------------------------------------------------------------------ building
 
 func _build_environment() -> void:
@@ -259,6 +299,7 @@ func _build_environment() -> void:
 	# the lens; the exposure drifts toward what is in view, so walking out of the
 	# trees into the sun dazzles and then settles, and the deep wood opens up.
 	var cam := CameraAttributesPractical.new()
+	_cam_attr = cam
 	if depth_of_field and quality > 0:
 		cam.dof_blur_far_enabled = true
 		cam.dof_blur_far_distance = 160.0

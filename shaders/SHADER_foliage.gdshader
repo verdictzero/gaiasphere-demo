@@ -30,6 +30,8 @@ uniform float atlas_columns = 1.0;
 uniform float thin_start = 0.0;
 uniform float thin_end = 0.0;
 uniform float thin_keep : hint_range(0.0, 1.0) = 0.3;
+// The share of the clumps drawn at all (the graphics menu's grass density).
+uniform float keep_share : hint_range(0.0, 1.0) = 1.0;
 uniform float fade_start = 0.0;
 uniform float fade_end = 0.0;
 // A PLANT THE PLAYER WALKS INTO GETS OUT OF THE WAY: it dissolves through a dither
@@ -56,7 +58,7 @@ void vertex() {
 		dissolve = smoothstep(fade_start, fade_end, d);
 		// INSTANCE_CUSTOM.z is the clump's lot: low numbers go first.
 		float gone = smoothstep(thin_start, thin_end, d) * (1.0 - thin_keep);
-		if (INSTANCE_CUSTOM.z < gone) {
+		if (INSTANCE_CUSTOM.z < gone || INSTANCE_CUSTOM.y > keep_share) {
 			VERTEX = root;          // every vertex on one point: no triangle is drawn
 		}
 	}

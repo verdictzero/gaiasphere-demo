@@ -229,6 +229,7 @@ func _build_layers() -> void:
 		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0,
 		"backlight": Color(0.035, 0.05, 0.015), "specular": 0.04, "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
 		"fade_start": reach * 0.72, "fade_end": reach * 0.98})
+	_blades = blades
 	_layers.append({
 		"name": "grass", "tile": 10.0, "radius": reach, "stride": STRIDE_CUSTOM,
 		"dists": [], "shadow_lods": 0,
@@ -240,12 +241,68 @@ func _build_layers() -> void:
 		layer["cache"] = {}          # Vector2i -> bufs, kept once placed
 		layer["asked"] = {}
 		layer["cam_tile"] = Vector2i(1 << 30, 0)
+		# As built, so the graphics menu can scale them (see apply_view).
+		layer["radius0"] = layer["radius"]
+		layer["dists0"] = (layer["dists"] as Array).duplicate()
+		layer["shadow_lods0"] = layer["shadow_lods"]
+		if layer.has("cross_reach"):
+			layer["cross0"] = layer["cross_reach"]
 		var holder := Node3D.new()
 		holder.name = String(layer["name"]).capitalize()
 		add_child(holder)
 		layer["holder"] = holder
 		if layer.has("cross_reach"):
 			layer["far"] = _far_instances(layer, holder)
+
+
+var _blades: ShaderMaterial
+
+
+## THE GRAPHICS MENU'S HAND ON THE PLANTS. Each is a multiple of what the layers
+## were built with: `veg` how far the plant meshes are drawn, `lod` how far each
+## level of detail is held before the next takes over, `impostor` how far the
+## trees' crossed cards reach before the flat boards, `grass` how far the grass
+## runs. `grass_keep` is the share of grass clumps drawn; `shadows` whether
+## plants cast any. Everything open is closed and reopened to the new distances.
+func apply_view(veg: float, lod: float, impostor: float, grass: float, grass_keep: float, shadows: bool) -> void:
+	for layer in _layers:
+		var radius0 := float(layer["radius0"])
+		if String(layer["name"]) == "grass":
+			var reach := radius0 * grass
+			layer["radius"] = reach
+			if _blades != null:
+				_blades.set_shader_parameter("thin_start", reach * 0.2)
+				_blades.set_shader_parameter("thin_end", reach * 0.7)
+				_blades.set_shader_parameter("fade_start", reach * 0.72)
+				_blades.set_shader_parameter("fade_end", reach * 0.98)
+				_blades.set_shader_parameter("keep_share", grass_keep)
+		else:
+			var dists: Array = []
+			for d in layer["dists0"]:
+				dists.append(float(d) * lod)
+			# The last hand-over has to fall inside what is drawn at all.
+			var radius := radius0 * veg
+			if not dists.is_empty():
+				radius = maxf(radius, float(dists[-1]) * 1.15)
+			layer["dists"] = dists
+			layer["radius"] = radius
+			if layer.has("cross0"):
+				layer["cross_reach"] = maxf(float(layer["cross0"]) * impostor, radius * 1.3)
+		layer["shadow_lods"] = int(layer["shadow_lods0"]) if shadows else 0
+		var tiles: Dictionary = layer["tiles"]
+		for key in tiles:
+			var held: Dictionary = tiles[key]["lods"]
+			for level in held:
+				_close_level(held[level])
+			held.clear()
+		if layer.has("far"):
+			var mms: Dictionary = layer["far"]["mms"]
+			for slot in mms:
+				var mmi: MultiMeshInstance3D = mms[slot]
+				var cross_reach := float(layer["cross_reach"])
+				mmi.set_instance_shader_parameter(&"lod_in", cross_reach if slot.z % 2 == 1 else float(layer["radius"]))
+				mmi.set_instance_shader_parameter(&"lod_out", 0.0 if slot.z % 2 == 1 else cross_reach)
+		layer["cam_tile"] = Vector2i(1 << 30, 0)
 
 
 ## Two quads crossed at right angles, a metre tall and a metre wide, rooted at the
