@@ -286,6 +286,67 @@ func _process(_delta: float) -> bool:
 			_wait = _frames_for(240)
 		12:
 			_shot("12_seaweed")
+			# A tree to fell: the first one found in the islet's wood.
+			var flora2 := _scene.get_node_or_null("Flora")
+			var mid2: Vector3 = _scene.get_node("SwordStone/SwordInStone").global_position
+			var tree := {}
+			for i in 720:
+				var ang := TAU * float(i) / 90.0
+				var rr := 26.0 + 0.12 * float(i)
+				var p := Vector3(mid2.x + cos(ang) * rr, mid2.y + 3.0, mid2.z + sin(ang) * rr)
+				tree = flora2.tree_on(p, Vector3.ZERO, 0.0, 5.0)
+				if not tree.is_empty():
+					break
+			if tree.is_empty():
+				push_error("tour: no tree found to fell")
+				_fail = true
+			else:
+				var foot: Vector3 = tree["origin"]
+				var back := (mid2 - foot)
+				back.y = 0.0
+				back = back.normalized()
+				_explorer.flying = false
+				_explorer.global_position = foot + back * 2.6 + Vector3(0, 0.6, 0)
+				_look_at(foot + Vector3(0, 1.6, 0))
+				print("tour: a tree %.1f m tall, trunk %.2f m, at %s" % [tree["height"], tree["radius"], foot])
+			_wait = _frames_for(120)
+		13:
+			_shot("13_tree")
+			var wood := _scene.get_node_or_null("Woodcutting")
+			if wood == null or not bool(wood.strike(cam.global_position, -cam.global_basis.z, true)):
+				push_error("tour: the swing met no tree")
+				_fail = true
+			_wait = 70
+		14:
+			_shot("14_logs")
+			var wood2 := _scene.get_node_or_null("Woodcutting")
+			var bag := _scene.get_node_or_null("Inventory")
+			print("tour: %d logs lying, %d gathered" % [wood2._logs.size(), bag.count_of("log")])
+			if wood2._logs.size() + bag.count_of("log") < 2:
+				_fail = true
+			bag.add("log", 7)
+			bag.add("planks", 12)
+			bag.add("sticks", 8)
+			bag.set_open(true)
+			bag.slots[Inventory.BAG] = ["log", 3]
+			var made: Variant = bag.crafted()
+			if made == null or made[0] != "planks" or int(made[1]) != 4:
+				push_error("tour: a log in the grid did not make planks")
+				_fail = true
+			bag._take_result(true)
+			if bag.count_of("planks") != 24:
+				push_error("tour: crafting all gave %d planks, not 24" % bag.count_of("planks"))
+				_fail = true
+			bag.slots[Inventory.BAG] = ["log", 2]
+			bag.slots[Inventory.BAG + 1] = ["sticks", 2]
+			bag.slots[Inventory.BAG + 2] = ["log", 1]
+			bag.slots[Inventory.BAG + 3] = ["sticks", 1]
+			if bag.crafted() == null or bag.crafted()[0] != "campfire":
+				push_error("tour: logs and sticks did not make a campfire")
+				_fail = true
+			_wait = 6
+		15:
+			_shot("15_bag")
 			print("tour: %s" % ("FAILED" if _fail else "ok"))
 			quit(1 if _fail else 0)
 			return true

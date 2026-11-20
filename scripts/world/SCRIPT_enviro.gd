@@ -11,7 +11,7 @@ extends Node3D
 #   enviro.hour = 21.5                  # jump to a time
 #   enviro.set_weather("storm", 20.0)   # blend to a preset over 20 seconds
 #
-# Keys while playing: T / G time forward / back, 1-7 the weather presets.
+# Keys while playing: T / G time forward / back, F1-F7 the weather presets.
 
 signal weather_changed(name: String)
 
@@ -169,8 +169,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			hour = fposmod(hour + 0.5, 24.0)
 		elif k == KEY_G:
 			hour = fposmod(hour - 0.5, 24.0)
-		elif k >= KEY_1 and k <= KEY_7 and not event.echo:
-			set_weather(WEATHER_KEYS[k - KEY_1], 8.0)
+		elif k >= KEY_F1 and k <= KEY_F7 and not event.echo:
+			# The number keys are the hotbar's (SCRIPT_inventory.gd).
+			set_weather(WEATHER_KEYS[k - KEY_F1], 8.0)
 
 
 # ------------------------------------------------------------------ building

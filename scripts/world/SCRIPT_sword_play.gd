@@ -122,7 +122,7 @@ func _find_parts() -> bool:
 
 func _process(delta: float) -> void:
 	_fly_blasts(delta)
-	if not _find_parts():
+	if not _find_parts() or Inventory.menu_open:
 		return
 	if not held:
 		var near: bool = _explorer.global_position.distance_to(_stone.get_child(0).global_position) < reach
@@ -279,12 +279,20 @@ func _cut(charged: bool) -> void:
 	_swing.parallel().tween_property(_pivot, "position", HAND + Vector3(0.04, 0.05, 0.08), wind)
 	_swing.tween_property(_pivot, "rotation_degrees", to, fall).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	_swing.parallel().tween_property(_pivot, "position", reach_to, fall).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_swing.tween_callback(_bite)
 	if charged:
 		_swing.tween_callback(_throw)
 	# Carried a little past the end of the cut before it comes home.
 	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * _rng.randf_range(5.0, 11.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, 2.0), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_swing.parallel().tween_property(_pivot, "position", HAND, back).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## The cut lands: a tree in reach takes a bite (SCRIPT_woodcutting.gd).
+func _bite() -> void:
+	var wood := get_node_or_null(^"../Woodcutting")
+	if wood != null:
+		wood.call(&"strike", _cam.global_position, -_cam.global_basis.z)
 
 
 # ------------------------------------------------------------------ the crescent
@@ -370,6 +378,9 @@ func _fly_blasts(delta: float) -> void:
 func _burst(at: Vector3, solid: bool) -> void:
 	if not solid:
 		return
+	var wood := get_node_or_null(^"../Woodcutting")
+	if wood != null:
+		wood.call(&"blast", at)
 	var flash := OmniLight3D.new()
 	flash.light_color = blast_color
 	flash.light_energy = 14.0

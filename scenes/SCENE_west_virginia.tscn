@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_terrain_occluders.gd" id="occl"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_stone.gd" id="sword"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_play.gd" id="swordplay"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_woodcutting.gd" id="woodcutting"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_inventory.gd" id="inventory"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_fog_patches.gd" id="fogp"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_dressing.gd" id="cliffs"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cloud_sea.gd" id="cloudsea"]
@@ -60,6 +62,9 @@ script = ExtResource("bridge")
 [node name="SwordPlay" type="Node3D" parent="."]
 script = ExtResource("swordplay")
 
+[node name="Woodcutting" type="Node3D" parent="."]
+script = ExtResource("woodcutting")
+
 [node name="ForestMotes" type="Node3D" parent="."]
 script = ExtResource("motes")
 
@@ -94,6 +99,9 @@ layer = 50
 
 [node name="TouchControls" type="Control" parent="TouchLayer"]
 script = ExtResource("touch")
+
+[node name="Inventory" type="CanvasLayer" parent="."]
+script = ExtResource("inventory")
 
 [node name="LoadingCover" type="CanvasLayer" parent="."]
 script = ExtResource("cover")

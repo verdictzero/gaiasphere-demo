@@ -30,9 +30,20 @@ To run it from source, open the folder in Godot 4.7-dev5 and press play.
 | Run, fly fast | Shift | click the left stick |
 | Fly / walk | F | Y |
 | Flying speed | mouse wheel, or [ and ] | the shoulders |
+| Flashlight | L or V | d-pad up |
+| Take the sword, swing it | left mouse or E | right trigger or X |
+| Charge the sword (release to throw a crescent) | hold right mouse | hold left trigger |
+| Hotbar slot | 1 - 9 | |
+| Bag and crafting | Tab or I | Start |
 | Back to the start | R | Back |
 | Free the mouse | Esc (click to take it again) | |
 | Full screen | F11 | |
+
+Swing the sword at a tree and it takes a bite; a few bites (one charged
+crescent) and the tree bursts into logs. Walk up to the logs to gather them. In
+the bag, the two-by-two grid crafts: a log makes planks, planks make sticks or a
+workbench, logs and sticks a campfire. Left click moves a stack, right click
+splits it, shift-click on the result crafts all it can.
 
 Walk into the water and you wade, then swim; hold down to go under. Flying has
 no collision and its speed runs from a crawl to crossing the island in seconds.
@@ -50,7 +61,7 @@ One node owns the time of day, the sun and moon and the shadowed light they
 share, the atmosphere, raymarched volumetric clouds, fog, rain, lightning, god
 rays, wind and wetness, and publishes them as `enviro_*` shader globals that
 every other shader reads. It is held at golden hour in fog (`hour`, `advance`,
-`weather`). While playing: `T` / `G` move the time, `1`-`7` pick a weather
+`weather`). While playing: `T` / `G` move the time, `F1`-`F7` pick a weather
 (golden fog, clear, cloudy, overcast, foggy, rain, storm). `quality` (0-2)
 scales cloud steps, god-ray samples and shadow reach.
 

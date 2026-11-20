@@ -938,6 +938,84 @@ func _rebuild_colliders(layer: Dictionary, cam_tile: Vector2i) -> void:
 					body.add_child(cs)
 
 
+# ------------------------------------------------------------------ felling
+
+func _tree_layer() -> Dictionary:
+	for layer in _layers:
+		if String(layer["name"]) == "trees":
+			return layer
+	return {}
+
+
+## The first tree a reach of `reach` metres from `from` along `dir` meets, or {}.
+## Looked for among the placed trees themselves (the tiles round `from`), so it
+## does not depend on which trunks have colliders at the moment.
+func tree_on(from: Vector3, dir: Vector3, reach: float, slack := 0.35) -> Dictionary:
+	var layer := _tree_layer()
+	if layer.is_empty():
+		return {}
+	var tile := float(layer["tile"])
+	var cache: Dictionary = layer["cache"]
+	var kinds: Array = layer["kinds"]
+	var a := Vector2(from.x, from.z)
+	var d := Vector2(dir.x, dir.z)
+	d = d.normalized() if d.length() > 0.001 else Vector2.ZERO
+	var at_tile := Vector2i(int(floor(from.x / tile)), int(floor(from.z / tile)))
+	var best := {}
+	var best_t := 1e9
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var key := at_tile + Vector2i(dx, dz)
+			var bufs: Variant = cache.get(key)
+			if bufs == null:
+				continue
+			for k in kinds.size():
+				var buf: PackedFloat32Array = bufs[k]
+				for i in range(0, buf.size(), STRIDE):
+					var p := Vector2(buf[i + 3], buf[i + 11])
+					var t := clampf((p - a).dot(d), 0.0, reach)
+					var size := Vector3(buf[i + 1], buf[i + 5], buf[i + 9]).length()
+					var r := float((kinds[k]["shape"] as CylinderShape3D).radius) / 1.2 * size
+					if (a + d * t).distance_to(p) > r + slack or t >= best_t:
+						continue
+					var h := float((kinds[k]["lods"][0] as Mesh).get_aabb().size.y) * size
+					if from.y < buf[i + 7] - 1.0 or from.y > buf[i + 7] + h:
+						continue
+					best_t = t
+					best = {"key": key, "kind": k, "index": i, "radius": r, "height": h,
+						"origin": Vector3(buf[i + 3], buf[i + 7], buf[i + 11]),
+						"basis": Basis(Vector3(buf[i], buf[i + 4], buf[i + 8]), Vector3(buf[i + 1], buf[i + 5], buf[i + 9]),
+							Vector3(buf[i + 2], buf[i + 6], buf[i + 10])).orthonormalized()}
+	return best
+
+
+## Take a tree `tree_on` found out of the wood: its meshes, its impostors and its
+## collider all go, for as long as this run lasts.
+func fell(tree: Dictionary) -> void:
+	var layer := _tree_layer()
+	if layer.is_empty() or tree.is_empty():
+		return
+	var key: Vector2i = tree["key"]
+	var bufs: Variant = (layer["cache"] as Dictionary).get(key)
+	if bufs == null:
+		return
+	var buf: PackedFloat32Array = bufs[int(tree["kind"])]
+	var i := int(tree["index"])
+	if i + STRIDE > buf.size():
+		return
+	var cut := buf.slice(0, i)
+	cut.append_array(buf.slice(i + STRIDE))
+	bufs[int(tree["kind"])] = cut
+	var tiles: Dictionary = layer["tiles"]
+	if tiles.has(key):
+		var held: Dictionary = tiles[key]["lods"]
+		for lod in held:
+			_close_level(held[lod])
+		held.clear()
+		tiles[key]["bufs"] = bufs
+	layer["cam_tile"] = Vector2i(1 << 30, 0)        # colliders and impostors again
+
+
 ## Half the hand-over band, as a share of the distance: SHADERINC_lod_fade's LOD_BAND.
 const LOD_BAND := 0.12
 
