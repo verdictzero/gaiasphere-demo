@@ -16,7 +16,10 @@ config/version="11"
 run/main_scene="res://scenes/SCENE_gaiasphere_demo.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 boot_splash/bg_color=Color(0, 0, 0, 1)
-boot_splash/show_image=false
+boot_splash/show_image=true
+boot_splash/image="res://branding/splash.png"
+boot_splash/stretch_mode=1
+boot_splash/minimum_display_time=1200
 config/icon="res://branding/icon.png"
 ; The worker pool's size, measured on the first launch and read from the second
 ; (scripts/SCRIPT_thread_tier.gd). A missing file is ignored.
