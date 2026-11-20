@@ -18,6 +18,8 @@ const BAG := 36          # the hotbar's nine and twenty-seven more
 
 const ITEMS := {
 	"log": {"name": "Fir Log", "icon": "res://assets/ui/item_log.png"},
+	"axe": {"name": "Axe", "icon": "res://assets/ui/item_axe.png"},
+	"sword": {"name": "Sword", "icon": "res://assets/ui/item_sword.png"},
 }
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.9)

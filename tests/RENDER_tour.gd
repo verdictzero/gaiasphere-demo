@@ -315,7 +315,7 @@ func _process(_delta: float) -> bool:
 			if wood == null or not bool(wood.strike(cam.global_position, -cam.global_basis.z, true)):
 				push_error("tour: the swing met no tree")
 				_fail = true
-			_wait = 70
+			_wait = 520          # the fall takes a few seconds
 		14:
 			_shot("14_logs")
 			var wood2 := _scene.get_node_or_null("Woodcutting")

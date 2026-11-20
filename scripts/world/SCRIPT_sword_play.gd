@@ -1,7 +1,12 @@
 class_name SwordPlay
 extends Node3D
 
-# TAKING THE SWORD, SWINGING IT, AND WHAT IT THROWS.
+# WHAT IS IN THE HAND: THE AXE, THE SWORD, AND WHAT THE SWORD THROWS.
+#
+# The player starts with an axe. It and the sword are items in the hotbar, and
+# whichever of them the selected slot holds is the one in the hand; any other
+# slot and the hand is empty. Both swing the same way and both cut trees
+# (SCRIPT_woodcutting.gd); only the sword charges.
 #
 #   near the stone:  attack (left mouse / E / right trigger / the touch button) draws it
 #   holding it:      left mouse swings, a different cut each time
@@ -32,6 +37,9 @@ const HAND := Vector3(0.36, -0.42, -0.62)
 const REST := Vector3(-24.0, 0.0, -14.0)
 const DRAWN := Vector3(38.0, 0.0, -34.0)
 const CUT := Vector3(-118.0, 0.0, 38.0)
+# The axe model: metres per unit, and where on it (its own units) the hand closes.
+const AXE_SCALE := 0.054
+const AXE_GRIP := Vector3(0.29, 0.0, 10.6)
 # THE CUTS: where the blade starts, where it ends, and how the crescent it throws
 # is canted (degrees about the look). One is picked each swing, never the one
 # before, and every angle is nudged, so no two swings are the same.
@@ -60,6 +68,10 @@ var _last_cut := -1
 var _cant := -62.0
 var _rng := RandomNumberGenerator.new()
 var _swing: Tween
+var _axe: Node3D
+var _bag: Inventory
+## What is in the hand now: "axe", "sword" or "".
+var tool := ""
 var _blasts: Array = []        # [node, velocity, seconds left]
 
 
@@ -124,19 +136,43 @@ func _process(delta: float) -> void:
 	_fly_blasts(delta)
 	if not _find_parts() or Inventory.menu_open or GraphicsMenu.menu_open:
 		return
+	_ensure_hand()
 	if not held:
 		var near: bool = _explorer.global_position.distance_to(_stone.get_child(0).global_position) < reach
 		_prompt.visible = near
 		if near and Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
 			_take()
+			return
+	# The hand follows the hotbar.
+	var now := ""
+	if _bag != null and _bag.slots[_bag.selected] != null:
+		now = String(_bag.slots[_bag.selected][0])
+	if now != "axe" and not (now == "sword" and held):
+		now = ""
+	if now != tool:
+		tool = now
+		_charging = false
+		_charge = 0.0
+		if _swing != null:
+			_swing.kill()
+		_pivot.rotation_degrees = REST
+		# The new one comes up into the hand from below.
+		_pivot.position = HAND + Vector3(0, -0.5, 0.15)
+		create_tween().tween_property(_pivot, "position", HAND, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_axe.visible = tool == "axe"
+	if held:
+		_sword.visible = tool == "sword"
+	if tool == "":
+		_light.light_energy = 0.0
+		_motes.emitting = false
 		return
-	var hold := Input.is_action_pressed(&"wv_charge")
+	var hold := Input.is_action_pressed(&"wv_charge") and tool == "sword"
 	if not _swinging() and not _charging:
-		if Input.is_action_just_pressed(&"wv_charge"):
+		if hold and Input.is_action_just_pressed(&"wv_charge"):
 			_charging = true
 			_charge = 0.0
 		elif Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
-			if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not DisplayServer.is_touchscreen_available():
+			if tool == "axe" or (Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not DisplayServer.is_touchscreen_available()):
 				_cut(false)          # the mouse has a button of its own for charging
 			else:
 				_charging = true
@@ -171,25 +207,22 @@ func _swinging() -> bool:
 	return _swing != null and _swing.is_running()
 
 
-func _take() -> void:
-	held = true
-	_prompt.visible = false
+## The hand itself, the axe in it, and the axe in the bag: made once, as soon
+## as there is a camera to hang them on.
+func _ensure_hand() -> void:
+	if _pivot != null:
+		return
+	_bag = get_node_or_null(^"../Inventory") as Inventory
 	_pivot = Node3D.new()
-	_pivot.name = "SwordHand"
+	_pivot.name = "Hand"
 	_pivot.position = HAND
 	_pivot.rotation_degrees = REST
 	_cam.add_child(_pivot)
-	_sword.get_parent().remove_child(_sword)
-	_pivot.add_child(_sword)
-	# Turned over so the blade stands up out of the hand, the grip at the pivot.
-	_sword.transform = Transform3D(Basis(Vector3.RIGHT, PI), Vector3(GRIP.x, GRIP.y, GRIP.z))
-	_sword.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_glow = StandardMaterial3D.new()
 	_glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	_glow.albedo_color = Color(blast_color.r, blast_color.g, blast_color.b, 0.0)
-	_sword.material_overlay = _glow
 	_light = OmniLight3D.new()
 	_light.light_color = blast_color
 	_light.light_energy = 0.0
@@ -199,10 +232,41 @@ func _take() -> void:
 	_motes = _gather_motes()
 	_motes.position = Vector3(0, 0.75, 0)
 	_pivot.add_child(_motes)
-	# Lifted out: it comes up into the hand from below.
-	_pivot.position = HAND + Vector3(0, -0.6, 0.2)
-	var draw := create_tween()
-	draw.tween_property(_pivot, "position", HAND, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# THE AXE. The model lies along its handle (the head at one end, the blade
+	# out to one side) and is fifteen units long: stood up on its grip, the blade
+	# turned to face away from the player, and brought down to 85 cm.
+	_axe = Node3D.new()
+	_axe.name = "Axe"
+	var model: Node3D = (load("res://assets/axe/axe.glb") as PackedScene).instantiate()
+	var stand := Basis(Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, -1, 0)).scaled(Vector3.ONE * AXE_SCALE)
+	model.transform = Transform3D(stand, -(stand * AXE_GRIP))
+	_axe.add_child(model)
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(mi as MeshInstance3D).layers = 1 << (WorldReflection.MIRROR_LAYER - 1)      # the steel mirrors the world too
+	_axe.visible = false
+	_pivot.add_child(_axe)
+	if _bag != null and _bag.count_of("axe") == 0:
+		_bag.add("axe", 1)
+
+
+func _take() -> void:
+	held = true
+	_prompt.visible = false
+	_ensure_hand()
+	_sword.get_parent().remove_child(_sword)
+	_pivot.add_child(_sword)
+	# Turned over so the blade stands up out of the hand, the grip at the pivot.
+	_sword.transform = Transform3D(Basis(Vector3.RIGHT, PI), Vector3(GRIP.x, GRIP.y, GRIP.z))
+	_sword.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_sword.material_overlay = _glow
+	# Into the bag, and into the hand: its slot becomes the one selected.
+	if _bag != null:
+		if _bag.count_of("sword") == 0:
+			_bag.add("sword", 1)
+		for i in Inventory.HOTBAR:
+			if _bag.slots[i] != null and _bag.slots[i][0] == "sword":
+				_bag.selected = i
 
 
 ## Sparks born on a shell round the blade and pulled into it, shrinking as they
@@ -365,7 +429,7 @@ func _fly_blasts(delta: float) -> void:
 		var hit := space.intersect_ray(q) if space != null else {}
 		b[2] = float(b[2]) - delta
 		if not hit.is_empty() or float(b[2]) <= 0.0:
-			_burst(hit.get("position", to), not hit.is_empty())
+			_burst(hit.get("position", to), not hit.is_empty(), (b[1] as Vector3).normalized())
 			node.queue_free()
 			_blasts.remove_at(i)
 			continue
@@ -375,12 +439,12 @@ func _fly_blasts(delta: float) -> void:
 		(node.material_override as StandardMaterial3D).albedo_color.a = clampf(float(b[2]) / 0.5, 0.0, 1.0)
 
 
-func _burst(at: Vector3, solid: bool) -> void:
+func _burst(at: Vector3, solid: bool, heading := Vector3.ZERO) -> void:
 	if not solid:
 		return
 	var wood := get_node_or_null(^"../Woodcutting")
 	if wood != null:
-		wood.call(&"blast", at)
+		wood.call(&"blast", at, heading)
 	var flash := OmniLight3D.new()
 	flash.light_color = blast_color
 	flash.light_energy = 14.0

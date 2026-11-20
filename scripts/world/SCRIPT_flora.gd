@@ -1039,11 +1039,18 @@ func tree_on(from: Vector3, dir: Vector3, reach: float, slack := 0.35) -> Dictio
 					if from.y < buf[i + 7] - 1.0 or from.y > buf[i + 7] + h:
 						continue
 					best_t = t
-					best = {"key": key, "kind": k, "index": i, "radius": r, "height": h,
+					best = {"key": key, "kind": k, "index": i, "radius": r, "height": h, "size": size,
 						"origin": Vector3(buf[i + 3], buf[i + 7], buf[i + 11]),
 						"basis": Basis(Vector3(buf[i], buf[i + 4], buf[i + 8]), Vector3(buf[i + 1], buf[i + 5], buf[i + 9]),
 							Vector3(buf[i + 2], buf[i + 6], buf[i + 10])).orthonormalized()}
 	return best
+
+
+## The full mesh of a kind of tree (`tree_on`'s "kind"), for a tree that has
+## left the instance buffers and is drawn on its own while it falls.
+func tree_mesh(kind: int) -> Mesh:
+	var layer := _tree_layer()
+	return null if layer.is_empty() else (layer["kinds"][kind]["lods"][0] as Mesh)
 
 
 ## Take a tree `tree_on` found out of the wood: its meshes, its impostors and its

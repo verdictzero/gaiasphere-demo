@@ -1,7 +1,7 @@
 extends SceneTree
 
-# HOW LONG A FELLING TAKES: loads the island, fells a run of trees one a frame,
-# and prints the main-thread cost of each (the call itself, not the frame).
+# HOW LONG A FELLING TAKES: loads the island, sends a run of trees over one a
+# frame, and prints the main-thread cost of each (the call itself, not the frame).
 #
 #   godot --headless --path . --script res://tests/CHECK_felling.gd
 
@@ -33,7 +33,7 @@ func _process(_dt: float) -> bool:
 		quit(0 if not _costs.is_empty() else 1)
 		return true
 	var t := Time.get_ticks_usec()
-	wood._fell(tree)
+	wood._topple(tree, Vector3(1, 0, 0))
 	var ms := (Time.get_ticks_usec() - t) / 1000.0
 	if _costs.is_empty():
 		_first = ms
