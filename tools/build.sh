@@ -3,9 +3,9 @@
 # into the binary), zipped under build/.
 #
 #   tools/build.sh            windows and linux
-#   tools/build.sh windows    build/WestVirginia_windows.zip
-#   tools/build.sh linux      build/WestVirginia_linux.zip
-#   tools/build.sh android    build/WestVirginia_android.apk (arm64, debug-signed)
+#   tools/build.sh windows    build/GaiaSphereDemo_windows.zip
+#   tools/build.sh linux      build/GaiaSphereDemo_linux.zip
+#   tools/build.sh android    build/GaiaSphereDemo_android.apk (arm64, debug-signed)
 #   tools/build.sh all        all three
 #
 # Android also needs the Android SDK (ANDROID_HOME, with build-tools and a
@@ -30,9 +30,9 @@ build() {
 	"$GODOT" --headless --path . --export-release "$preset" "build/$dir/$file"
 	[ -s "build/$dir/$file" ] || { echo "no build/$dir/$file: the export failed" >&2; exit 1; }
 	cp README.md "build/$dir/README.txt"
-	rm -f "build/WestVirginia_$dir.zip"
-	( cd "build/$dir" && zip -q -9 "../WestVirginia_$dir.zip" ./* )
-	echo "build/WestVirginia_$dir.zip  $(du -h "build/WestVirginia_$dir.zip" | cut -f1)"
+	rm -f "build/GaiaSphereDemo_$dir.zip"
+	( cd "build/$dir" && zip -q -9 "../GaiaSphereDemo_$dir.zip" ./* )
+	echo "build/GaiaSphereDemo_$dir.zip  $(du -h "build/GaiaSphereDemo_$dir.zip" | cut -f1)"
 }
 
 # The import has to exist before an export can read it.
@@ -67,22 +67,22 @@ open(path, "w").write(s)
 PY
 	[ -f "$TEMPLATES/android_debug.apk" ] || python3 tools/fetch_export_template.py android_debug.apk android_release.apk
 	mkdir -p build/android
-	"$GODOT" --headless --path . --export-debug "Android" build/android/WestVirginia.apk
-	[ -s build/android/WestVirginia.apk ] || { echo "no build/android/WestVirginia.apk: the export failed" >&2; exit 1; }
-	cp build/android/WestVirginia.apk build/WestVirginia_android.apk
-	echo "build/WestVirginia_android.apk  $(du -h build/WestVirginia_android.apk | cut -f1)"
+	"$GODOT" --headless --path . --export-debug "Android" build/android/GaiaSphereDemo.apk
+	[ -s build/android/GaiaSphereDemo.apk ] || { echo "no build/android/GaiaSphereDemo.apk: the export failed" >&2; exit 1; }
+	cp build/android/GaiaSphereDemo.apk build/GaiaSphereDemo_android.apk
+	echo "build/GaiaSphereDemo_android.apk  $(du -h build/GaiaSphereDemo_android.apk | cut -f1)"
 }
 
 case "$WHAT" in
-	windows) build "Windows" windows WestVirginia.exe windows_release_x86_64.exe ;;
-	linux)   build "Linux" linux WestVirginia.x86_64 linux_release.x86_64 ;;
+	windows) build "Windows" windows GaiaSphereDemo.exe windows_release_x86_64.exe ;;
+	linux)   build "Linux" linux GaiaSphereDemo.x86_64 linux_release.x86_64 ;;
 	both)
-		build "Windows" windows WestVirginia.exe windows_release_x86_64.exe
-		build "Linux" linux WestVirginia.x86_64 linux_release.x86_64 ;;
+		build "Windows" windows GaiaSphereDemo.exe windows_release_x86_64.exe
+		build "Linux" linux GaiaSphereDemo.x86_64 linux_release.x86_64 ;;
 	android) android ;;
 	all)
-		build "Windows" windows WestVirginia.exe windows_release_x86_64.exe
-		build "Linux" linux WestVirginia.x86_64 linux_release.x86_64
+		build "Windows" windows GaiaSphereDemo.exe windows_release_x86_64.exe
+		build "Linux" linux GaiaSphereDemo.x86_64 linux_release.x86_64
 		android ;;
 	*) echo "usage: $0 [windows|linux|both|android|all]" >&2; exit 2 ;;
 esac

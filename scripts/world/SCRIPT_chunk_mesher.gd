@@ -757,7 +757,7 @@ static func _ruin_at_point(ruin: IslandField.RuinSite, ruins: Array, x: float,
 #
 # Only emitted where both ends of a boundary edge are land. Where the coastline
 # crosses a boundary the contour, not the skirt, is responsible — which is why
-# `SCRIPT_island_world.gd` pins every chunk holding coastline to one shared LOD.
+# `SCRIPT_gaiasphere.gd` pins every chunk holding coastline to one shared LOD.
 static func _build_skirt(field: IslandField, n: int, r: int, g: int,
 		gx: PackedFloat64Array, gz: PackedFloat64Array, gmask: PackedFloat32Array,
 		gheight: PackedFloat32Array, gcolor: PackedColorArray, guv: PackedVector2Array,

@@ -27,7 +27,7 @@ extends Node3D
 @export var deck_size := 12000.0
 ## How far the sea climbs the island's wall, metres above `sea_altitude`.
 @export var rise := 16.0
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 
 var _prox_thread: Thread
 
@@ -123,7 +123,7 @@ func _process(_dt: float) -> void:
 
 
 # Rendered world rebased: fold the shift into the logical offset so the noise field
-# stays put, matching `island_world.apply_origin_shift`. The quad itself is re-
+# stays put, matching `gaiasphere.apply_origin_shift`. The quad itself is re-
 # centred on the camera every frame, so it needs no explicit move here.
 func apply_origin_shift(shift: Vector3) -> void:
 	_offset -= shift

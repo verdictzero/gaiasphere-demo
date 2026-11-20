@@ -13,7 +13,7 @@ extends CharacterBody3D
 # wheel scales from a crawl to crossing the island in seconds. F again and it
 # drops back onto its feet from wherever it is.
 #
-# The streaming terrain (`IslandWorld`), the vegetation scatters and the
+# The streaming terrain (`GaiaSphere`), the vegetation scatters and the
 # underwater view all read the viewport's active camera, which is this node's,
 # so nothing has to be told where the player is.
 #

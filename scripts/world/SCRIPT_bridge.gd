@@ -6,7 +6,7 @@ extends Node3D
 # shader where it runs so it can cobble it, and tells the water where the middle
 # of the mere is, so its waves can run outward from the islet.
 
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 @export var water_path: NodePath = ^"../RiverWater"
 ## Half the width of the cobbled strip, metres. The bank it runs on is wider.
 @export var cobble_half_width := 1.25

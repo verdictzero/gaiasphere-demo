@@ -44,7 +44,7 @@ func _initialize() -> void:
 		elif a.begins_with("--weather="):
 			_weather = a.substr(10)
 	DirAccess.make_dir_recursive_absolute(_out)
-	_scene = (load("res://scenes/SCENE_west_virginia.tscn") as PackedScene).instantiate()
+	_scene = (load("res://scenes/SCENE_gaiasphere_demo.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
 	_explorer = _scene.get_node("Explorer")
 	var enviro := _scene.get_node_or_null("Enviro")
@@ -72,7 +72,7 @@ func _process(_delta: float) -> bool:
 		return false
 	var cam := root.get_camera_3d()
 	var water := _scene.get_node("RiverWater")
-	var world := _scene.get_node("IslandWorld")
+	var world := _scene.get_node("GaiaSphere")
 	match _step:
 		0:
 			var on_floor := _explorer.is_on_floor()

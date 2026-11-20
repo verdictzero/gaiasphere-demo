@@ -12,7 +12,7 @@ extends RefCounted
 # the machine has. It does not say whether more threads make the game's work go
 # faster. That work is GDScript, and on some machines it stops scaling well before
 # the cores run out: a dual-socket Xeon peaked at three or four builds
-# (`island_world._pregen_begin`). So, the first time the game starts on a machine:
+# (`gaiasphere._pregen_begin`). So, the first time the game starts on a machine:
 #   1. it runs a GDScript workload shaped like the mesher's (float sums, array
 #      writes, dictionary reads) on 3 worker threads for `PROBE_MS`, and counts
 #      the work done. Tier 4 is the floor and is always taken;

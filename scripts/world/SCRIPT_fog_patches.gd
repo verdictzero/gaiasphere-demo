@@ -8,7 +8,7 @@ extends Node3D
 # sheets (SHADER_fog_patch); one MultiMesh holds every bank near the camera and is
 # re-laid when the camera crosses into another cell.
 
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 @export var enviro_path: NodePath = ^"../Enviro"
 ## Metres between places a bank might be.
 @export var cell := 70.0

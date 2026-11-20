@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/SCRIPT_explorer.gd" id="explorer"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_touch_controls.gd" id="touch"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_loading_cover.gd" id="cover"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_island_world.gd" id="world"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_gaiasphere.gd" id="world"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_enviro.gd" id="enviro"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_flora.gd" id="flora"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_forest_motes.gd" id="motes"]
@@ -26,12 +26,12 @@
 [ext_resource type="Material" path="res://materials/MAT_water.tres" id="water_mat"]
 [ext_resource type="Material" path="res://materials/MAT_underwater_003_r2.tres" id="uw_mat"]
 
-[node name="WestVirginia" type="Node3D"]
+[node name="GaiaSphereDemo" type="Node3D"]
 
 [node name="Enviro" type="Node3D" parent="."]
 script = ExtResource("enviro")
 
-[node name="IslandWorld" type="Node3D" parent="."]
+[node name="GaiaSphere" type="Node3D" parent="."]
 script = ExtResource("world")
 island_name = "West Virginia"
 field = ExtResource("field")
@@ -42,7 +42,7 @@ prewarm = true
 
 [node name="Flora" type="Node3D" parent="."]
 script = ExtResource("flora")
-world_path = NodePath("../IslandWorld")
+world_path = NodePath("../GaiaSphere")
 
 [node name="CliffDressing" type="Node3D" parent="."]
 script = ExtResource("cliffs")
@@ -70,7 +70,7 @@ script = ExtResource("motes")
 
 [node name="LandingSpot" type="Node3D" parent="."]
 script = ExtResource("landing")
-island_world_path = NodePath("../IslandWorld")
+island_world_path = NodePath("../GaiaSphere")
 bearing_deg = 200.0
 
 [node name="CloudSea" type="Node3D" parent="."]
@@ -79,7 +79,7 @@ cloud_material = ExtResource("cloud_mat")
 
 [node name="RiverWater" type="Node3D" parent="."]
 script = ExtResource("water")
-world_path = NodePath("../IslandWorld")
+world_path = NodePath("../GaiaSphere")
 material = ExtResource("water_mat")
 wakes = false
 
@@ -105,6 +105,6 @@ script = ExtResource("inventory")
 
 [node name="LoadingCover" type="CanvasLayer" parent="."]
 script = ExtResource("cover")
-world_path = NodePath("../IslandWorld")
+world_path = NodePath("../GaiaSphere")
 explorer_path = NodePath("../Explorer")
 scatter_paths = [NodePath("../Flora")]

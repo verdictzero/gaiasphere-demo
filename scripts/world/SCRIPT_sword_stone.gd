@@ -9,7 +9,7 @@ extends Node3D
 # was made: the altar stands 1.8 m, the pommel 2.3 m. SCRIPT_sword_play.gd lets
 # the player draw the sword out of it.
 
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 ## Radius of the meadow round the stone, metres: grass, no trees.
 const MEADOW := 21.0
 @export var beam_height := 85.0

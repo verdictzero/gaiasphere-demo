@@ -9,7 +9,7 @@ extends Node3D
 # the hill does not. Trees and fog are see-through and occlude nothing.
 # (`rendering/occlusion_culling/use_occlusion_culling` is on in project.godot.)
 
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 @export var grid := 32.0
 @export var sink := 1.5
 

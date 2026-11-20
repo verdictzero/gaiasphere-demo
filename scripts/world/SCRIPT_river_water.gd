@@ -130,7 +130,7 @@ const LAGOON_EDGE := 8.0
 func _ready() -> void:
 	_world = get_node_or_null(world_path)
 	if _world == null or not _world.has_method(&"get_field"):
-		push_warning("river_water: no IslandWorld (set world_path)")
+		push_warning("river_water: no GaiaSphere (set world_path)")
 		return
 	var field: IslandField = _world.call(&"get_field")
 	if field == null:

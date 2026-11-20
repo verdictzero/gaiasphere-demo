@@ -2,7 +2,7 @@ extends BakeStore
 
 # THE RESOURCE HALF OF THE CHUNK CACHE.
 #
-# `SCRIPT_island_world.gd` already caches chunks: `_islands[cell]["cache"]` maps
+# `SCRIPT_gaiasphere.gd` already caches chunks: `_islands[cell]["cache"]` maps
 # a (chunk, resolution) to the MeshInstance3D built for it, which is why an LOD
 # swap after a prewarm costs nothing. That cache is instance state and dies with
 # the node — the right lifetime for a world you enter once, and the wrong one for
@@ -169,7 +169,7 @@ static var _meshes_on_workers := -1
 ## shadow flags and the visibility cutoff are all applied per instance by
 ## `island_world._node_from_built`, so retuning any of them costs no geometry.
 ##
-## IT LIVES HERE, not on `SCRIPT_island_world.gd` where it was written, because it
+## IT LIVES HERE, not on `SCRIPT_gaiasphere.gd` where it was written, because it
 ## IS the shape of what is stored — the thing `BAKE_VERSION` versions and the
 ## thing a bake read back off disk has to be rebuilt through. The world calls it
 ## on the way in; `_decode_entry` calls it on the way up from a file.

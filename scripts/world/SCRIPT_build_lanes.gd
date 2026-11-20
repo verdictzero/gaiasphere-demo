@@ -3,7 +3,7 @@ extends RefCounted
 
 # LONG-RUNNING WORKER LANES, ON THREADS OF THEIR OWN.
 #
-# `SCRIPT_island_world.gd` and `SCRIPT_veg_scatter.gd` both build their world up
+# `SCRIPT_gaiasphere.gd` and `SCRIPT_veg_scatter.gd` both build their world up
 # front the same way: a handful of LANES, each looping on a shared cursor until
 # the work list is empty, so the lanes never idle and the frame rate stops being a
 # throttle. Both used to raise those lanes with `WorkerThreadPool.add_task(...,
@@ -37,7 +37,7 @@ extends RefCounted
 # frame 46,092 ms -> 403 ms — which is the proof it was contention for pool
 # threads and not the meshing itself. It is not the fix: twelve lanes on four
 # cores made the build slower (83 s against 62 s) for exactly the reason
-# `island_world._pregen_retune` climbs its ladder with a stopwatch.
+# `gaiasphere._pregen_retune` climbs its ladder with a stopwatch.
 #
 # SO THE LANES MOVE OUT. A `Thread` this file owns is scheduled by the OS against
 # every other thread in the process, so the pool keeps all three of its threads
@@ -48,7 +48,7 @@ extends RefCounted
 # unaffected by which scheduler runs them.
 #
 # WHAT STAYS IN THE POOL, and should: the per-chunk and per-tile tasks the
-# STREAMER dispatches while the player is playing (`island_world._queue_build`,
+# STREAMER dispatches while the player is playing (`gaiasphere._queue_build`,
 # `grass_scatter._rescan`). Those are short, bounded in flight, and deliberately
 # LOW priority — the pool's cap on low-priority work is a feature there, since a
 # tile that lands a frame later costs nothing and a stolen core costs a frame.
@@ -57,7 +57,7 @@ extends RefCounted
 # lane should stop. Both callers publish a width under their own mutex and let a
 # lane that finds itself surplus take itself out of the count and return — so
 # `join()` is one work item long rather than one build long, PROVIDED the caller
-# has told the lanes to retire first. See `island_world._exit_tree`.
+# has told the lanes to retire first. See `gaiasphere._exit_tree`.
 
 ## Lanes started and not yet joined. A `Thread` must be waited on before it is
 ## dropped, so this is also the list of what `join()` owes.

@@ -44,11 +44,11 @@ var _heading := Vector2.RIGHT
 func _ready() -> void:
 	var world := get_node_or_null(island_world_path)
 	if world == null or not world.has_method(&"get_field"):
-		push_warning("landing_spot: no IslandWorld (set island_world_path)")
+		push_warning("landing_spot: no GaiaSphere (set island_world_path)")
 		return
 	var field: IslandField = world.call(&"get_field")
 	if field == null:
-		push_warning("landing_spot: the IslandWorld carries no field")
+		push_warning("landing_spot: the GaiaSphere carries no field")
 		return
 	if not field._ready:
 		field.prepare()

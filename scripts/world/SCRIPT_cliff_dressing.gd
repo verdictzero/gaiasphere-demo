@@ -11,7 +11,7 @@ extends Node3D
 # Each chunk is four MeshInstance3Ds, one per level of detail, handed over by
 # distance with Godot's visibility ranges; nothing here runs after _ready.
 
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 ## Metres of coast per chunk, on average.
 ## Close enough that every rock overlaps its neighbours: no wall shows between them.
 @export var spacing := 11.0

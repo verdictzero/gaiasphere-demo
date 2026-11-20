@@ -1,7 +1,7 @@
 extends CanvasLayer
 
 # THE BLACK OVER THE FIRST HALF MINUTE. The island is generated when the program
-# starts, not shipped as meshes: `IslandWorld` builds every terrain chunk at every
+# starts, not shipped as meshes: `GaiaSphere` builds every terrain chunk at every
 # level of detail before the first frame anyone sees (`prewarm`), and the
 # vegetation scatters plant the ground round the start. This covers the screen
 # while they do, says how far along they are, puts the explorer down once there

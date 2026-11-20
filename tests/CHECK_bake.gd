@@ -17,15 +17,15 @@ func _initialize() -> void:
 	if OS.get_cmdline_user_args().has("--as-exported"):
 		BakeStore.read_as_exported(JSON.parse_string(FileAccess.get_file_as_string(BakeStore.DIGEST_TABLE)))
 	_t0 = Time.get_ticks_msec()
-	_scene = (load("res://scenes/SCENE_west_virginia.tscn") as PackedScene).instantiate()
+	_scene = (load("res://scenes/SCENE_gaiasphere_demo.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
-	_scene.get_node("IslandWorld").connect(&"pregen_finished", func() -> void: _done = true)
+	_scene.get_node("GaiaSphere").connect(&"pregen_finished", func() -> void: _done = true)
 
 
 func _process(_delta: float) -> bool:
 	if not _done:
 		return false
-	var world := _scene.get_node("IslandWorld")
+	var world := _scene.get_node("GaiaSphere")
 	print("check: island ready in %.1f s, bake source '%s', store %s" % [
 			(Time.get_ticks_msec() - _t0) / 1000.0, world.get("bake_source"), root.get_node("TerrainBake").stats()])
 	quit()

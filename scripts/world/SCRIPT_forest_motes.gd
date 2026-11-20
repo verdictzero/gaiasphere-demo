@@ -8,7 +8,7 @@ extends Node3D
 # in shade and at night. Hidden under water and high above the island.
 
 @export var enviro_path: NodePath = ^"../Enviro"
-@export var world_path: NodePath = ^"../IslandWorld"
+@export var world_path: NodePath = ^"../GaiaSphere"
 @export var pollen_count := 520
 @export var bug_count := 90
 

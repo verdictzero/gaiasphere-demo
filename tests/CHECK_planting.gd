@@ -11,9 +11,9 @@ var _world_done := -1
 
 
 func _initialize() -> void:
-	_scene = (load("res://scenes/SCENE_west_virginia.tscn") as PackedScene).instantiate()
+	_scene = (load("res://scenes/SCENE_gaiasphere_demo.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
-	_scene.get_node("IslandWorld").connect(&"pregen_finished", func() -> void: _world_done = Time.get_ticks_msec())
+	_scene.get_node("GaiaSphere").connect(&"pregen_finished", func() -> void: _world_done = Time.get_ticks_msec())
 
 
 func _process(_delta: float) -> bool:

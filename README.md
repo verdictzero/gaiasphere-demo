@@ -1,7 +1,9 @@
-# West Virginia
+# GaiaSphere Demo
 
-A procedural floating island with rivers, creeks, waterfalls and a dark mere:
-a standalone example of a terrain engine and a water engine, lifted out of a
+A procedural floating island with rivers, creeks, waterfalls and a dark mere,
+built by **GaiaSphere**, the terrain world system (the `GaiaSphere` node,
+`scripts/world/SCRIPT_gaiasphere.gd`, and the field, mesher and bake behind it).
+This demo is a standalone example of that terrain engine and a water engine, lifted out of a
 larger game with everything that was the game left behind. There is no title
 screen, no menu and no HUD. It starts, builds the island, and puts you on it.
 
@@ -10,8 +12,8 @@ Made with Godot 4.7-dev5, on the Mobile renderer.
 ## Running it
 
 Download the build for your machine from the repository's Releases page, unzip
-it and run the one file in it (`WestVirginia.exe` on Windows,
-`WestVirginia.x86_64` on Linux). Nothing is installed.
+it and run the one file in it (`GaiaSphereDemo.exe` on Windows,
+`GaiaSphereDemo.x86_64` on Linux). Nothing is installed.
 
 The first launch spends a while on a black screen that says `building the
 island`: the terrain is generated when the program starts, not shipped. It is
@@ -75,7 +77,7 @@ scales cloud steps, god-ray samples and shadow reach.
 **Terrain**
 
 - `scripts/world/SCRIPT_island_field.gd`, `SCRIPT_flow_terrain.gd`,
-  `SCRIPT_chunk_mesher.gd`, `SCRIPT_island_world.gd`: the height field, the
+  `SCRIPT_chunk_mesher.gd`, `SCRIPT_gaiasphere.gd`: the height field, the
   rivers and mere, the mesher, and the streamer that draws chunks at five
   levels of detail. Unchanged from the original project.
 - `shaders/SHADER_terrain.gdshader`, `materials/MAT_terrain.tres`: the lit

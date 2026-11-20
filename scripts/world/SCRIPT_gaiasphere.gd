@@ -1,5 +1,10 @@
+class_name GaiaSphere
 extends Node3D
 
+# GAIASPHERE: the terrain world system. This node is its front door; behind it
+# are the field that says what the land is (SCRIPT_island_field.gd), the mesher
+# (SCRIPT_chunk_mesher.gd), the flowing water's ground (SCRIPT_flow_terrain.gd),
+# the build lanes and the bake stores.
 # Streams the island field around the camera: decides what should exist, gets it
 # meshed on worker threads, and swaps the results in without hitching.
 #
@@ -69,7 +74,7 @@ const _COAST_PROBE := 9
 
 ## The first island's name: the hub, the one the game starts on.
 const FIRST_ISLAND := "Not Pennsylvania"
-## The group every IslandWorld joins, so a node anywhere in its scene can find it.
+## The group every GaiaSphere joins, so a node anywhere in its scene can find it.
 const GROUP := &"island_world"
 
 ## THE ISLAND'S NAME, as a player reads it — on the map's tab, on the map while it
@@ -1442,14 +1447,14 @@ func _pregen_build() -> void:
 	_pg_lanes.join()
 	_pg = _Pregen.DONE
 	if prewarm and not pregenerate:
-		print("[island_world] prewarmed %d chunk meshes across %d LOD levels in %d ms, "
+		print("[gaiasphere] prewarmed %d chunk meshes across %d LOD levels in %d ms, "
 				% [cached_chunk_count(), lod_distances.size() + 1,
 				Time.get_ticks_msec() - _pg_started_ms]
 				+ "%d lanes, %.0f MB of %.0f (%d spare levels left to the streamer)"
 				% [_pg_best_width, float(_pg_verts) * _BYTES_PER_VERT / 1.0e6,
 				prewarm_budget_mb, _pg_skipped])
 	else:
-		print("[island_world] pregenerated %d chunks at %d cells in %d ms, %d lanes" % [
+		print("[gaiasphere] pregenerated %d chunks at %d cells in %d ms, %d lanes" % [
 				_pg_installed, maxi(pregen_cells, 1),
 				Time.get_ticks_msec() - _pg_started_ms, _pg_best_width])
 	pregen_progress.emit("build", _pg_installed, _pg_jobs.size())
@@ -1820,7 +1825,7 @@ func get_field() -> IslandField:
 	return field
 
 
-## Logical = render + this. The tree scatter mirrors `island_world`'s own frame so
+## Logical = render + this. The tree scatter mirrors `gaiasphere`'s own frame so
 ## its trees stay pinned to the ground across a floating-origin rebase.
 func origin_offset() -> Vector3:
 	return _origin_offset

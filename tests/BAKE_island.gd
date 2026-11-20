@@ -22,9 +22,9 @@ func _initialize() -> void:
 	bake.record_arrays = true
 	# Built afresh, never read back: a bake read from disk holds no arrays to write.
 	bake.refuse_disk = true
-	_scene = (load("res://scenes/SCENE_west_virginia.tscn") as PackedScene).instantiate()
+	_scene = (load("res://scenes/SCENE_gaiasphere_demo.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
-	_scene.get_node("IslandWorld").connect(&"pregen_finished", func() -> void: _done = true)
+	_scene.get_node("GaiaSphere").connect(&"pregen_finished", func() -> void: _done = true)
 
 
 func _process(_delta: float) -> bool:
@@ -36,7 +36,7 @@ func _process(_delta: float) -> bool:
 	if flora != null and not bool(flora.call(&"prefill_step")):
 		return false
 	var bake := root.get_node("TerrainBake")
-	var world := _scene.get_node("IslandWorld")
+	var world := _scene.get_node("GaiaSphere")
 	var sig := String(world.get("_bake_sig"))
 	if sig == "":
 		push_error("bake: the world has no bake signature")
