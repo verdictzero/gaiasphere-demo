@@ -28,6 +28,7 @@ const BUTTONS := [
 	[&"wv_light", "LIGHT", Vector2(-4.1, -2.7), true],
 	[&"wv_bag", "BAG", Vector2(-1.1, -4.4), false],
 	[&"wv_graphics", "GFX", Vector2(-2.6, -4.2), false],
+	[&"wv_environment", "ENV", Vector2(-4.1, -4.2), false],
 ]
 const MOVES := [&"wv_left", &"wv_right", &"wv_forward", &"wv_back"]
 
@@ -95,7 +96,7 @@ func _input(event: InputEvent) -> void:
 
 func _press(i: int, touch: int) -> void:
 	var action: StringName = BUTTONS[i][0]
-	if action == &"wv_bag" or action == &"wv_graphics":
+	if action == &"wv_bag" or action == &"wv_graphics" or action == &"wv_environment":
 		var open := InputEventAction.new()
 		open.action = action
 		open.pressed = true

@@ -134,7 +134,7 @@ func _find_parts() -> bool:
 
 func _process(delta: float) -> void:
 	_fly_blasts(delta)
-	if not _find_parts() or Inventory.menu_open or GraphicsMenu.menu_open:
+	if not _find_parts() or Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
 		return
 	_ensure_hand()
 	if not held:

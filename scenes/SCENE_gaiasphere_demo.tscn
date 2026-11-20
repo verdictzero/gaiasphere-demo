@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/SCRIPT_watermark.gd" id="watermark"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_world_reflection.gd" id="worldrefl"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_graphics_menu.gd" id="gfxmenu"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_environment_menu.gd" id="envmenu"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_fog_patches.gd" id="fogp"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cloud_sea.gd" id="cloudsea"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_landing_spot.gd" id="landing"]
@@ -110,6 +111,9 @@ script = ExtResource("watermark")
 
 [node name="GraphicsMenu" type="CanvasLayer" parent="."]
 script = ExtResource("gfxmenu")
+
+[node name="EnvironmentMenu" type="CanvasLayer" parent="."]
+script = ExtResource("envmenu")
 
 [node name="LoadingCover" type="CanvasLayer" parent="."]
 script = ExtResource("cover")

@@ -38,6 +38,7 @@ To run it from source, open the folder in Godot 4.7-dev5 and press play.
 | Hotbar slot | 1 - 9 | |
 | Bag | Tab or I | Start |
 | Graphics menu (draw distances, LOD, grass, shadows, effects) | O or F10 | |
+| Time and environment panel (hour, day length, moon, weather, fog, grade) | P or F9 | |
 | Back to the start | R | Back |
 | Free the mouse | Esc (click to take it again) | |
 | Full screen | F11 | |

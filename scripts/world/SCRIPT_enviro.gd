@@ -82,6 +82,8 @@ var _env: Environment
 var _sky_mat: ShaderMaterial
 var _light: DirectionalLight3D
 var _cam_attr: CameraAttributesPractical
+var _lens_mat: ShaderMaterial
+var _graded := -1.0
 var _flash_light: DirectionalLight3D
 var _rays: MeshInstance3D
 var _rays_mat: ShaderMaterial
@@ -176,6 +178,20 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # ------------------------------------------------------------------ the graphics menu
+
+## The environment panel has moved `spooky`, `cinematic_grade` or `letterbox`:
+## the ones that are set up once rather than read every frame. (The grade is a
+## lookup table worked out in script, so it is only rebuilt when it has moved.)
+func apply_look() -> void:
+	if _env == null:
+		return
+	_env.adjustment_saturation = lerpf(1.0, 0.94, spooky)
+	if absf(cinematic_grade - _graded) > 0.001:
+		_graded = cinematic_grade
+		_env.adjustment_color_correction = _grade_lut(cinematic_grade) if cinematic_grade > 0.0 else null
+	if _lens_mat != null:
+		_lens_mat.set_shader_parameter("letterbox_aspect", 2.39 if letterbox else 0.0)
+
 
 ## What the menu starts from: the state this machine was given at start-up.
 func graphics_now() -> Dictionary:
@@ -326,6 +342,7 @@ func _build_environment() -> void:
 		var lens := ShaderMaterial.new()
 		lens.shader = load("res://shaders/SHADER_lens.gdshader")
 		lens.set_shader_parameter("letterbox_aspect", 2.39 if letterbox else 0.0)
+		_lens_mat = lens
 		if quality == 0:
 			lens.set_shader_parameter("fringe", 0.0)
 		rect.material = lens

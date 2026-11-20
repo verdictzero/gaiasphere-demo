@@ -215,6 +215,9 @@ func set_open(open: bool) -> void:
 	menu_open = open
 	_view.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	if open:
+		var other := get_node_or_null(^"../EnvironmentMenu")
+		if other != null and EnvironmentMenu.menu_open:
+			other.call(&"set_open", false)
 		_was_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
