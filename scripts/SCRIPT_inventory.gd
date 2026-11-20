@@ -360,7 +360,7 @@ func _draw_view() -> void:
 	_view.draw_rect(Rect2(mid - Vector2(34.0, 5.0) * k, Vector2(48.0, 10.0) * k), ink)
 	_view.draw_colored_polygon(PackedVector2Array([mid + Vector2(14, -18) * k, mid + Vector2(40, 0) * k, mid + Vector2(14, 18) * k]), ink)
 	# What can be made, written out: this is the whole of the crafting so far.
-	var x := a.end.x + 44.0 * k
+	var x := a.end.x + 22.0 * k
 	var y := p.position.y + 44.0 * k
 	_view.draw_string(_font, Vector2(x, y), "RECIPES", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
 	for recipe in RECIPES:
@@ -369,7 +369,7 @@ func _draw_view() -> void:
 		for id in recipe["in"]:
 			parts.append("%d %s" % [int(recipe["in"][id]), ITEMS[id]["name"]])
 		_view.draw_string(_font, Vector2(x, y), "%s  >  %d %s" % [" + ".join(parts), int(recipe["out"][1]), ITEMS[recipe["out"][0]]["name"]],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, int(22.0 * k), ink)
+				HORIZONTAL_ALIGNMENT_LEFT, -1, int(20.0 * k), ink)
 	for i in RESULT + 1:
 		var r := _slot_rect(i)
 		_draw_slot(r, i)

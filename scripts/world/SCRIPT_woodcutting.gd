@@ -94,10 +94,10 @@ func _fell(tree: Dictionary) -> void:
 	var radius := float(tree["radius"])
 	# The trunk below the crown, sawn into lengths; the thin top is lost in the fall.
 	var trunk := height * 0.62
-	var count := clampi(int(round(trunk / 2.3)), 2, 9)
+	var count := clampi(int(round(trunk / 1.7)), 3, 10)
 	for i in count:
 		var f := float(i) / float(count)
-		var r := maxf(radius * (1.0 - 0.72 * f), 0.07)
+		var r := maxf(radius * 1.25 * (1.0 - 0.65 * f), 0.1)
 		var body := _log_body(r)
 		add_child(body)
 		body.global_transform = Transform3D(basis * Basis(Vector3.UP, _rng.randf() * TAU),
