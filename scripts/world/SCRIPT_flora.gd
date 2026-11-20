@@ -1063,14 +1063,29 @@ func fell(tree: Dictionary) -> void:
 	var cut := buf.slice(0, i)
 	cut.append_array(buf.slice(i + STRIDE))
 	bufs[int(tree["kind"])] = cut
+	# The tile's open levels take the shorter buffer as they stand: nothing is
+	# closed, rebuilt or reopened, so a felling costs one buffer upload a level.
 	var tiles: Dictionary = layer["tiles"]
 	if tiles.has(key):
+		tiles[key]["bufs"] = bufs
 		var held: Dictionary = tiles[key]["lods"]
 		for lod in held:
-			_close_level(held[lod])
-		held.clear()
-		tiles[key]["bufs"] = bufs
-	layer["cam_tile"] = Vector2i(1 << 30, 0)        # colliders and impostors again
+			var mmi: MultiMeshInstance3D = held[lod][int(tree["kind"])]
+			if mmi == null:
+				continue
+			mmi.multimesh.instance_count = cut.size() / STRIDE
+			if not cut.is_empty():
+				mmi.multimesh.buffer = cut
+	# Its trunk's collider goes now. The far impostors are not repacked for one
+	# tree (that walks every tile on the island): a tree near enough to fell is
+	# drawn as a mesh, and the impostors catch up at the next tile crossed.
+	var body: StaticBody3D = layer.get("body")
+	var origin: Vector3 = tree["origin"]
+	if body != null:
+		for c in body.get_children():
+			var at: Vector3 = (c as Node3D).position
+			if absf(at.x - origin.x) < 0.6 and absf(at.z - origin.z) < 0.6:
+				c.queue_free()
 
 
 ## Half the hand-over band, as a share of the distance: SHADERINC_lod_fade's LOD_BAND.
