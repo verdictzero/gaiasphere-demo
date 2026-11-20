@@ -36,7 +36,7 @@ func _process(_dt: float) -> bool:
 		if explorer.arrived and not _scene.has_node("LoadingCover"):
 			var enviro := _scene.get_node("Enviro")
 			enviro.advance = false
-			enviro.hour = 15.0
+			enviro.hour = 8.5
 			enviro.set_weather("clear", 0.0)
 			# The nearest tree of some size, and a place to stand at its foot.
 			var here: Vector3 = explorer.global_position
