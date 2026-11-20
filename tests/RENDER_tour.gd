@@ -241,11 +241,17 @@ func _process(_delta: float) -> bool:
 			var play2 := _scene.get_node_or_null("SwordPlay")
 			if play2 != null and play2.held:
 				play2.blast_speed = 1.5        # slow, so a still can catch it
-				play2._throw()
+				Input.action_press(&"wv_charge")
 			else:
 				_fail = true
-			_wait = 3
+			_wait = 45
 		11:
+			if Input.is_action_pressed(&"wv_charge"):
+				# Charged: the motes gathering into the blade. Then let it go.
+				_shot("10b_charging")
+				Input.action_release(&"wv_charge")
+				_wait = 16
+				return false
 			_shot("11_crescent")
 			# Under the mere: the weed and the rocks on its bed.
 			var flora := _scene.get_node_or_null("Flora")

@@ -4,9 +4,12 @@ extends Node3D
 # TAKING THE SWORD, SWINGING IT, AND WHAT IT THROWS.
 #
 #   near the stone:  attack (left mouse / E / right trigger / the touch button) draws it
-#   holding it:      tap attack to swing
-#                    hold attack to charge (the blade lights), release to swing and
-#                    throw a crescent of light along the cut
+#   holding it:      left mouse swings, a different cut each time
+#                    hold right mouse (left trigger) to charge: motes of light
+#                    gather into the blade; release to swing and throw a crescent
+#                    of light along the cut
+#                    with one button only (touch, E, pad X): tap to swing, hold
+#                    to charge
 #
 # The sword is the stone's own `sword` mesh, lifted out and hung on the explorer's
 # camera. The crescent flies straight, lights what it passes, and bursts on the
@@ -29,6 +32,17 @@ const HAND := Vector3(0.36, -0.42, -0.62)
 const REST := Vector3(-24.0, 0.0, -14.0)
 const DRAWN := Vector3(38.0, 0.0, -34.0)
 const CUT := Vector3(-118.0, 0.0, 38.0)
+# THE CUTS: where the blade starts, where it ends, and how the crescent it throws
+# is canted (degrees about the look). One is picked each swing, never the one
+# before, and every angle is nudged, so no two swings are the same.
+const CUTS := [
+	[Vector3(38.0, 0.0, -34.0), Vector3(-118.0, 0.0, 38.0), -62.0],     # down, right to left
+	[Vector3(42.0, 8.0, 44.0), Vector3(-112.0, -6.0, -52.0), 62.0],     # down, left to right
+	[Vector3(-74.0, -62.0, -18.0), Vector3(-80.0, 68.0, 14.0), -6.0],   # flat sweep to the left
+	[Vector3(-80.0, 64.0, 16.0), Vector3(-72.0, -66.0, -16.0), 8.0],    # flat sweep back
+	[Vector3(58.0, 0.0, -4.0), Vector3(-126.0, 0.0, 6.0), 90.0],        # overhead chop
+	[Vector3(-128.0, 10.0, 34.0), Vector3(34.0, -8.0, -28.0), -48.0],   # rising cut
+]
 
 var held := false
 var _stone: Node3D
@@ -41,6 +55,10 @@ var _light: OmniLight3D
 var _prompt: Label
 var _charge := 0.0
 var _charging := false
+var _motes: GPUParticles3D
+var _last_cut := -1
+var _cant := -62.0
+var _rng := RandomNumberGenerator.new()
 var _swing: Tween
 var _blasts: Array = []        # [node, velocity, seconds left]
 
@@ -63,6 +81,16 @@ func _ready() -> void:
 		var pad := InputEventJoypadButton.new()
 		pad.button_index = JOY_BUTTON_X
 		InputMap.action_add_event(&"wv_attack", pad)
+	if not InputMap.has_action(&"wv_charge"):
+		InputMap.add_action(&"wv_charge", 0.3)
+		var rmb := InputEventMouseButton.new()
+		rmb.button_index = MOUSE_BUTTON_RIGHT
+		InputMap.action_add_event(&"wv_charge", rmb)
+		var lt := InputEventJoypadMotion.new()
+		lt.axis = JOY_AXIS_TRIGGER_LEFT
+		lt.axis_value = 1.0
+		InputMap.action_add_event(&"wv_charge", lt)
+	_rng.randomize()
 	var layer := CanvasLayer.new()
 	layer.layer = 40
 	add_child(layer)
@@ -102,22 +130,35 @@ func _process(delta: float) -> void:
 		if near and Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
 			_take()
 		return
-	if Input.is_action_just_pressed(&"wv_attack") and _mouse_ready() and not _swinging():
-		_charging = true
-		_charge = 0.0
+	var hold := Input.is_action_pressed(&"wv_charge")
+	if not _swinging() and not _charging:
+		if Input.is_action_just_pressed(&"wv_charge"):
+			_charging = true
+			_charge = 0.0
+		elif Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
+			if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not DisplayServer.is_touchscreen_available():
+				_cut(false)          # the mouse has a button of its own for charging
+			else:
+				_charging = true
+				_charge = 0.0
 	if _charging:
+		hold = hold or Input.is_action_pressed(&"wv_attack")
 		_charge = minf(_charge + delta / charge_time, 1.0)
 		# Drawn back as it charges, with a tremble when it is full.
 		var pose := REST.lerp(DRAWN, smoothstep(0.0, 1.0, _charge))
 		if _charge >= 1.0:
 			pose += Vector3(sin(Time.get_ticks_msec() * 0.05), 0.0, cos(Time.get_ticks_msec() * 0.043)) * 1.2
 		_pivot.rotation_degrees = pose
-		if not Input.is_action_pressed(&"wv_attack"):
+		if not hold:
 			_charging = false
 			_cut(_charge >= 1.0)
 	var lit := _charge if _charging else move_toward(_glow.albedo_color.a, 0.0, delta * 3.0)
 	_glow.albedo_color = Color(blast_color.r, blast_color.g, blast_color.b, lit)
 	_light.light_energy = lit * 3.0
+	# Motes are drawn in from all round while it charges, thicker as it fills.
+	_motes.emitting = _charging
+	_motes.amount_ratio = clampf(0.25 + _charge * 0.75, 0.0, 1.0)
+	_motes.speed_scale = 0.8 + _charge * 0.9
 
 
 ## A click that is only capturing the mouse is not a swing.
@@ -155,18 +196,95 @@ func _take() -> void:
 	_light.omni_range = 7.0
 	_light.position = Vector3(0, 0.8, 0)
 	_pivot.add_child(_light)
+	_motes = _gather_motes()
+	_motes.position = Vector3(0, 0.75, 0)
+	_pivot.add_child(_motes)
 	# Lifted out: it comes up into the hand from below.
 	_pivot.position = HAND + Vector3(0, -0.6, 0.2)
 	var draw := create_tween()
 	draw.tween_property(_pivot, "position", HAND, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
+## Sparks born on a shell round the blade and pulled into it, shrinking as they
+## arrive. They live in the hand's space, so they stay with the sword.
+func _gather_motes() -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = 90
+	p.lifetime = 0.62
+	p.emitting = false
+	p.local_coords = true
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.visibility_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
+	var m := ParticleProcessMaterial.new()
+	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE_SURFACE
+	m.emission_sphere_radius = 1.15
+	m.gravity = Vector3.ZERO
+	m.radial_velocity_min = -1.95
+	m.radial_velocity_max = -1.55
+	m.orbit_velocity_min = -0.6
+	m.orbit_velocity_max = 0.6
+	m.scale_min = 0.5
+	m.scale_max = 1.3
+	var size := Curve.new()
+	size.add_point(Vector2(0.0, 0.0))
+	size.add_point(Vector2(0.18, 1.0))
+	size.add_point(Vector2(1.0, 0.15))
+	var size_tex := CurveTexture.new()
+	size_tex.curve = size
+	m.scale_curve = size_tex
+	p.process_material = m
+	var dot := GradientTexture2D.new()
+	dot.width = 32
+	dot.height = 32
+	dot.fill = GradientTexture2D.FILL_RADIAL
+	dot.fill_from = Vector2(0.5, 0.5)
+	dot.fill_to = Vector2(1.0, 0.5)
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	dot.gradient = g
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.albedo_texture = dot
+	mat.albedo_color = Color(blast_color.r * 1.6, blast_color.g * 1.6, blast_color.b * 1.6, 1.0)
+	mat.disable_fog = true
+	mat.no_depth_test = true
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.055, 0.055)
+	quad.material = mat
+	p.draw_pass_1 = quad
+	return p
+
+
 func _cut(charged: bool) -> void:
+	var pick := _rng.randi_range(0, CUTS.size() - 1)
+	if pick == _last_cut:
+		pick = (pick + 1 + _rng.randi_range(0, CUTS.size() - 2)) % CUTS.size()
+	_last_cut = pick
+	var nudge := func(v: Vector3, by: float) -> Vector3:
+		return v + Vector3(_rng.randf_range(-by, by), _rng.randf_range(-by, by), _rng.randf_range(-by, by))
+	var from: Vector3 = nudge.call(CUTS[pick][0], 7.0)
+	var to: Vector3 = nudge.call(CUTS[pick][1], 9.0)
+	_cant = float(CUTS[pick][2]) + _rng.randf_range(-9.0, 9.0)
+	var wind := _rng.randf_range(0.07, 0.11) if not charged else 0.06
+	var fall := _rng.randf_range(0.095, 0.14)
+	var back := _rng.randf_range(0.28, 0.42)
+	# The arm goes with the blade: reaching along the cut, then settling back.
+	var reach_to := HAND + Vector3(_rng.randf_range(-0.12, 0.06), _rng.randf_range(-0.06, 0.08), _rng.randf_range(-0.26, -0.12))
 	_swing = create_tween()
-	_swing.tween_property(_pivot, "rotation_degrees", CUT, 0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_swing.tween_property(_pivot, "rotation_degrees", from, wind).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_swing.parallel().tween_property(_pivot, "position", HAND + Vector3(0.04, 0.05, 0.08), wind)
+	_swing.tween_property(_pivot, "rotation_degrees", to, fall).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	_swing.parallel().tween_property(_pivot, "position", reach_to, fall).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	if charged:
 		_swing.tween_callback(_throw)
-	_swing.tween_property(_pivot, "rotation_degrees", REST, 0.32).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# Carried a little past the end of the cut before it comes home.
+	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * _rng.randf_range(5.0, 11.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, 2.0), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_swing.parallel().tween_property(_pivot, "position", HAND, back).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 # ------------------------------------------------------------------ the crescent
@@ -219,7 +337,7 @@ func _throw() -> void:
 	add_child(blast)
 	# Along the look, canted with the cut (down and across).
 	var forward := -_cam.global_basis.z
-	blast.global_basis = _cam.global_basis * Basis(Vector3.FORWARD, deg_to_rad(-62.0))
+	blast.global_basis = _cam.global_basis * Basis(Vector3.FORWARD, deg_to_rad(_cant))
 	blast.global_position = _cam.global_position + forward * 1.4 - _cam.global_basis.y * 0.15
 	_blasts.append([blast, forward * blast_speed, blast_life])
 

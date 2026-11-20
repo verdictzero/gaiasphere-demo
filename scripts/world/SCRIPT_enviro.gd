@@ -54,7 +54,7 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 ## The film grade (a 3D colour lookup table built in _grade_lut): 0 off, 1 full.
 @export_range(0.0, 1.0) var cinematic_grade := 0.85
 ## How bright the night's own light is, as a multiple of a dark, starlit night.
-@export_range(0.0, 10.0) var night_ambient := 14.0
+@export_range(0.0, 20.0) var night_ambient := 5.5
 @export var god_rays := true
 ## The camera: depth of field, the eye adjusting to light and dark, and the lens
 ## pass (grade, vignette, fringing, grain). Each can be turned off.
@@ -455,7 +455,7 @@ func _apply(dt: float) -> void:
 	var sun_energy := smoothstep(-0.03, 0.1, sun_dir.y) * lerpf(3.4, 2.0, smoothstep(0.1, 0.5, sun_dir.y))
 	var moon_tint := Color(0.55, 0.68, 1.0)
 	var moon_lit := 1.0 - absf(moon_phase - 0.5) * 2.0
-	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.7 + 0.8 * moon_lit)
+	var moon_energy := smoothstep(-0.02, 0.16, moon_dir.y) * (1.0 - day) * (0.4 + 0.55 * moon_lit)
 
 	# One shadowed light: whichever is stronger owns it, and it dips through zero
 	# at the hand-over so the shadows never jump.
