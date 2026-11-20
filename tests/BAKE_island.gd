@@ -20,6 +20,8 @@ var _done := false
 func _initialize() -> void:
 	var bake := root.get_node("TerrainBake")
 	bake.record_arrays = true
+	# Built afresh, never read back: a bake read from disk holds no arrays to write.
+	bake.refuse_disk = true
 	_scene = (load("res://scenes/SCENE_west_virginia.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
 	_scene.get_node("IslandWorld").connect(&"pregen_finished", func() -> void: _done = true)
