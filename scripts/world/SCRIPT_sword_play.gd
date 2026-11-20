@@ -69,6 +69,12 @@ var _cant := -62.0
 var _rng := RandomNumberGenerator.new()
 var _swing: Tween
 var _axe: Node3D
+var _bob: Node3D
+var _stride := 0.0           # where in the step the walk is, radians
+var _gait := 0.0             # 0 standing .. 1 at a run, eased
+var _lag := Vector2.ZERO     # how far the hand trails a turn of the head
+var _drop := 0.0             # the hand left behind by a jump or a fall
+var _look_was := Basis()
 var _bag: Inventory
 ## What is in the hand now: "axe", "sword" or "".
 var tool := ""
@@ -134,9 +140,12 @@ func _find_parts() -> bool:
 
 func _process(delta: float) -> void:
 	_fly_blasts(delta)
-	if not _find_parts() or Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
+	if not _find_parts():
 		return
 	_ensure_hand()
+	_sway(delta)
+	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
+		return
 	if not held:
 		var near: bool = _explorer.global_position.distance_to(_stone.get_child(0).global_position) < reach
 		_prompt.visible = near
@@ -197,6 +206,41 @@ func _process(delta: float) -> void:
 	_motes.speed_scale = 0.8 + _charge * 0.9
 
 
+## WHAT IS HELD MOVES WITH WHOEVER HOLDS IT. Walking rocks it side to side and
+## dips it twice a stride; turning the head leaves it a little behind; a jump or
+## a drop leaves it behind too; and standing still it rises and falls with a
+## breath. All of it small: felt more than seen.
+func _sway(delta: float) -> void:
+	var body := _explorer as CharacterBody3D
+	var flat := Vector2.ZERO
+	var rising := 0.0
+	var afoot := false
+	if body != null:
+		flat = Vector2(body.velocity.x, body.velocity.z)
+		rising = body.velocity.y
+		afoot = body.is_on_floor() and not bool(body.get("flying"))
+	var pace := flat.length()
+	_gait = lerpf(_gait, clampf(pace / 6.0, 0.0, 1.0) if afoot else 0.0, 1.0 - exp(-delta * 8.0))
+	_stride = fposmod(_stride + delta * (5.5 + pace * 0.9) * (1.0 if afoot else 0.0), TAU)
+	# How far the view has turned since the last frame, in the camera's own frame.
+	var turn := _look_was.inverse() * _cam.global_basis
+	_look_was = _cam.global_basis
+	var yaw := atan2(turn.z.x, turn.z.z)
+	var pitch := -asin(clampf(turn.z.y, -1.0, 1.0))
+	_lag = (_lag + Vector2(yaw, pitch) * 0.9).limit_length(0.12)
+	_lag = _lag.lerp(Vector2.ZERO, 1.0 - exp(-delta * 9.0))
+	_drop = lerpf(_drop, clampf(-rising * 0.006, -0.05, 0.05) if not afoot else 0.0, 1.0 - exp(-delta * 7.0))
+	var breath := sin(Time.get_ticks_msec() * 0.0016)
+	_bob.position = Vector3(
+			sin(_stride) * 0.014 * _gait + _lag.x * 0.22,
+			-absf(cos(_stride)) * 0.02 * _gait + breath * 0.0035 + _drop + _lag.y * 0.2,
+			_gait * 0.012)
+	_bob.rotation = Vector3(
+			-_lag.y * 0.7 + cos(_stride * 2.0) * 0.012 * _gait,
+			-_lag.x * 0.8,
+			sin(_stride) * 0.03 * _gait + _lag.x * 0.5)
+
+
 ## A click that is only capturing the mouse is not a swing.
 func _mouse_ready() -> bool:
 	return DisplayServer.is_touchscreen_available() or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
@@ -217,7 +261,13 @@ func _ensure_hand() -> void:
 	_pivot.name = "Hand"
 	_pivot.position = HAND
 	_pivot.rotation_degrees = REST
-	_cam.add_child(_pivot)
+	# The hand hangs from a node of its own that carries the sway of walking, so
+	# the swings (which move the hand itself) and the bob never fight over it.
+	_bob = Node3D.new()
+	_bob.name = "HandBob"
+	_cam.add_child(_bob)
+	_bob.add_child(_pivot)
+	_look_was = _cam.global_basis
 	_glow = StandardMaterial3D.new()
 	_glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -246,7 +296,9 @@ func _ensure_hand() -> void:
 		(mi as MeshInstance3D).layers = 1 << (WorldReflection.MIRROR_LAYER - 1)      # the steel mirrors the world too
 	_axe.visible = false
 	# Turned in the hand so the flat of the head shows, not its edge.
-	_axe.rotation_degrees = Vector3(0.0, -62.0, 0.0)
+	# and brought in towards the eye, where an arm would carry it.
+	_axe.rotation_degrees = Vector3(0.0, 118.0, 0.0)
+	_axe.position = Vector3(-0.05, 0.02, 0.2)
 	_pivot.add_child(_axe)
 	if _bag != null and _bag.count_of("axe") == 0:
 		_bag.add("axe", 1)

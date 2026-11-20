@@ -31,8 +31,8 @@ const WEATHERS := {
 const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "rain", "storm"]
 
 ## Hour of the day, 0-24.
-@export_range(0.0, 24.0) var hour := 17.3
-## Whether time passes on its own. Off: the island is held at golden hour.
+@export_range(0.0, 24.0) var hour := 8.5
+## Whether time passes on its own. Off: the island is held at the hour above.
 @export var advance := true
 ## Real minutes for one full day.
 @export var day_minutes := 36.0
@@ -44,7 +44,7 @@ const WEATHER_KEYS := ["golden_fog", "clear", "cloudy", "overcast", "foggy", "ra
 @export var latitude := 38.0
 ## Where the moon is in its month: 0 new, 0.5 full.
 @export_range(0.0, 1.0) var moon_phase := 0.42
-@export var weather := "golden_fog"
+@export var weather := "clear"
 ## 0 low, 1 medium, 2 high: cloud march steps, god-ray samples, shadow reach.
 @export_range(0, 2) var quality := 1
 ## Cold, slightly drained colour: the look of the place. 0 turns the grade off.
