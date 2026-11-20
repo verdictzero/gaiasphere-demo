@@ -211,7 +211,7 @@ func apply_graphics(g: Dictionary) -> void:
 		var q := clampi(int(round(float(g.get("clouds", 1.0)))), 0, 2)
 		_sky_mat.set_shader_parameter("cloud_steps", [32, 80, 112][q])
 		_sky_mat.set_shader_parameter("cloud_light_steps", [3, 5, 6][q])
-	get_viewport().scaling_3d_scale = clampf(float(g.get("render_scale", 1.0)), 0.25, 1.0)
+	get_viewport().scaling_3d_scale = clampf(float(g.get("render_scale", 1.0)), 0.25, 1.5)
 
 
 # ------------------------------------------------------------------ building

@@ -11,21 +11,32 @@ extends CanvasLayer
 const FILE := "user://graphics.cfg"
 
 # key, label, kind ("slide" | "step" | "tick"), low, high, step, how it is shown
+const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3840, 2160)]
+const CAPS := [30, 60, 90, 120, 0]
+## Rows per column: the display and the camera on the left, the world on the right.
+const PER_COLUMN := 12
 const ROWS := [
+	["window_mode", "Window", "step", 0.0, 2.0, 1.0, "WINDOWED,BORDERLESS,FULLSCREEN"],
+	["resolution", "Viewport resolution", "step", 0.0, 4.0, 1.0, "1280 x 720,1600 x 900,1920 x 1080,2560 x 1440,3840 x 2160"],
+	["render_scale", "Rendering resolution", "slide", 0.25, 1.5, 0.05, "%"],
+	["msaa", "Anti-aliasing (MSAA)", "step", 0.0, 2.0, 1.0, "OFF,2X,4X"],
+	["fxaa", "Anti-aliasing (FXAA)", "tick"],
+	["vsync", "V-sync", "tick"],
+	["fps_cap", "Frame rate limit", "step", 0.0, 4.0, 1.0, "30,60,90,120,UNLIMITED"],
+	["fov", "Field of view", "slide", 50.0, 110.0, 1.0, "deg"],
+	["dof", "Depth of field", "tick"],
+	["bloom", "Bloom", "tick"],
+	["god_rays", "God rays", "tick"],
+	["fps", "Show frame rate", "tick"],
 	["veg_distance", "Vegetation draw distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["lod_distance", "Vegetation LOD distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["impostor_distance", "Tree impostor distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["grass_distance", "Grass distance", "slide", 0.4, 2.0, 0.05, "x"],
 	["grass_density", "Grass density", "slide", 0.2, 1.0, 0.05, "%"],
+	["veg_shadows", "Vegetation shadows", "tick"],
 	["terrain_detail", "Terrain detail distance", "slide", 0.5, 1.5, 0.05, "x"],
 	["shadow_distance", "Shadow distance", "slide", 40.0, 400.0, 10.0, "m"],
-	["render_scale", "Render resolution", "slide", 0.4, 1.0, 0.05, "%"],
 	["clouds", "Cloud quality", "step", 0.0, 2.0, 1.0, "LOW,MEDIUM,HIGH"],
-	["veg_shadows", "Vegetation shadows", "tick"],
-	["dof", "Depth of field", "tick"],
-	["bloom", "Bloom", "tick"],
-	["god_rays", "God rays", "tick"],
-	["fps", "Show frame rate", "tick"],
 ]
 # What each preset does to the multipliers and ticks (the rest are left alone).
 const PRESETS := {
@@ -80,9 +91,26 @@ func _ready() -> void:
 		_terrain_lods = (_world.get("lod_distances") as PackedFloat32Array).duplicate()
 	_defaults = {"veg_distance": 1.0, "lod_distance": 1.0, "impostor_distance": 1.0, "grass_distance": 1.0,
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 220.0, "render_scale": 1.0,
-		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false}
+		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false,
+		"window_mode": 0.0, "resolution": 2.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
 	if _enviro != null:
 		_defaults.merge(_enviro.call(&"graphics_now"), true)
+	# The display and the camera, as this machine started.
+	var win := get_window()
+	_defaults["window_mode"] = 2.0 if win.mode == Window.MODE_FULLSCREEN or win.mode == Window.MODE_EXCLUSIVE_FULLSCREEN \
+			else (1.0 if win.borderless else 0.0)
+	var nearest := 0
+	for i in SIZES.size():
+		if absi(SIZES[i].y - win.size.y) < absi(SIZES[nearest].y - win.size.y):
+			nearest = i
+	_defaults["resolution"] = float(nearest)
+	_defaults["msaa"] = float(clampi(int(get_viewport().msaa_3d), 0, 2))
+	_defaults["fxaa"] = get_viewport().screen_space_aa == Viewport.SCREEN_SPACE_AA_FXAA
+	_defaults["vsync"] = DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
+	_defaults["fps_cap"] = float(maxi(CAPS.find(Engine.max_fps), 0)) if Engine.max_fps > 0 else 4.0
+	var cam := get_viewport().get_camera_3d()
+	if cam != null:
+		_defaults["fov"] = cam.fov
 	values = _defaults.duplicate()
 	var cfg := ConfigFile.new()
 	if cfg.load(FILE) == OK:
@@ -128,11 +156,50 @@ func apply() -> void:
 				float(values["grass_distance"]), float(values["grass_density"]), bool(values["veg_shadows"]))
 	if _enviro != null:
 		_enviro.call(&"apply_graphics", values)
+	_apply_display()
 	if _world != null and not _terrain_lods.is_empty():
 		var scaled := PackedFloat32Array()
 		for d in _terrain_lods:
 			scaled.append(d * float(values["terrain_detail"]))
 		_world.set("lod_distances", scaled)
+
+
+## The window, the viewport and the camera. A phone has one window the size of
+## its screen, so there only what is drawn inside it is touched.
+var _window_was: Array[int] = [-1, -1]
+
+
+func _apply_display() -> void:
+	var vp := get_viewport()
+	vp.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][clampi(int(round(float(values["msaa"]))), 0, 2)]
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if bool(values["fxaa"]) else Viewport.SCREEN_SPACE_AA_DISABLED
+	Engine.max_fps = CAPS[clampi(int(round(float(values["fps_cap"]))), 0, CAPS.size() - 1)]
+	var cam := vp.get_camera_3d()
+	if cam != null:
+		cam.fov = clampf(float(values["fov"]), 30.0, 120.0)
+	if OS.has_feature("mobile") or DisplayServer.get_name() == "headless":
+		return
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if bool(values["vsync"]) else DisplayServer.VSYNC_DISABLED)
+	# Only when one of them has moved: resizing the window on every slider tick
+	# would fight the player's own dragging of it.
+	var mode := clampi(int(round(float(values["window_mode"]))), 0, 2)
+	var size_i := clampi(int(round(float(values["resolution"]))), 0, SIZES.size() - 1)
+	if _window_was == [mode, size_i]:
+		return
+	var first: bool = _window_was[0] < 0
+	_window_was = [mode, size_i]
+	if first and values["window_mode"] == _defaults["window_mode"] and values["resolution"] == _defaults["resolution"]:
+		return            # as the window already is: leave it exactly so
+	var win := get_window()
+	if mode == 2:
+		win.mode = Window.MODE_FULLSCREEN
+		return
+	win.mode = Window.MODE_WINDOWED
+	win.borderless = mode == 1
+	var screen := DisplayServer.screen_get_usable_rect(win.current_screen)
+	var want := Vector2i(mini(SIZES[size_i].x, screen.size.x), mini(SIZES[size_i].y, screen.size.y))
+	win.size = want
+	win.position = screen.position + (screen.size - want) / 2
 
 
 func _save() -> void:
@@ -175,14 +242,16 @@ func _k() -> float:
 
 func _panel_rect() -> Rect2:
 	var k := _k()
-	var size := Vector2(820.0, 196.0 + 50.0 * float(ROWS.size())) * k
+	var size := Vector2(1560.0, 196.0 + 50.0 * float(PER_COLUMN)) * k
 	return Rect2((_view.size - size) * 0.5, size)
 
 
 func _row_rect(i: int) -> Rect2:
 	var k := _k()
 	var p := _panel_rect()
-	return Rect2(p.position + Vector2(34.0, 150.0 + 50.0 * float(i)) * k, Vector2(p.size.x - 68.0 * k, 50.0 * k))
+	var w := (p.size.x - 68.0 * k - 48.0 * k) * 0.5
+	return Rect2(p.position + Vector2(34.0 * k + (w + 48.0 * k) * float(i / PER_COLUMN), (150.0 + 50.0 * float(i % PER_COLUMN)) * k),
+			Vector2(w, 50.0 * k))
 
 
 ## Where a row's slider runs, or its tick box sits.
@@ -191,7 +260,7 @@ func _control_rect(i: int) -> Rect2:
 	var r := _row_rect(i)
 	if ROWS[i][2] == "tick":
 		return Rect2(Vector2(r.end.x - 122.0 * k, r.position.y + 10.0 * k), Vector2(56.0, 30.0) * k)
-	return Rect2(Vector2(r.position.x + 330.0 * k, r.position.y + 10.0 * k), Vector2(300.0, 30.0) * k)
+	return Rect2(Vector2(r.position.x + 290.0 * k, r.position.y + 10.0 * k), Vector2(260.0, 30.0) * k)
 
 
 func _button_rect(i: int) -> Rect2:
@@ -281,7 +350,10 @@ func _shown(row: Array) -> String:
 			return "%d%%" % int(round(v * 100.0))
 		"m":
 			return "%d m" % int(round(v))
-	return String(row[6]).split(",")[clampi(int(round(v)), 0, 2)]
+		"deg":
+			return "%d deg" % int(round(v))
+	var names := String(row[6]).split(",")
+	return names[clampi(int(round(v)), 0, names.size() - 1)]
 
 
 func _draw_view() -> void:
@@ -301,7 +373,7 @@ func _draw_view() -> void:
 	for i in ROWS.size():
 		var row: Array = ROWS[i]
 		var r := _row_rect(i)
-		if i > 0:
+		if i % PER_COLUMN > 0:
 			_view.draw_rect(Rect2(r.position, Vector2(r.size.x, maxf(1.0, k))), Color(1, 1, 1, 0.06))
 		_label(r.position + Vector2(0.0, 33.0 * k), row[1], 21.0, Color(INK.r, INK.g, INK.b, 0.88))
 		var c := _control_rect(i)
