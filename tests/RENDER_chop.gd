@@ -73,30 +73,41 @@ func _process(_dt: float) -> bool:
 				push_error("chop: the hand holds '%s', not the axe" % play.tool)
 				_failed = true
 			_shot("0_axe_in_hand")
-			for i in 2:
+			# One bite short of what it takes.
+			var tree := flora.tree_on(cam.global_position, -cam.global_basis.z, wood.reach)
+			var bites := Woodcutting.bites_for(float(tree.get("radius", 0.3)))
+			for i in bites - 1:
 				if not wood.strike(cam.global_position, -cam.global_basis.z):
 					push_error("chop: the swing met no tree")
 					_failed = true
-			_wait = 20
+			_wait = 12
 		1:
 			_shot("1_notch")
-			for i in 8:
-				if wood._falls.is_empty():
-					wood.strike(cam.global_position, -cam.global_basis.z)
+			wood.strike(cam.global_position, -cam.global_basis.z)
 			if wood._falls.is_empty():
 				push_error("chop: the tree did not go over")
 				_failed = true
-			_fell_at = Time.get_ticks_msec()
-			_wait = 2
+			# The fall is stepped by hand from here: this renderer draws a frame or two
+			# a second, and at that pace the tree would be down between two stills.
+			wood.set_process(false)
+			var seconds := 0.0
+			while not wood._falls.is_empty() and float(wood._falls[0]["angle"]) < 0.75:
+				wood._fall_step(0.02)
+				seconds += 0.02
+			print("chop: 0.75 rad over after %.1f s" % seconds)
+			_wait = 4
 		2:
-			# Part way down.
-			if not wood._falls.is_empty() and float(wood._falls[0]["angle"]) < 0.7:
-				return false
 			_shot("2_falling")
+			var seconds2 := 0.0
+			while not wood._falls.is_empty():
+				wood._fall_step(0.02)
+				seconds2 += 0.02
+			print("chop: on the ground %.1f s later" % seconds2)
+			wood.set_process(true)
 		3:
 			if not wood._falls.is_empty():
 				return false
-			print("chop: down in %.1f s, %d logs" % [(Time.get_ticks_msec() - _fell_at) / 1000.0, wood._logs.size()])
+			print("chop: %d logs" % wood._logs.size())
 			if wood._logs.size() < 3:
 				_failed = true
 			_wait = 40
