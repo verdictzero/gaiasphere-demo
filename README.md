@@ -82,9 +82,11 @@ scales cloud steps, god-ray samples and shadow reach.
   levels of detail. Unchanged from the original project.
 - `shaders/SHADER_terrain.gdshader`, `materials/MAT_terrain.tres`: the lit
   ground, blended from Poly Haven scans (`textures/polyhaven/`, CC0).
-- `scripts/world/SCRIPT_cliff_dressing.gd`: rock masses (`assets/cliff`) set
-  into the island's edge. `shaders/SHADER_boulder.gdshader` and
-  `SHADERINC_top_moss.gdshaderinc` are the rock and its moss.
+- `scripts/world/SCRIPT_cliff_dressing.gd`: rock masses (`assets/cliff`) that
+  can be set into the island's edge. Not in the scene at present: add a
+  `CliffDressing` node with this script to bring them back.
+  `shaders/SHADER_boulder.gdshader` and `SHADERINC_top_moss.gdshaderinc` are
+  the boulders' rock and its moss.
 
 **Everything that grows** (`scripts/world/SCRIPT_flora.gd`)
 
