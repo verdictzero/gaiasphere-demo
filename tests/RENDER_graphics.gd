@@ -54,7 +54,11 @@ func _process(_dt: float) -> bool:
 			menu.apply()
 			menu.set_open(true)
 			# A drag on the first slider, as a mouse would make it.
-			menu._slide(0, menu._control_rect(0).end.x)
+			var row := 0
+			for i in GraphicsMenu.ROWS.size():
+				if GraphicsMenu.ROWS[i][0] == "veg_distance":
+					row = i
+			menu._slide(row, menu._control_rect(row).end.x)
 			print("graphics: vegetation distance now ", menu.values["veg_distance"])
 			_wait = 20
 		3:
