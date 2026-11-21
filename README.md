@@ -51,6 +51,9 @@ and so does an empty stomach; fed, it mends. At nothing (or under the cloud sea)
 you are put back at the start with what you were carrying. Select the berries in the hotbar and
 click to eat one.
 
+A plank hut stands a few steps from where you start. Face its door and press
+the use button (left mouse, E, the big touch button) to open or shut it.
+
 Hit a berry bush (the ones hung with red) and it is stripped bare in a cloud of
 leaves, and its berries go in the bag. The bag
 holds what you gather: left click moves a stack, right click splits it. There
