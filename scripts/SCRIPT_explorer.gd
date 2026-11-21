@@ -45,6 +45,9 @@ extends CharacterBody3D
 
 ## True while flying.
 var flying := false
+## Whether there is the breath to run, and whether it is being done this frame.
+var run_allowed := true
+var running := false
 ## False until the loading cover puts the body down (`arrive`).
 var arrived := false
 
@@ -187,6 +190,10 @@ func _physics_process(delta: float) -> void:
 	var move := Input.get_vector(&"wv_left", &"wv_right", &"wv_forward", &"wv_back")
 	var rise := Input.get_axis(&"wv_down", &"wv_up")
 	var fast := Input.is_action_pressed(&"wv_run")
+	# On foot, running is the body's to allow (SCRIPT_vitals.gd): not out of breath.
+	running = fast and run_allowed and not flying and move.length() > 0.2
+	if not flying:
+		fast = fast and run_allowed
 	if flying:
 		_fly(move, rise, fast, delta)
 	else:

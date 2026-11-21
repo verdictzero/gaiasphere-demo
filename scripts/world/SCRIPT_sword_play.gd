@@ -69,6 +69,8 @@ var _cant := -62.0
 var _rng := RandomNumberGenerator.new()
 var _swing: Tween
 var _axe: Node3D
+var _berries: MeshInstance3D
+var _munch := 0.0
 var _bob: Node3D
 var _stride := 0.0           # where in the step the walk is, radians
 var _gait := 0.0             # 0 standing .. 1 at a run, eased
@@ -156,7 +158,7 @@ func _process(delta: float) -> void:
 	var now := ""
 	if _bag != null and _bag.slots[_bag.selected] != null:
 		now = String(_bag.slots[_bag.selected][0])
-	if now != "axe" and not (now == "sword" and held):
+	if now != "axe" and now != "berry" and not (now == "sword" and held):
 		now = ""
 	if now != tool:
 		tool = now
@@ -169,8 +171,25 @@ func _process(delta: float) -> void:
 		_pivot.position = HAND + Vector3(0, -0.5, 0.15)
 		create_tween().tween_property(_pivot, "position", HAND, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_axe.visible = tool == "axe"
+	_berries.visible = tool == "berry"
 	if held:
 		_sword.visible = tool == "sword"
+	if tool == "berry":
+		# Berries in the hand are for eating: one to a click.
+		_light.light_energy = 0.0
+		_motes.emitting = false
+		_munch = maxf(_munch - delta, 0.0)
+		var asked := Input.is_action_just_pressed(&"wv_attack") or Input.is_action_just_pressed(&"wv_charge")
+		if asked and _munch <= 0.0 and _mouse_ready() and _bag.take_selected():
+			_munch = 0.38
+			var vitals := get_node_or_null(^"../Vitals")
+			if vitals != null:
+				vitals.call(&"eat", float(vitals.get("berry_food")))
+			# Up to the mouth and back.
+			var bite := create_tween()
+			bite.tween_property(_pivot, "position", HAND + Vector3(-0.2, 0.2, 0.3), 0.14).set_trans(Tween.TRANS_SINE)
+			bite.tween_property(_pivot, "position", HAND, 0.22).set_trans(Tween.TRANS_SINE)
+		return
 	if tool == "":
 		_light.light_energy = 0.0
 		_motes.emitting = false
@@ -303,6 +322,26 @@ func _ensure_hand() -> void:
 	_pivot.add_child(_axe)
 	if _bag != null and _bag.count_of("axe") == 0:
 		_bag.add("axe", 1)
+	# Berries, held up in the fingers when their slot is the one selected.
+	_berries = MeshInstance3D.new()
+	_berries.name = "Berries"
+	var card := QuadMesh.new()
+	card.size = Vector2(0.2, 0.2)
+	var berry_mat := StandardMaterial3D.new()
+	berry_mat.albedo_texture = load("res://assets/berry_bush/berry_cluster.png")
+	berry_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	berry_mat.alpha_scissor_threshold = 0.45
+	berry_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	berry_mat.roughness = 0.4
+	berry_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	card.material = berry_mat
+	_berries.mesh = card
+	_berries.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# (The hand leans back at rest: the card is stood up square to the eye again.)
+	_berries.position = Vector3(-0.12, 0.18, 0.1)
+	_berries.rotation_degrees = -REST
+	_berries.visible = false
+	_pivot.add_child(_berries)
 
 
 func _take() -> void:
@@ -379,6 +418,10 @@ func _gather_motes() -> GPUParticles3D:
 
 
 func _cut(charged: bool) -> void:
+	# A swing is an effort (SCRIPT_vitals.gd), and a charged one a greater.
+	var vitals := get_node_or_null(^"../Vitals")
+	if vitals != null:
+		vitals.call(&"spend", float(vitals.get("swing_cost")) * (3.0 if charged else 1.0))
 	var pick := _rng.randi_range(0, CUTS.size() - 1)
 	if pick == _last_cut:
 		pick = (pick + 1 + _rng.randi_range(0, CUTS.size() - 2)) % CUTS.size()

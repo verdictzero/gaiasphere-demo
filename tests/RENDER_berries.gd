@@ -9,6 +9,7 @@ var _out := "user://"
 var _step := -1
 var _wait := 0
 var _bush: Node3D
+var _had := 0
 
 
 func _initialize() -> void:
@@ -90,7 +91,26 @@ func _process(_dt: float) -> bool:
 			_wait = 6
 		3:
 			root.get_texture().get_image().save_png(_out.path_join("berry_3_growing.png"))
-			quit(0)
+			# Hungry and winded, the berries in the hand, and one eaten.
+			var vitals: Vitals = _scene.get_node("Vitals")
+			vitals.hunger = 30.0
+			vitals.stamina = 20.0
+			for i in Inventory.HOTBAR:
+				if bag.slots[i] != null and bag.slots[i][0] == "berry":
+					bag.selected = i
+			_had = bag.count_of("berry")
+			_wait = 8
+		4:
+			root.get_texture().get_image().save_png(_out.path_join("berry_4_hungry.png"))
+			Input.action_press(&"wv_attack")
+			_wait = 3
+		5:
+			Input.action_release(&"wv_attack")
+			var vitals2: Vitals = _scene.get_node("Vitals")
+			var ate := _had - bag.count_of("berry") == 1 and vitals2.hunger > 40.0
+			print("berries: %d left after eating, food %.0f; %s" % [bag.count_of("berry"), vitals2.hunger, "ok" if ate else "FAILED"])
+			root.get_texture().get_image().save_png(_out.path_join("berry_5_eaten.png"))
+			quit(0 if ate else 1)
 			return true
 	_step += 1
 	return false

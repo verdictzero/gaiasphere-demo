@@ -105,6 +105,19 @@ func add(id: String, count: int) -> int:
 	return count
 
 
+## One off the stack in the hotbar slot in hand. True if there was one to take.
+func take_selected() -> bool:
+	var stack: Variant = slots[selected]
+	if stack == null:
+		return false
+	stack[1] = int(stack[1]) - 1
+	if int(stack[1]) <= 0:
+		slots[selected] = null
+	if _view != null:
+		_view.queue_redraw()
+	return true
+
+
 func count_of(id: String) -> int:
 	var n := 0
 	for i in BAG:
