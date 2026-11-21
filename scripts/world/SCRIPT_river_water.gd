@@ -83,6 +83,12 @@ extends Node3D
 @export var hill_speed := 5.0
 ## The metres of river the grade is read over, and the steepness smoothed over.
 @export var grade_window := 24.0
+## The metres of hill the water takes to get up to its speed, and the metres of
+## flat below it carries that speed on over.
+@export var run_up := 9.0
+@export var run_out := 22.0
+## The metres over which a river slows into still water (a pool, the mere).
+@export var meet := 18.0
 
 ## Across a river, its rows' vertices, in shares of its half-width (before
 ## `under_bank`).
@@ -364,8 +370,35 @@ func build_mesh(field: IslandField, hub: IslandField.Island, flows: FlowTerrain)
 			var fade := 1.0 if r.lake else smoothstep(0.0, source_fade, r.s[i])
 			rows.append([p, tan, r.width[i], level, r.s[i], ease, fade, -1.0, 0.0, 0.0, 1.0])
 		var steep := hill_steepness(r.s, levels)
+		# WATER HAS WEIGHT. It does not take the speed of the slope under it at once:
+		# it gathers way over `run_up` metres of a hill and carries it `run_out`
+		# metres on into the flat below, so a rapid begins part way down its drop and
+		# ends in a tongue of fast water past its foot. From here on `steep` is that:
+		# how fast the water is going, 0 at a flat reach's pace to 1 flat out.
+		var way := 0.0
+		for i in range(n):
+			if i > 0:
+				var ds := r.s[i] - r.s[i - 1]
+				way += (steep[i] - way) * (1.0 - exp(-ds / (run_up if steep[i] > way else run_out)))
+			else:
+				way = steep[0]
+			steep[i] = way
+		# WHERE A RIVER MEETS STILL WATER it slows into it: a pool at its toe, the
+		# mere at its mouth, the lake it rises from. Its ripples hand over to the
+		# still water's across `meet` metres instead of stopping at a line.
+		var into_still := r.toe
+		if flows.has_lagoon() and not into_still:
+			var shores := flows.lagoon_shores(0.0)
+			into_still = r.points[n - 1].distance_to(flows.lagoon_center()) < shores.y * 1.1
 		var tau := 0.0
 		for i in range(n):
+			var run := 1.0
+			if into_still:
+				run *= smoothstep(0.0, meet, r.length - r.s[i])
+			if r.lake:
+				run *= smoothstep(0.0, meet, r.s[i])
+			steep[i] *= run
+			rows[i].append(run)
 			var pace := 1.0 / (1.0 + (hill_speed - 1.0) * steep[i])
 			if i > 0:
 				tau += (r.s[i] - r.s[i - 1]) * 0.5 * (pace + float(rows[i - 1][10]))
@@ -495,7 +528,8 @@ func _sweep(st: Dictionary, rows: Array, moving: bool, flows: FlowTerrain,
 			st["v"].append(Vector3(q.x, row[3], q.y))
 			st["uv"].append(Vector2(row[4], d))
 			var at := absf(d) / w if cap < 0.0 else Vector2(cap * w, d).length() / w
-			st["uv2"].append(Vector2(at, 1.0 if moving else float(row[8])))
+			var run: float = row[11] if row.size() > 11 else 1.0
+			st["uv2"].append(Vector2(at, run if moving else float(row[8])))
 			st["flow"].append_array(PackedFloat32Array([row[9], row[10], row[8], 0.0]))
 			var depth := flows.water_depth(minf(at, 1.0), moving) * float(row[5]) if at < 1.0 else 0.0
 			st["col"].append(Color(clampf(depth / 4.0, 0.0, 1.0),

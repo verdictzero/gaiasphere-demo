@@ -24,7 +24,8 @@
 //   UV2      x: 0 mid-stream to 1 at the bank;  y: how much the water is running
 //   COLOR    g fades the water out where a river leaves the island, b at its spring
 //   TANGENT  downstream
-//   CUSTOM0  x flow time, z steepness
+//   CUSTOM0  y the share of a flat reach's pace this water covers a metre in
+//            (1 over how many times faster it runs), z how fast it is going, 0..1
 shader_type spatial;
 render_mode blend_mix, cull_disabled, depth_draw_never, shadows_disabled, specular_schlick_ggx;
 
@@ -74,6 +75,8 @@ uniform float wave_pace = 2.6;
 
 group_uniforms flow;
 uniform float flow_speed = 0.9;
+// Seconds a copy of the ripples is carried before it starts again (see fragment).
+uniform float flow_cycle : hint_range(1.0, 8.0) = 3.2;
 
 group_uniforms foam;
 uniform sampler2D foam_tex : filter_linear_mipmap, repeat_enable;
@@ -155,16 +158,36 @@ void fragment() {
 	float size1 = size0 * 2.0;
 	float blend = fract(level);
 	float chop = wave_strength * (0.55 + 0.6 * wind + 0.9 * steep + 0.5 * enviro_wetness) * (1.0 + far_chop * far);
-	float pace = flow_speed * (1.0 + 2.5 * steep);
+	// HOW FAST THIS WATER IS GOING, metres a second. The mesh carries the share of
+	// a flat reach's pace it covers a metre in (CUSTOM0.y): a rapid at five times
+	// the speed carries a fifth.
+	float pace = flow_speed / clamp(flow.y, 0.12, 1.0);
 	vec2 drift = enviro_wind.xy * TIME * 0.12;
-	vec2 ru = vec2(UV.x - TIME * pace, UV.y) / wave_size;
-	vec2 ru2 = vec2(UV.x * 0.7 - TIME * pace * 1.6, UV.y * 0.7 + 3.1) / (wave_size * 0.43);
+	// THE RIPPLES ARE CARRIED DOWN THE RIVER AT THAT SPEED, WHICH CHANGES ALONG IT.
+	// Sliding the pattern by speed x time does not survive that: where the speed
+	// differs between two points the pattern between them is sheared a little more
+	// every second, for ever, until a rapid is a smear. So it is carried the way a
+	// flow map is: two copies, each sliding at the local speed for `flow_cycle`
+	// seconds and then starting again, half a cycle apart, each faded out as it
+	// resets. The shear is never more than half a cycle's worth, the pattern is
+	// never stretched, and every stretch of water moves at its own speed.
+	float cycle = TIME / flow_cycle + texture(foam_tex, world_pos.xz * 0.013).r * 0.6;
+	float ph0 = fract(cycle);
+	float ph1 = fract(cycle + 0.5);
+	float keep0 = 1.0 - abs(1.0 - 2.0 * ph0);
+	float slide0 = pace * (ph0 - 0.5) * flow_cycle;
+	float slide1 = pace * (ph1 - 0.5) * flow_cycle;
+	vec2 ru = vec2(UV.x - slide0, UV.y) / wave_size;
+	vec2 rv = vec2(UV.x - slide1 + 5.3, UV.y + 2.9) / wave_size;
+	vec2 ru2 = vec2(UV.x * 0.7 - slide0 * 1.6, UV.y * 0.7 + 3.1) / (wave_size * 0.43);
+	vec2 rv2 = vec2(UV.x * 0.7 - slide1 * 1.6 + 1.7, UV.y * 0.7 + 6.4) / (wave_size * 0.43);
 	vec2 su = (world_pos.xz + drift) / (wave_size * 1.7);
 	vec2 su2 = (world_pos.zx * vec2(1.0, -1.0) - drift * 1.6) / (wave_size * 0.6);
 	vec3 n_still = mix(texture(wave_a, su / size0).xyz + texture(wave_b, su2 / size0).xyz,
 			texture(wave_a, su / size1).xyz + texture(wave_b, su2 / size1).xyz, blend);
-	vec3 n_run = mix(texture(wave_a, ru / size0).xyz + texture(wave_b, ru2).xyz,
-			texture(wave_a, ru / size1).xyz + texture(wave_b, ru2).xyz, blend);
+	// (Running water is narrow and near: it takes the nearer ripple size only.)
+	vec3 n_run = mix(texture(wave_a, rv / size0).xyz + texture(wave_b, rv2).xyz,
+			texture(wave_a, ru / size0).xyz + texture(wave_b, ru2).xyz, keep0);
 	vec3 n = mix(n_still, n_run, running) - 1.0;
 	n = normalize(vec3(n.xy * chop, 1.0));
 
@@ -228,7 +251,9 @@ void fragment() {
 	under += sky_seen * fresnel * 0.9;
 
 	// ---- foam
-	float grain = texture(foam_tex, mix(world_pos.xz * 0.35, vec2(UV.x * 0.5 - TIME * pace * 0.5, UV.y * 0.5), running)).r;
+	float grain_run = mix(texture(foam_tex, vec2(UV.x * 0.5 - slide1 * 0.5 + 0.4, UV.y * 0.5 + 0.7)).r,
+			texture(foam_tex, vec2(UV.x * 0.5 - slide0 * 0.5, UV.y * 0.5)).r, keep0);
+	float grain = mix(texture(foam_tex, world_pos.xz * 0.35).r, grain_run, running);
 	float fine = texture(foam_tex, world_pos.xz * 1.3 + vec2(TIME * 0.03, -TIME * 0.02)).r;
 	// Where the water meets anything: a solid line at the very edge, then a broken
 	// band behind it with lines that lap in and out. It comes from how little

@@ -11,6 +11,16 @@ var _step := -1
 var _wait := 0
 var _fell_at := 0
 var _failed := false
+var _foot := Vector3.ZERO
+var _bites := 3
+
+
+func _look(explorer: Node3D, target: Vector3) -> void:
+	var cam := root.get_camera_3d()
+	var from := explorer.global_position + Vector3.UP * cam.position.y
+	var d := target - from
+	explorer.rotation = Vector3(0.0, atan2(-d.x, -d.z), 0.0)
+	cam.rotation.x = atan2(d.y, Vector2(d.x, d.z).length())
 
 
 func _initialize() -> void:
@@ -58,7 +68,8 @@ func _process(_dt: float) -> bool:
 			back = back.normalized()
 			explorer.flying = false
 			explorer.global_position = foot + back * (float(tree["radius"]) + 2.0) + Vector3(0, 0.4, 0)
-			explorer.look_at(Vector3(foot.x, explorer.global_position.y, foot.z))
+			_foot = foot
+			_look(explorer, foot + Vector3(0, 1.3, 0))
 			print("chop: a tree %.1f m tall, trunk %.2f m, %d bites" % [tree["height"], tree["radius"],
 					Woodcutting.bites_for(float(tree["radius"]))])
 			_step = 0
@@ -73,16 +84,28 @@ func _process(_dt: float) -> bool:
 				push_error("chop: the hand holds '%s', not the axe" % play.tool)
 				_failed = true
 			_shot("0_axe_in_hand")
-			# One bite short of what it takes.
+			# Looking down at where the axe lands, and one bite in.
+			_look(explorer, _foot + Vector3(0, 0.8, 0))
 			var tree := flora.tree_on(cam.global_position, -cam.global_basis.z, wood.reach)
-			var bites := Woodcutting.bites_for(float(tree.get("radius", 0.3)))
-			for i in bites - 1:
+			_bites = Woodcutting.bites_for(float(tree.get("radius", 0.3)))
+			if not wood.strike(cam.global_position, -cam.global_basis.z):
+				push_error("chop: the swing met no tree")
+				_failed = true
+			_wait = 12
+		1:
+			_shot("1_first_bite")
+			# One bite short of what it takes.
+			for i in _bites - 2:
 				if not wood.strike(cam.global_position, -cam.global_basis.z):
 					push_error("chop: the swing met no tree")
 					_failed = true
 			_wait = 12
-		1:
+			_step = 12
+			return false
+		12:
 			_shot("1_notch")
+			_step = 1
+			_look(explorer, _foot + Vector3(0, 1.6, 0))
 			wood.strike(cam.global_position, -cam.global_basis.z)
 			if wood._falls.is_empty():
 				push_error("chop: the tree did not go over")
