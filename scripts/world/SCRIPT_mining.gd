@@ -54,11 +54,21 @@ func _ready() -> void:
 	_rock.metallic_specular = 0.3
 	_rock.uv1_triplanar = true
 	_rock.uv1_scale = Vector3.ONE * 1.6
+	# GRIT: sixteen photographs of broken stone (assets/chips/stone_atlas.png, cut
+	# from one sheet by tools/build_chip_atlas.py), one to a particle, tumbling.
 	_grit_mat = StandardMaterial3D.new()
-	_grit_mat.albedo_color = Color(0.5, 0.49, 0.47)
-	_grit_mat.roughness = 1.0
-	var bit := BoxMesh.new()
-	bit.size = Vector3(0.035, 0.026, 0.03)
+	_grit_mat.albedo_texture = load("res://assets/chips/stone_atlas.png")
+	_grit_mat.albedo_color = Color(0.82, 0.81, 0.8)
+	_grit_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	_grit_mat.alpha_scissor_threshold = 0.45
+	_grit_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_grit_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	_grit_mat.particles_anim_h_frames = 4
+	_grit_mat.particles_anim_v_frames = 4
+	_grit_mat.particles_anim_loop = false
+	_grit_mat.roughness = 0.95
+	var bit := QuadMesh.new()
+	bit.size = Vector2(0.075, 0.075)
 	_grit_mesh = bit
 	_grit_flow = ParticleProcessMaterial.new()
 	_grit_flow.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
@@ -73,6 +83,10 @@ func _ready() -> void:
 	_grit_flow.angular_velocity_max = 500.0
 	_grit_flow.scale_min = 0.4
 	_grit_flow.scale_max = 1.7
+	_grit_flow.anim_offset_min = 0.0
+	_grit_flow.anim_offset_max = 1.0
+	_grit_flow.anim_speed_min = 0.0
+	_grit_flow.anim_speed_max = 0.0
 	_dust_mat = StandardMaterial3D.new()
 	_dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
