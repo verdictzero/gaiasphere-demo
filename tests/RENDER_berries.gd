@@ -78,7 +78,19 @@ func _process(_dt: float) -> bool:
 			root.get_texture().get_image().save_png(_out.path_join("berry_2_bare.png"))
 			var got := bag.count_of("berry")
 			print("berries: %d in the bag; %s" % [got, "ok" if got >= bushes.berries.x else "FAILED"])
-			quit(0 if got >= bushes.berries.x else 1)
+			if got < bushes.berries.x:
+				quit(1)
+				return true
+			# Its leaves half way back, as they would be part way through growing in.
+			var sq: Vector2i = _bush.get_meta(&"square")
+			bushes._stripped.erase(sq)
+			var leafy := _bush.get_node("Leafy") as MeshInstance3D
+			leafy.set_instance_shader_parameter(&"grown", 0.5)
+			leafy.visible = true
+			_wait = 6
+		3:
+			root.get_texture().get_image().save_png(_out.path_join("berry_3_growing.png"))
+			quit(0)
 			return true
 	_step += 1
 	return false
