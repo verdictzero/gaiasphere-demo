@@ -8,7 +8,9 @@ var _scene: Node
 var _out := "user://"
 var _step := -1
 var _wait := 0
-var _bush: Node3D
+var _bush := Transform3D()
+var _square := Vector2i.ZERO
+var _found := false
 var _had := 0
 
 
@@ -38,24 +40,26 @@ func _process(_dt: float) -> bool:
 		var here: Vector3 = explorer.global_position
 		var count := 0
 		for sq in bushes._live:
-			var b: Node3D = bushes._live[sq]
-			if b == null:
+			if bushes._live[sq] == null:
 				continue
+			var b: Transform3D = bushes._live[sq]
 			count += 1
-			if _bush == null or b.global_position.distance_to(here) < _bush.global_position.distance_to(here):
+			if not _found or b.origin.distance_to(here) < _bush.origin.distance_to(here):
 				_bush = b
+				_square = sq
+				_found = true
 		print("berries: %d bushes within %d m" % [count, int(bushes.view_range)])
-		if _bush == null:
+		if not _found:
 			push_error("berries: no bush near the start")
 			quit(1)
 			return true
-		var back := here - _bush.global_position
+		var back := here - _bush.origin
 		back.y = 0.0
 		back = back.normalized()
 		explorer.flying = false
-		explorer.global_position = _bush.global_position + back * 3.0 + Vector3(0, 0.4, 0)
+		explorer.global_position = _bush.origin + back * 3.0 + Vector3(0, 0.4, 0)
 		var from: Vector3 = explorer.global_position + Vector3.UP * cam.position.y
-		var d: Vector3 = _bush.global_position + Vector3(0, 1.2, 0) - from
+		var d: Vector3 = _bush.origin + Vector3(0, 1.2, 0) - from
 		explorer.rotation = Vector3(0.0, atan2(-d.x, -d.z), 0.0)
 		cam.rotation.x = atan2(d.y, Vector2(d.x, d.z).length())
 		_step = 0
@@ -83,11 +87,10 @@ func _process(_dt: float) -> bool:
 				quit(1)
 				return true
 			# Its leaves half way back, as they would be part way through growing in.
-			var sq: Vector2i = _bush.get_meta(&"square")
-			bushes._stripped.erase(sq)
-			var leafy := _bush.get_node("Leafy") as MeshInstance3D
-			leafy.set_instance_shader_parameter(&"grown", 0.5)
-			leafy.visible = true
+			# (Held there: put back to half every frame until the still is taken.)
+			bushes.regrow_fade = 1e9
+			bushes._growing[_square] = 0.5
+			bushes._stale = true
 			_wait = 6
 		3:
 			root.get_texture().get_image().save_png(_out.path_join("berry_3_growing.png"))

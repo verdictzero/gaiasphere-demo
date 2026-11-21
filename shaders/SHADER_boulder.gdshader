@@ -31,6 +31,9 @@ void vertex() {
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	w_nrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	foot = w_pos.y - MODEL_MATRIX[3].y;
+	if (lod_fade_gone(lod_keep)) {
+		VERTEX = vec3(0.0);
+	}
 }
 
 void fragment() {

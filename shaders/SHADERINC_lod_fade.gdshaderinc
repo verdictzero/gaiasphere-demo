@@ -26,6 +26,16 @@ vec2 lod_fade_window(vec3 root, vec3 camera) {
 			lod_out > 0.0 ? 1.0 - smoothstep(lod_out * (1.0 - LOD_BAND), lod_out * (1.0 + LOD_BAND), d) : 1.0);
 }
 
+// True when nothing of this instance is drawn at this level: nearer than where
+// the level takes over, or beyond where it hands on. A tile draws every level
+// any of its plants need, so most instances at most levels are in this state,
+// and the vertex shader folds them to a point (no triangle, nothing to shade)
+// instead of drawing them and throwing every pixel away:
+//   vertex():    if (lod_fade_gone(lod_keep)) { VERTEX = <the instance's root>; }
+bool lod_fade_gone(vec2 keep) {
+	return keep.x >= 1.0 || keep.y <= 0.0;
+}
+
 bool lod_fade_discard(vec2 pixel) {
 	float dither = fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
 	return dither < lod_keep.x || dither >= lod_keep.y;

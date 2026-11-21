@@ -127,17 +127,19 @@ func _build_layers() -> void:
 	var tree_kinds: Array[Dictionary] = []
 	for fir in FIRS:
 		var lods: Array = []
-		for i in 3:
+		# Six meshes (tools/build_fir.py): every frond a card at the first two, one
+		# card to a limb from the third, fewer and wider after that.
+		for i in 6:
 			var m := _mesh_of("res://assets/fir/%s/%s_lod%d.gltf" % [fir, fir, i])
 			m.surface_set_material(0, bark)
-			m.surface_set_material(1, needles if i == 0 else boughs)
+			m.surface_set_material(1, needles if i < 2 else boughs)
 			lods.append(m)
 		var atlas := "res://assets/fir/textures/impostors/%s_impostor_" % fir
-		var cross := _mesh_of("res://assets/fir/%s/%s_lod3_cross.gltf" % [fir, fir])
+		var cross := _mesh_of("res://assets/fir/%s/%s_lod6_cross.gltf" % [fir, fir])
 		cross.surface_set_material(0, _shader_mat("res://shaders/SHADER_impostor.gdshader", {
 			"albedo_tex": load(atlas + "basecolor.png"),
 			"tint": Color(0.44, 0.57, 0.5)}))
-		var board := _mesh_of("res://assets/fir/%s/%s_lod4_billboard.gltf" % [fir, fir])
+		var board := _mesh_of("res://assets/fir/%s/%s_lod7_billboard.gltf" % [fir, fir])
 		board.surface_set_material(0, _shader_mat("res://shaders/SHADER_impostor.gdshader", {
 			"albedo_tex": load(atlas + "basecolor.png"),
 			"tint": Color(0.44, 0.57, 0.5), "billboard": true}))
@@ -147,10 +149,14 @@ func _build_layers() -> void:
 		trunk.height = 8.0
 		tree_kinds.append({"lods": lods, "cross": cross, "board": board, "shape": trunk, "shape_lift": 4.0})
 	_layers.append({
-		"name": "trees", "tile": 32.0, "radius": 135.0 * _scale, "stride": STRIDE,
-		"dists": [20.0 * _scale, 52.0 * _scale], "shadow_lods": 3 if quality > 0 else 2,
+		# EIGHT LEVELS: the six meshes hand over at these distances, then the
+		# crossed cards from `radius`, then the flat boards from `cross_reach`.
+		# Only the nearest four cast shadows.
+		"name": "trees", "tile": 32.0, "radius": 140.0 * _scale, "stride": STRIDE,
+		"dists": [9.0 * _scale, 18.0 * _scale, 32.0 * _scale, 55.0 * _scale, 90.0 * _scale],
+		"shadow_lods": 4 if quality > 0 else 3,
 		"kinds": tree_kinds, "place": _place_trees, "prefill": true,
-		"cross_reach": 750.0 * _scale, "height": 50.0, "collide": true,
+		"cross_reach": 480.0 * _scale, "height": 50.0, "collide": true,
 	})
 
 	# --- ferns: three meshes, then their own impostors, then nothing

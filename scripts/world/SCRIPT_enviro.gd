@@ -495,9 +495,10 @@ func _apply(dt: float) -> void:
 	var mean := float(_now["wind"])
 	var gusty := smoothstep(0.5, 1.6, mean)
 	var gt := Time.get_ticks_msec() * 0.001
-	var gust := sin(gt * 0.31) * 0.5 + sin(gt * 0.83 + 1.7) * 0.3 + sin(gt * 2.1 + 0.4) * 0.2
-	wind_strength = maxf(0.02, mean * (1.0 + gust * lerpf(0.12, 0.5, gusty)))
-	_veer = sin(gt * 0.11) * lerpf(0.1, 0.45, gusty)
+	# (Long gusts and slow veering even in a storm: it heaves, it does not jitter.)
+	var gust := sin(gt * 0.27) * 0.55 + sin(gt * 0.61 + 1.7) * 0.33 + sin(gt * 1.2 + 0.4) * 0.12
+	wind_strength = maxf(0.02, mean * (1.0 + gust * lerpf(0.12, 0.32, gusty)))
+	_veer = sin(gt * 0.09) * lerpf(0.1, 0.3, gusty)
 	var wind := wind_strength
 
 	# Where the sun and moon are.
@@ -590,7 +591,9 @@ func _apply(dt: float) -> void:
 	_flash_light.light_energy = flicker * 3.0
 
 	# Wind and wet.
-	_wind_time += dt * (0.6 + wind)
+	# The sway's clock: quicker in a wind, but only so far. A storm at twice the
+	# wind does not sway twice as fast; it would only look frantic.
+	_wind_time += dt * (0.6 + minf(wind, 0.75) + 0.12 * maxf(wind - 0.75, 0.0))
 	_wind_drift += wind_vector() * dt * 22.0
 	wetness = move_toward(wetness, clampf(rain * 1.5, 0.0, 1.0), dt * (0.08 if rain > 0.01 else 0.02))
 

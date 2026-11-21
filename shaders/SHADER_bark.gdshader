@@ -17,6 +17,9 @@ global uniform float enviro_wetness;
 void vertex() {
 	lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
 	VERTEX += wind_offset(VERTEX, UV2, wind_bend, 0.0);
+	if (lod_fade_gone(lod_keep)) {
+		VERTEX = MODEL_MATRIX[3].xyz;
+	}
 }
 
 void fragment() {

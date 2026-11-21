@@ -27,9 +27,9 @@ Files per tree, in `<tree>/`:
 - `<tree>_lod0.gltf`, `_lod1.gltf`, `_lod2.gltf` – meshes. All three are cut from the
   same branch layout (LOD1 keeps half the side twigs, LOD2 a quarter, enlarged to hold
   the silhouette; LOD2 drops the limb geometry).
-- `<tree>_lod3_cross.gltf` – a double cross: four planes 45° apart, textured with renders of LOD0
+- `<tree>_lod6_cross.gltf` – a double cross: four planes 45° apart, textured with renders of LOD0
   from +Z, +X and the two diagonals.
-- `<tree>_lod4_billboard.gltf` – one quad facing +Z with the +Z render. Rotate it about Y
+- `<tree>_lod7_billboard.gltf` – one quad facing +Z with the +Z render. Rotate it about Y
   toward the camera in the engine; it is single-sided.
 
 `manifest.json` lists every file with its counts and the impostor plane size.

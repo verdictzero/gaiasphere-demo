@@ -11,6 +11,10 @@ extends Node3D
 # after. The cloud between them is single leaves (the drawn leaf atlas) and
 # berry clusters (the photograph the inventory icon is cut from).
 #
+# THEY ARE DRAWN AS TWO MULTIMESHES, however many there are: one of every bush
+# in leaf, one of every bare one, each instance carrying how much of it is there
+# (the leaves' fade back in). Both sway in the wind with the rest of the wood.
+#
 # ONLY THE ONES NEAR THE PLAYER EXIST. The island is divided into squares of
 # `spacing` metres; a hash of the square says whether a bush stands in it and
 # where, and the ground decides whether it may (grass or soil, not water, sand,
@@ -45,11 +49,15 @@ var _field: IslandField
 var _explorer: Node3D
 var _inventory: Node
 var _bare: Mesh
-var _bare_mat: StandardMaterial3D
+var _bare_mat: ShaderMaterial
+var _leafy_mm: MultiMesh
+var _bare_mm: MultiMesh
+var _leafy_slot := {}            # square -> its instance in the leafy MultiMesh
+var _stale := true               # the MultiMeshes need filling again
 var _leafy: Mesh
 var _leafy_mat: ShaderMaterial
 var _growing := {}               # square -> how far its leaves have come back, 0..1
-var _live := {}                  # square -> the bush's node, or null where none stands
+var _live := {}                  # square -> where its bush stands (a Transform3D), or null where none does
 var _stripped := {}              # square -> the day (and part of a day) it was stripped
 var _enviro: Node
 var _days := 0.0                 # whole days gone by since the game began
@@ -76,15 +84,15 @@ func _ready() -> void:
 	_rng.randomize()
 	_bare = _model("res://assets/berry_bush/viburnum_bush_bare.glb")
 	_leafy = _model("res://assets/berry_bush/viburnum_bush.glb")
-	_bare_mat = _both_sides(_bare)
+	_leafy_mat = _bush_material(_leafy)
+	_bare_mat = _bush_material(_bare)
 	# The bare twigs are a cool grey-violet in the photograph, which the sky's
 	# light turns blue in shade: brought down to the brown of the wood round it.
-	_bare_mat.albedo_color = Color(0.62, 0.5, 0.4)
-	var as_made := _leafy.surface_get_material(0) as StandardMaterial3D
-	_leafy_mat = ShaderMaterial.new()
-	_leafy_mat.shader = load("res://shaders/SHADER_berry_bush.gdshader")
-	_leafy_mat.set_shader_parameter("albedo_tex", as_made.albedo_texture)
-	_leafy_mat.set_shader_parameter("normal_tex", as_made.normal_texture)
+	_bare_mat.set_shader_parameter("tint", Color(0.62, 0.5, 0.4))
+	_bare_mat.set_shader_parameter("backlight", Color(0, 0, 0))
+	_bare_mat.set_shader_parameter("wind_flutter", 0.015)
+	_leafy_mm = _multimesh(_leafy, _leafy_mat, "Leafy")
+	_bare_mm = _multimesh(_bare, _bare_mat, "Bare")
 	_leaf_mat = _cutout(load("res://assets/leaves/berry_leaves_atlas.png"), Color(0.78, 0.9, 0.7))
 	_leaf_mat.backlight_enabled = true
 	_leaf_mat.backlight = Color(0.16, 0.24, 0.06)
@@ -110,12 +118,54 @@ static func _model(path: String) -> Mesh:
 	return found
 
 
-## The model's own material, seen from both sides (its cards are single faces).
-static func _both_sides(mesh: Mesh) -> StandardMaterial3D:
-	var m: StandardMaterial3D = (mesh.surface_get_material(0) as StandardMaterial3D).duplicate()
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+## The model's own pictures in the bush shader (both sides, wind, the fade).
+static func _bush_material(mesh: Mesh) -> ShaderMaterial:
+	var as_made := mesh.surface_get_material(0) as StandardMaterial3D
+	var m := ShaderMaterial.new()
+	m.shader = load("res://shaders/SHADER_berry_bush.gdshader")
+	m.set_shader_parameter("albedo_tex", as_made.albedo_texture)
+	m.set_shader_parameter("normal_tex", as_made.normal_texture)
+	m.set_shader_parameter("height", mesh.get_aabb().size.y)
 	return m
+
+
+func _multimesh(mesh: Mesh, mat: Material, called: String) -> MultiMesh:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = true
+	mm.mesh = mesh
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = called
+	mmi.multimesh = mm
+	mmi.material_override = mat
+	# Never culled as one: its bushes are all round the player, wherever that is.
+	mmi.extra_cull_margin = 16384.0
+	add_child(mmi)
+	return mm
+
+
+## Both MultiMeshes filled from what stands and what state each is in.
+func _fill() -> void:
+	_stale = false
+	var leafy: Array = []
+	var bare: Array = []
+	_leafy_slot.clear()
+	for sq in _live:
+		if _live[sq] == null:
+			continue
+		var growing := _growing.has(sq)
+		if not _stripped.has(sq) or growing:
+			_leafy_slot[sq] = leafy.size()
+			leafy.append([_live[sq], float(_growing[sq]) if growing else 1.0])
+		if _stripped.has(sq) or growing:
+			bare.append([_live[sq], 1.0])
+	for pair in [[_leafy_mm, leafy], [_bare_mm, bare]]:
+		var mm: MultiMesh = pair[0]
+		var list: Array = pair[1]
+		mm.instance_count = list.size()
+		for i in list.size():
+			mm.set_instance_transform(i, list[i][0])
+			mm.set_instance_custom_data(i, Color(float(list[i][1]), 0, 0, 0))
 
 
 func _cutout(tex: Texture2D, tint: Color) -> StandardMaterial3D:
@@ -167,26 +217,10 @@ func _site(square: Vector2i) -> Variant:
 	return Vector3(x, float(s["height"]) - 0.06, z)
 
 
-func _stand(square: Vector2i, at: Vector3) -> Node3D:
+func _stand(square: Vector2i, at: Vector3) -> Transform3D:
 	var seed_value := square.x * 92821 + square.y * 68917
-	var bush := Node3D.new()
 	var scale_by := lerpf(0.75, 1.15, _rand(seed_value, 0, 44))
-	bush.transform = Transform3D(Basis(Vector3.UP, _rand(seed_value, 0, 45) * TAU).scaled(Vector3.ONE * scale_by), at)
-	var bare := MeshInstance3D.new()
-	bare.name = "Bare"
-	bare.mesh = _bare
-	bare.material_override = _bare_mat
-	bare.visible = _stripped.has(square)
-	bush.add_child(bare)
-	var leafy := MeshInstance3D.new()
-	leafy.name = "Leafy"
-	leafy.mesh = _leafy
-	leafy.material_override = _leafy_mat
-	leafy.visible = not _stripped.has(square)
-	bush.add_child(leafy)
-	bush.set_meta(&"square", square)
-	add_child(bush)
-	return bush
+	return Transform3D(Basis(Vector3.UP, _rand(seed_value, 0, 45) * TAU).scaled(Vector3.ONE * scale_by), at)
 
 
 ## The day and the part of it gone, counted from the start of the game. The
@@ -211,29 +245,32 @@ func _process(delta: float) -> void:
 		_regrow_check = 1.0
 		var now := today()
 		for sq in _stripped.keys():
-			if now - float(_stripped[sq]) < regrow_days:
+			if _growing.has(sq) or now - float(_stripped[sq]) < regrow_days:
 				continue
-			var bush: Node3D = _live.get(sq)
-			if bush != null and _in_view(bush.global_position + Vector3(0, 1.2, 0)):
+			var stands: Variant = _live.get(sq)
+			if stands != null and _in_view((stands as Transform3D).origin + Vector3(0, 1.2, 0)):
 				continue
-			_stripped.erase(sq)
-			if bush != null:
+			if stands != null:
 				# Its leaves come in over the bare bush, which stays until they are whole.
 				_growing[sq] = 0.0
-				var leafy := bush.get_node("Leafy") as MeshInstance3D
-				leafy.set_instance_shader_parameter(&"grown", 0.0)
-				leafy.visible = true
+				_stale = true
+			else:
+				_stripped.erase(sq)
 	for sq in _growing.keys():
-		var bush: Node3D = _live.get(sq)
-		if bush == null:
+		if _live.get(sq) == null:
 			_growing.erase(sq)
+			_stripped.erase(sq)
 			continue
 		var grown := minf(float(_growing[sq]) + delta / maxf(regrow_fade, 0.01), 1.0)
 		_growing[sq] = grown
-		(bush.get_node("Leafy") as MeshInstance3D).set_instance_shader_parameter(&"grown", grown)
 		if grown >= 1.0:
-			(bush.get_node("Bare") as MeshInstance3D).visible = false
 			_growing.erase(sq)
+			_stripped.erase(sq)
+			_stale = true
+		elif _leafy_slot.has(sq) and not _stale and _leafy_mm != null:
+			_leafy_mm.set_instance_custom_data(int(_leafy_slot[sq]), Color(grown, 0, 0, 0))
+	if _stale and _leafy_mm != null:
+		_fill()
 	if _field == null:
 		return
 	var square := _square_of(here)
@@ -252,7 +289,7 @@ func _process(delta: float) -> void:
 		for sq in _live.keys():
 			if not wanted.has(sq):
 				if _live[sq] != null:
-					(_live[sq] as Node).queue_free()
+					_stale = true
 				_live.erase(sq)
 	# A few squares a frame: asking the ground what it is is not free.
 	for i in mini(_todo.size(), 3):
@@ -261,6 +298,10 @@ func _process(delta: float) -> void:
 			continue
 		var at: Variant = _site(sq)
 		_live[sq] = _stand(sq, at) if at != null else null
+		if at != null:
+			_stale = true
+	if _stale:
+		_fill()
 
 
 ## Whether the player is looking toward a point: within `out_of_view` degrees of
@@ -283,19 +324,18 @@ func strike(from: Vector3, dir: Vector3) -> bool:
 	var d := Vector2(dir.x, dir.z)
 	d = d.normalized() if d.length() > 0.001 else Vector2.ZERO
 	for sq in _live:
-		var bush: Node3D = _live[sq]
-		if bush == null:
+		if _live[sq] == null:
 			continue
-		var p := Vector2(bush.global_position.x, bush.global_position.z)
+		var bush: Transform3D = _live[sq]
+		var size := bush.basis.get_scale().x
+		var p := Vector2(bush.origin.x, bush.origin.z)
 		var t := clampf((p - a).dot(d), 0.0, reach)
-		if (a + d * t).distance_to(p) > 1.25 * bush.scale.x or absf(from.y - bush.global_position.y - 1.2) > 2.6:
+		if (a + d * t).distance_to(p) > 1.25 * size or absf(from.y - bush.origin.y - 1.2) > 2.6:
 			continue
-		var leafy := bush.get_node("Leafy") as MeshInstance3D
-		if leafy.visible and not _growing.has(sq):
-			leafy.visible = false
-			(bush.get_node("Bare") as MeshInstance3D).visible = true
+		if not _stripped.has(sq):
 			_stripped[sq] = today()
-			_puff(bush.global_position + Vector3(0, 1.3 * bush.scale.y, 0), bush.scale.x)
+			_stale = true
+			_puff(bush.origin + Vector3(0, 1.3 * size, 0), size)
 			if _inventory != null:
 				_inventory.call(&"add", "berry", _rng.randi_range(berries.x, berries.y))
 		return true

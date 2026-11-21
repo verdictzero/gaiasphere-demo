@@ -71,6 +71,9 @@ void vertex() {
 		UV.x = (mod(floor(UV.x) + floor(INSTANCE_CUSTOM.x + 0.5), atlas_columns) + fract(UV.x)) / atlas_columns;
 		shade *= 0.8 + 0.4 * INSTANCE_CUSTOM.y;
 	}
+	if (lod_fade_gone(lod_keep)) {
+		VERTEX = root;
+	}
 }
 
 void fragment() {

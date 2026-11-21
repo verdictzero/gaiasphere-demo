@@ -3,7 +3,7 @@
 
     python3 tools/build_fir.py assets/fir
 
-Writes assets/fir/<tree>/<tree>_lod{0,1,2}.gltf (+ .bin) and assets/fir/manifest.json.
+Writes assets/fir/<tree>/<tree>_lod{0..5}.gltf (+ .bin) and assets/fir/manifest.json.
 Impostor LODs (cross planes, billboard) are added by tools/build_impostors.py.
 
 Y-up, metres, origin at the base of the trunk.
@@ -204,7 +204,7 @@ BOUGHS = []          # textures/fir_bough_atlas.json, read in main()
 BOUGH_S0, BOUGH_S1 = 0.12, 0.9
 
 
-def add_bough(mesh, limb, segs, fold, col, sway0, center, li, drape=False):
+def add_bough(mesh, limb, segs, fold, col, sway0, center, li, drape=False, widen=1.0):
     """One card carrying the picture of a whole bough.
 
     The main card runs along the limb, rolled a little so the tree is not a stack of
@@ -219,7 +219,7 @@ def add_bough(mesh, limb, segs, fold, col, sway0, center, li, drape=False):
     length = (BOUGH_S1 - BOUGH_S0) * Lv + min(1.9, 0.5 * Lv + 0.45)
     pic_len = (BOUGH_S1 - BOUGH_S0) * b["limb_length"] + min(1.9, 0.5 * b["limb_length"] + 0.45)
     v_tip = 1.0 - pic_len / b["length_m"]                    # the picture's root is at v = 1
-    width = b["width_m"] * fl / b["frond_len"] * (1.0 if fold else 1.08)
+    width = b["width_m"] * fl / b["frond_len"] * (1.0 if fold else 1.08) * widen
     flip = (li % 2) == 1
     jit = ((li * 7919) % 1000) / 1000.0
     roll = (1.15 + 0.5 * jit) * (1 if li % 2 else -1) if drape else (jit - 0.5) * 0.8
@@ -276,17 +276,38 @@ def rotate(v, axis, ang):
 
 # ------------------------------------------------------------------- LODs ---
 # All LODs are cut from the same tree description so they pop as little as possible.
+# EIGHT LEVELS, the last two being the impostors (tools/build_impostors.py makes
+# those from level 0). The six here go from every frond a card of its own, through
+# one card to a limb, to a few dozen wide cards for the whole tree:
+#
+#   keep     the share of the fronds (or of the limbs) that are drawn at all,
+#            chosen evenly up the tree, never in runs;
+#   widen    how much bigger each one kept is, so the crown stays as full.
+#
+# Trees are what the frame is spent on, and there are thousands of them: the
+# budget for each level is set by how many trees stand at its distance, and the
+# far ones have to be nearly free.
 LODS = [
-    dict(name="lod0", trunk_sides=12, trunk_rings=18, limb_sides=3, limb_segs=3, card_segs=2,
-         drapes=3, limb_min=0.8),
-    # The mid LODs draw one card per limb with a picture of the whole bough on it
-    # (tools/build_bough_atlas.py), folded into a shallow V at LOD1 and flat at LOD2:
-    # every limb is still there with its needles at their true size.
-    dict(name="lod1", trunk_sides=8, trunk_rings=10, limb_sides=3, limb_segs=2, bough_segs=2,
-         bough_fold=True, drape_min=1.5, limb_min=2.2),
-    dict(name="lod2", trunk_sides=6, trunk_rings=7, limb_sides=0, limb_segs=0, bough_segs=1,
-         bough_fold=False, drape_min=2.4, limb_min=99),
+    dict(name="lod0", trunk_sides=10, trunk_rings=14, limb_sides=3, limb_segs=2, card_segs=2,
+         drapes=2, limb_min=1.2, keep=0.52, widen=1.3, leader=3),
+    dict(name="lod1", trunk_sides=8, trunk_rings=10, limb_sides=3, limb_segs=1, card_segs=1,
+         drapes=1, limb_min=2.2, keep=0.3, widen=1.62, leader=3),
+    # From here one card per limb with a picture of the whole bough on it
+    # (tools/build_bough_atlas.py): folded into a shallow V, then flat, then fewer.
+    dict(name="lod2", trunk_sides=7, trunk_rings=8, limb_sides=0, limb_segs=0, bough_segs=1,
+         bough_fold=True, drape_min=2.6, limb_min=99, keep=0.86, widen=1.08, leader=3),
+    dict(name="lod3", trunk_sides=6, trunk_rings=6, limb_sides=0, limb_segs=0, bough_segs=1,
+         bough_fold=False, drape_min=3.2, limb_min=99, keep=0.6, widen=1.28, leader=2),
+    dict(name="lod4", trunk_sides=5, trunk_rings=4, limb_sides=0, limb_segs=0, bough_segs=1,
+         bough_fold=False, drape_min=99, limb_min=99, keep=0.3, widen=1.75, leader=2),
+    dict(name="lod5", trunk_sides=4, trunk_rings=3, limb_sides=0, limb_segs=0, bough_segs=1,
+         bough_fold=False, drape_min=99, limb_min=99, keep=0.14, widen=2.5, leader=2),
 ]
+
+
+def kept(i, share):
+    """Whether item i of a run is one of the `share` kept: spread evenly, not in runs."""
+    return share >= 1.0 or (i * 0.6180339887) % 1.0 < share
 
 
 def build(limbs, lod):
@@ -319,13 +340,18 @@ def build(limbs, lod):
                      [(sway0 + 0.5 * s * s, limb["phase"]) for s in ss])
 
         if "bough_segs" in lod:
-            add_bough(leaf, limb, lod["bough_segs"], lod["bough_fold"], col, sway0, center, li)
+            if not kept(li, lod["keep"]):
+                continue
+            add_bough(leaf, limb, lod["bough_segs"], lod["bough_fold"], col, sway0, center, li,
+                      widen=lod["widen"])
             if L > lod["drape_min"]:
-                add_bough(leaf, limb, 1, False, col, sway0, center, li, drape=True)
+                add_bough(leaf, limb, 1, False, col, sway0, center, li, drape=True, widen=lod["widen"])
             continue
 
         k = nd = 0
-        for fr in limb["fronds"]:
+        for fi, fr in enumerate(limb["fronds"]):
+            if not kept(li * 31 + fi, lod["keep"]):
+                continue
             if fr["kind"] == "drape":
                 nd += 1
                 if nd > lod["drapes"]:
@@ -347,7 +373,7 @@ def build(limbs, lod):
             cn = np.cross(cs, d)
             if cn[1] < 0 and fr["kind"] != "drape":
                 cn, cs = -cn, -cs
-            ln = fr["len"]
+            ln = fr["len"] * lod["widen"]
             add_card(leaf, limb_point(limb, s), d, cs, cn, ln, ln * 0.6,
                      lod["card_segs"] if fr["kind"] != "side" else 1,
                      0.10 + 0.5 * fr["droop"] * 0.3, fr["flip"], col(s),
@@ -357,8 +383,8 @@ def build(limbs, lod):
     lead = 2.1 * min(1.0, (H / 30.0) ** 0.5)
     top = trunk_center(H - 0.72 * lead)
     _phase[0] = 0.5
-    for i in range(3 if lod["name"] != "lod2" else 2):
-        a = math.pi * i / (3 if lod["name"] != "lod2" else 2)
+    for i in range(lod["leader"]):
+        a = math.pi * i / lod["leader"]
         S = np.array([math.cos(a), 0, math.sin(a)])
         if "bough_segs" in lod:
             # the twig-only top third of the smallest bough picture

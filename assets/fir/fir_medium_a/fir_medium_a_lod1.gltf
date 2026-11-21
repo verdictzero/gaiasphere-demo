@@ -68,7 +68,7 @@
    }
   },
   {
-   "name": "fir_bough",
+   "name": "fir_foliage",
    "pbrMetallicRoughness": {
     "baseColorTexture": {
      "index": 3
@@ -130,80 +130,80 @@
    "uri": "../textures/pine_bark_orm.jpg"
   },
   {
-   "uri": "../textures/fir_bough_atlas_basecolor.png"
+   "uri": "../textures/fir_branch_basecolor.png"
   }
  ],
  "buffers": [
   {
    "uri": "fir_medium_a_lod1.bin",
-   "byteLength": 220180
+   "byteLength": 134696
   }
  ],
  "bufferViews": [
   {
    "buffer": 0,
    "byteOffset": 0,
-   "byteLength": 16344,
+   "byteLength": 11256,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 16344,
-   "byteLength": 16344,
+   "byteOffset": 11256,
+   "byteLength": 11256,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 32688,
-   "byteLength": 10896,
+   "byteOffset": 22512,
+   "byteLength": 7504,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 43584,
-   "byteLength": 10896,
+   "byteOffset": 30016,
+   "byteLength": 7504,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 54480,
-   "byteLength": 8496,
+   "byteOffset": 37520,
+   "byteLength": 4680,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 62976,
-   "byteLength": 38652,
+   "byteOffset": 42200,
+   "byteLength": 23616,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 101628,
-   "byteLength": 38652,
+   "byteOffset": 65816,
+   "byteLength": 23616,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 140280,
-   "byteLength": 25768,
+   "byteOffset": 89432,
+   "byteLength": 15744,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 166048,
-   "byteLength": 25768,
+   "byteOffset": 105176,
+   "byteLength": 15744,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 191816,
-   "byteLength": 12884,
+   "byteOffset": 120920,
+   "byteLength": 7872,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 204700,
-   "byteLength": 15480,
+   "byteOffset": 128792,
+   "byteLength": 5904,
    "target": 34963
   }
  ],
@@ -211,88 +211,88 @@
   {
    "bufferView": 0,
    "componentType": 5126,
-   "count": 1362,
+   "count": 938,
    "type": "VEC3",
    "min": [
-    -3.2621095180511475,
+    -3.262695789337158,
     -0.002980633405968547,
-    -3.299053430557251
+    -3.2978367805480957
    ],
    "max": [
-    3.046997547149658,
+    3.04770827293396,
     20.00009536743164,
-    3.0275540351867676
+    3.025719404220581
    ]
   },
   {
    "bufferView": 1,
    "componentType": 5126,
-   "count": 1362,
+   "count": 938,
    "type": "VEC3"
   },
   {
    "bufferView": 2,
    "componentType": 5126,
-   "count": 1362,
+   "count": 938,
    "type": "VEC2"
   },
   {
    "bufferView": 3,
    "componentType": 5126,
-   "count": 1362,
+   "count": 938,
    "type": "VEC2"
   },
   {
    "bufferView": 4,
    "componentType": 5123,
-   "count": 4248,
+   "count": 2340,
    "type": "SCALAR"
   },
   {
    "bufferView": 5,
    "componentType": 5126,
-   "count": 3221,
+   "count": 1968,
    "type": "VEC3",
    "min": [
-    -5.410943984985352,
-    1.0578835010528564,
-    -5.288312911987305
+    -6.058960914611816,
+    1.833757996559143,
+    -5.761041164398193
    ],
    "max": [
-    5.286868095397949,
-    20.480100631713867,
-    5.114701747894287
+    6.121402740478516,
+    20.54405975341797,
+    5.738002300262451
    ]
   },
   {
    "bufferView": 6,
    "componentType": 5126,
-   "count": 3221,
+   "count": 1968,
    "type": "VEC3"
   },
   {
    "bufferView": 7,
    "componentType": 5126,
-   "count": 3221,
+   "count": 1968,
    "type": "VEC2"
   },
   {
    "bufferView": 8,
    "componentType": 5126,
-   "count": 3221,
+   "count": 1968,
    "type": "VEC2"
   },
   {
    "bufferView": 9,
    "componentType": 5121,
-   "count": 3221,
+   "count": 1968,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 10,
    "componentType": 5123,
-   "count": 7740,
+   "count": 2952,
    "type": "SCALAR"
   }
  ]

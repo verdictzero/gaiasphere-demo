@@ -34,6 +34,9 @@ void vertex() {
 	} else {
 		world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	}
+	if (lod_fade_gone(lod_keep)) {
+		world = MODEL_MATRIX[3].xyz;
+	}
 	VERTEX = (VIEW_MATRIX * vec4(world, 1.0)).xyz;
 	NORMAL = normalize(mat3(VIEW_MATRIX) * n);
 }

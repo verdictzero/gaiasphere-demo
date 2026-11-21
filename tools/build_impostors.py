@@ -8,9 +8,9 @@
 Per tree:
   textures/impostors/<tree>_impostor_basecolor.png   RGBA atlas, four views side by side:
   textures/impostors/<tree>_impostor_normal.png      from +Z, +X and the two diagonals
-  <tree>/<tree>_lod3_cross.gltf      a double cross: four planes 45 degrees apart, each
+  <tree>/<tree>_lod6_cross.gltf      a double cross: four planes 45 degrees apart, each
                                      a front and a back quad (16 triangles, single-sided)
-  <tree>/<tree>_lod4_billboard.gltf  one quad facing +Z (2 triangles); rotate it about Y
+  <tree>/<tree>_lod7_billboard.gltf  one quad facing +Z (2 triangles); rotate it about Y
                                      toward the camera in the engine
 """
 import json
@@ -109,14 +109,14 @@ def main():
                 right = (dz, -dx)                                 # the camera's right, in (x, z)
                 plane(cross, (-r * right[0], -r * right[1]), (r * right[0], r * right[1]), y0, y1,
                       (dx, 0, dz), i / 4.0, (i + 1) / 4.0, entry["top"], back)
-        bf.write_gltf(out / name / f"{name}_lod3_cross", f"{name}_LOD3", [(cross, mat)])
+        bf.write_gltf(out / name / f"{name}_lod6_cross", f"{name}_LOD6", [(cross, mat)])
         bill = bf.Mesh()
         plane(bill, (-r, 0), (r, 0), y0, y1, (0, 0, 1), 0.0, 0.25, entry["top"])
-        bf.write_gltf(out / name / f"{name}_lod4_billboard", f"{name}_LOD4", [(bill, mat)])
+        bf.write_gltf(out / name / f"{name}_lod7_billboard", f"{name}_LOD7", [(bill, mat)])
 
         entry["lods"] = entry["lods"][:3] + [
-            dict(file=f"{name}/{name}_lod3_cross.gltf", triangles=cross.tris, vertices=len(cross.p)),
-            dict(file=f"{name}/{name}_lod4_billboard.gltf", triangles=bill.tris, vertices=len(bill.p)),
+            dict(file=f"{name}/{name}_lod6_cross.gltf", triangles=cross.tris, vertices=len(cross.p)),
+            dict(file=f"{name}/{name}_lod7_billboard.gltf", triangles=bill.tris, vertices=len(bill.p)),
         ]
         entry["impostor_size_m"] = [round(2 * r, 3), round(y1 - y0, 3)]
         print("impostor", name, "plane %.2f x %.2f m" % (2 * r, y1 - y0))

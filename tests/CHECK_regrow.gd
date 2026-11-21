@@ -24,15 +24,7 @@ func _process(_dt: float) -> bool:
 	bushes._process(0.1)
 	bushes._stripped[sq] = bushes.today()
 	# A bush standing in that square, ten metres in front of the player.
-	var bush := Node3D.new()
-	for part in ["Leafy", "Bare"]:
-		var mi := MeshInstance3D.new()
-		mi.name = part
-		bush.add_child(mi)
-	root.add_child(bush)
-	bush.position = Vector3(0, 0, -10)
-	bushes._live[sq] = bush
-	(bush.get_node("Leafy") as MeshInstance3D).visible = false
+	bushes._live[sq] = Transform3D(Basis(), Vector3(0, 0, -10))
 	# Four days pass with the player facing it.
 	for day in 4:
 		for hour in [14.0, 20.0, 2.0, 8.0]:
@@ -45,12 +37,12 @@ func _process(_dt: float) -> bool:
 	explorer.rotation.y = PI
 	bushes._regrow_check = 0.0
 	bushes._process(0.1)
-	var started: bool = not bushes._stripped.has(sq) and bushes._growing.has(sq) and (bush.get_node("Leafy") as MeshInstance3D).visible
+	var started: bool = bushes._growing.has(sq)
 	ok = ok and started
 	print("regrow: then with their back turned: %s" % ("leaves coming in (%.0f%%)" % (float(bushes._growing.get(sq, 0.0)) * 100.0) if started else "STILL BARE"))
 	for i in 60:
 		bushes._process(0.1)
-	var whole: bool = not bushes._growing.has(sq) and not (bush.get_node("Bare") as MeshInstance3D).visible
+	var whole: bool = not bushes._growing.has(sq) and not bushes._stripped.has(sq)
 	ok = ok and whole
 	print("regrow: six seconds on: %s" % ("whole, the bare bush gone" if whole else "NOT FINISHED"))
 	# Stripped again, back still turned, two days: not yet.
