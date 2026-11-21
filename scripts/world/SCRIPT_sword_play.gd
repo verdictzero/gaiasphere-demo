@@ -326,7 +326,7 @@ func _ensure_hand() -> void:
 	_berries = MeshInstance3D.new()
 	_berries.name = "Berries"
 	var card := QuadMesh.new()
-	card.size = Vector2(0.2, 0.2)
+	card.size = Vector2(0.13, 0.13)
 	var berry_mat := StandardMaterial3D.new()
 	berry_mat.albedo_texture = load("res://assets/berry_bush/berry_cluster.png")
 	berry_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
