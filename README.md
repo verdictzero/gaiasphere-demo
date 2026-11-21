@@ -44,7 +44,8 @@ To run it from source, open the folder in Godot 4.7-dev5 and press play.
 | Full screen | F11 | |
 
 Swing the sword at a tree and it takes a bite; a few bites (one charged
-crescent) and the tree bursts into logs. Walk up to the logs to gather them. The bag
+crescent) and the tree bursts into logs. Walk up to the logs to gather them. Hit a berry bush (the ones hung with red) and it is stripped bare in a cloud of
+leaves, and its berries go in the bag. The bag
 holds what you gather: left click moves a stack, right click splits it. There
 is nothing to craft yet.
 

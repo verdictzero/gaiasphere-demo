@@ -24,7 +24,7 @@ extends Node3D
 ## The side of a square, metres: at most one bush in each.
 @export var spacing := 34.0
 ## The share of squares that hold a bush where the ground allows.
-@export_range(0.0, 1.0) var share := 0.5
+@export_range(0.0, 1.0) var share := 0.32
 ## How far from the player bushes exist, metres.
 @export var view_range := 130.0
 ## How near a swing has to come, metres.
@@ -63,6 +63,9 @@ func _ready() -> void:
 	_bare = _model("res://assets/berry_bush/viburnum_bush_bare.glb")
 	_leafy = _model("res://assets/berry_bush/viburnum_bush.glb")
 	_bare_mat = _both_sides(_bare)
+	# The bare twigs are a cool grey-violet in the photograph, which the sky's
+	# light turns blue in shade: brought down to the brown of the wood round it.
+	_bare_mat.albedo_color = Color(0.62, 0.5, 0.4)
 	_leafy_mat = _both_sides(_leafy)
 	_leafy_mat.backlight_enabled = true
 	_leafy_mat.backlight = Color(0.14, 0.2, 0.05)
