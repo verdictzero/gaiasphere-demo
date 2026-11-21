@@ -20,6 +20,9 @@ const ITEMS := {
 	"log": {"name": "Fir Log", "icon": "res://assets/ui/item_log.png"},
 	"axe": {"name": "Axe", "icon": "res://assets/ui/item_axe.png"},
 	"sword": {"name": "Sword", "icon": "res://assets/ui/item_sword.png"},
+	# Not handed out by anything yet: the icon and the name are ready for when
+	# berries can be gathered.
+	"berry": {"name": "Berries", "icon": "res://assets/ui/item_berry.png"},
 }
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.9)
