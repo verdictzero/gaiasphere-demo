@@ -40,9 +40,11 @@ const CUT := Vector3(-118.0, 0.0, 38.0)
 # The axe model: metres per unit, and where on it (its own units) the hand closes.
 const AXE_SCALE := 0.054
 const AXE_GRIP := Vector3(0.29, 0.0, 10.6)
-# THE CUTS: where the blade starts, where it ends, and how the crescent it throws
+# THE SWORD'S CUTS: where the blade starts, where it ends, and how the crescent it throws
 # is canted (degrees about the look). One is picked each swing, never the one
 # before, and every angle is nudged, so no two swings are the same.
+# The axe's one stroke: where it is drawn back to, and where it lands.
+const AXE_CHOP := [Vector3(42.0, -14.0, -30.0), Vector3(-96.0, 12.0, 34.0)]
 const CUTS := [
 	[Vector3(38.0, 0.0, -34.0), Vector3(-118.0, 0.0, 38.0), -62.0],     # down, right to left
 	[Vector3(42.0, 8.0, 44.0), Vector3(-112.0, -6.0, -52.0), 62.0],     # down, left to right
@@ -422,20 +424,40 @@ func _cut(charged: bool) -> void:
 	var vitals := get_node_or_null(^"../Vitals")
 	if vitals != null:
 		vitals.call(&"spend", float(vitals.get("swing_cost")) * (3.0 if charged else 1.0))
-	var pick := _rng.randi_range(0, CUTS.size() - 1)
-	if pick == _last_cut:
-		pick = (pick + 1 + _rng.randi_range(0, CUTS.size() - 2)) % CUTS.size()
-	_last_cut = pick
 	var nudge := func(v: Vector3, by: float) -> Vector3:
 		return v + Vector3(_rng.randf_range(-by, by), _rng.randf_range(-by, by), _rng.randf_range(-by, by))
-	var from: Vector3 = nudge.call(CUTS[pick][0], 7.0)
-	var to: Vector3 = nudge.call(CUTS[pick][1], 9.0)
-	_cant = float(CUTS[pick][2]) + _rng.randf_range(-9.0, 9.0)
-	var wind := _rng.randf_range(0.07, 0.11) if not charged else 0.06
-	var fall := _rng.randf_range(0.095, 0.14)
-	var back := _rng.randf_range(0.28, 0.42)
-	# The arm goes with the blade: reaching along the cut, then settling back.
-	var reach_to := HAND + Vector3(_rng.randf_range(-0.12, 0.06), _rng.randf_range(-0.06, 0.08), _rng.randf_range(-0.26, -0.12))
+	var from: Vector3
+	var to: Vector3
+	var wind: float
+	var fall: float
+	var back: float
+	var reach_to: Vector3
+	var settle := 0.0
+	if tool == "axe":
+		# THE AXE IS A TOOL, AND A TOOL IS SWUNG THE SAME WAY EVERY TIME: back over
+		# the right shoulder, down and across into the trunk, and home. No picking
+		# among cuts, no nudging, the same timing: the stroke you learn is the
+		# stroke you get.
+		from = AXE_CHOP[0]
+		to = AXE_CHOP[1]
+		wind = 0.13
+		fall = 0.11
+		back = 0.34
+		reach_to = HAND + Vector3(-0.06, 0.0, -0.2)
+	else:
+		var pick := _rng.randi_range(0, CUTS.size() - 1)
+		if pick == _last_cut:
+			pick = (pick + 1 + _rng.randi_range(0, CUTS.size() - 2)) % CUTS.size()
+		_last_cut = pick
+		from = nudge.call(CUTS[pick][0], 7.0)
+		to = nudge.call(CUTS[pick][1], 9.0)
+		_cant = float(CUTS[pick][2]) + _rng.randf_range(-9.0, 9.0)
+		wind = _rng.randf_range(0.07, 0.11) if not charged else 0.06
+		fall = _rng.randf_range(0.095, 0.14)
+		back = _rng.randf_range(0.28, 0.42)
+		settle = 2.0
+		# The arm goes with the blade: reaching along the cut, then settling back.
+		reach_to = HAND + Vector3(_rng.randf_range(-0.12, 0.06), _rng.randf_range(-0.06, 0.08), _rng.randf_range(-0.26, -0.12))
 	_swing = create_tween()
 	_swing.tween_property(_pivot, "rotation_degrees", from, wind).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_swing.parallel().tween_property(_pivot, "position", HAND + Vector3(0.04, 0.05, 0.08), wind)
@@ -445,8 +467,8 @@ func _cut(charged: bool) -> void:
 	if charged:
 		_swing.tween_callback(_throw)
 	# Carried a little past the end of the cut before it comes home.
-	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * _rng.randf_range(5.0, 11.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, 2.0), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * (8.0 if tool != "axe" else 4.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, settle), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_swing.parallel().tween_property(_pivot, "position", HAND, back).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
