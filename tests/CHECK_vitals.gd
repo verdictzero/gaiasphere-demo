@@ -13,6 +13,8 @@ func _process(_dt: float) -> bool:
 	var v := Vitals.new()
 	v._explorer = body
 	v._view = Control.new()
+	v._epitaph = Label.new()
+	v._shroud = ColorRect.new()
 	var ok := true
 	# Run flat out.
 	body.running = true
@@ -56,6 +58,30 @@ func _process(_dt: float) -> bool:
 	var before := v.stamina
 	v.spend(v.swing_cost)
 	ok = ok and absf(before - v.stamina - v.swing_cost) < 0.01
+	# A short drop costs nothing; a long one hurts; a very long one is the end.
+	v.health = 100.0
+	var after: Array = []
+	for drop in [[8.0, "3 m"], [18.0, "16 m"], [40.0, "80 m"]]:
+		body.velocity = Vector3(0, -float(drop[0]), 0)
+		body.grounded = false
+		v._process(0.1)
+		body.grounded = true
+		body.velocity = Vector3.ZERO
+		v._process(0.1)
+		after.append(v.health)
+		print("vitals: a %s drop (landing at %d m/s): health %.0f, put back at the start %d time(s)" % [drop[1], int(drop[0]), v.health, body.arrivals])
+	ok = ok and after[0] == 100.0 and after[1] < 70.0 and after[1] > 50.0 and body.arrivals == 1 and after[2] == 100.0
+	# Starving wears it down; fed, it mends, for food.
+	v.health = 60.0
+	v.hunger = 0.0
+	for i in 100:
+		v._process(0.1)
+	var starved := v.health
+	v.hunger = 90.0
+	for i in 200:
+		v._process(0.1)
+	print("vitals: 10 s starving took health 60 -> %.1f; 20 s fed brought it to %.1f, food 90 -> %.1f" % [starved, v.health, v.hunger])
+	ok = ok and starved < 56.0 and v.health > starved + 10.0 and v.hunger < 90.0
 	print("vitals: %s" % ("ok" if ok else "FAILED"))
 	quit(0 if ok else 1)
 	return true

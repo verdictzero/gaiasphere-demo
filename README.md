@@ -44,9 +44,11 @@ To run it from source, open the folder in Godot 4.7-dev5 and press play.
 | Full screen | F11 | |
 
 Swing the sword at a tree and it takes a bite; a few bites (one charged
-crescent) and the tree bursts into logs. Walk up to the logs to gather them. Two bars sit over the hotbar: hunger and stamina. Running, jumping and swinging
-spend stamina; getting it back spends food; and the hungrier you are the less
-stamina you have and the slower it returns. Select the berries in the hotbar and
+crescent) and the tree bursts into logs. Walk up to the logs to gather them. Three bars sit over the hotbar: health, hunger and stamina. Running, jumping and
+swinging spend stamina; getting it back spends food; and the hungrier you are
+the less stamina you have and the slower it returns. A long fall costs health,
+and so does an empty stomach; fed, it mends. At nothing (or under the cloud sea)
+you are put back at the start with what you were carrying. Select the berries in the hotbar and
 click to eat one.
 
 Hit a berry bush (the ones hung with red) and it is stripped bare in a cloud of

@@ -45,6 +45,8 @@ extends CharacterBody3D
 
 ## True while flying.
 var flying := false
+## Gone under the cloud sea, a moment before being put back at the start.
+signal fell
 ## Whether there is the breath to run, and whether it is being done this frame.
 var run_allowed := true
 var running := false
@@ -258,6 +260,7 @@ func _fell_off(delta: float) -> void:
 	_under += delta
 	if _under > 1.5:
 		_under = 0.0
+		fell.emit()
 		arrive()
 
 
