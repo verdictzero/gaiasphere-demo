@@ -46,6 +46,9 @@ var _prefill_group := -1
 var _prefill_jobs: Array = []          # [layer index, tile]
 var _prefill_count := 0
 var _prefilled := false
+var _near_mutex := Mutex.new()
+var _near_done := {}                   # layer index -> a finished sorting (see _near_update)
+var _near_tasks := {}                  # layer index -> its sorting's task
 var _scale := 1.0
 # The islet in the mere: wooded to its shore, with a clearing in the middle for the
 # sword in the stone.
@@ -157,7 +160,7 @@ func _build_layers() -> void:
 		"shadow_lods": 4 if quality > 0 else 3,
 		"kinds": tree_kinds, "place": _place_trees, "prefill": true,
 		"cross_reach": 480.0 * _scale, "height": 50.0, "collide": true,
-		# Each tree picks its own level (see _bin_near): not a tile at a time.
+		# Each tree picks its own level (see _near_update): not a tile at a time.
 		"near_field": true,
 	})
 
@@ -179,7 +182,7 @@ func _build_layers() -> void:
 	_layers.append({
 		"name": "ferns", "tile": 20.0, "radius": 95.0 * _scale, "stride": STRIDE,
 		"dists": [9.0 * _scale, 24.0 * _scale, 50.0 * _scale], "shadow_lods": 1,
-		"kinds": fern_kinds, "prefill": true, "place": _place_ferns, "height": 2.0,
+		"kinds": fern_kinds, "prefill": true, "place": _place_ferns, "height": 2.0, "near_field": true,
 	})
 
 	# --- bushes: cards cut from the bush photos, crossed and leaned for volume
@@ -197,7 +200,7 @@ func _build_layers() -> void:
 			{"lods": [_bush_mesh(leaves, 5, 4, 11), _bush_mesh(leaves, 3, 1, 11), _bush_mesh(leaves, 2, 0, 11)]},
 			{"lods": [_bush_mesh(leaves, 4, 4, 23), _bush_mesh(leaves, 3, 1, 23), _bush_mesh(leaves, 2, 0, 23)]},
 			{"lods": [_bush_mesh(leaves, 5, 3, 37), _bush_mesh(leaves, 3, 1, 37), _bush_mesh(leaves, 2, 0, 37)]}],
-		"prefill": true, "place": _place_bushes, "height": 4.0,
+		"prefill": true, "place": _place_bushes, "height": 4.0, "near_field": true,
 	})
 
 	# --- seaweed, under the mere
@@ -227,6 +230,7 @@ func _build_layers() -> void:
 		"name": "boulders", "tile": 32.0, "radius": 380.0 * _scale, "stride": STRIDE,
 		"dists": [26.0 * _scale, 90.0 * _scale], "shadow_lods": 2,
 		"kinds": boulder_kinds, "prefill": true, "place": _place_boulders, "height": 8.0, "collide": true,
+		"near_field": true,
 	})
 
 	# --- grass: crossed quads cut from the clump photos, one atlas, one draw per tile
@@ -785,6 +789,8 @@ func _prefill_one(i: int) -> void:
 func _exit_tree() -> void:
 	if _prefill_group >= 0 and not _prefilled:
 		WorkerThreadPool.wait_for_group_task_completion(_prefill_group)
+	for li in _near_tasks:
+		WorkerThreadPool.wait_for_task_completion(_near_tasks[li])
 
 
 # THE LOADING COVER'S HOOKS: everything is planted behind the loading screen, so
@@ -1176,10 +1182,7 @@ func _update_layer(li: int, at: Vector3) -> void:
 		if layer.get("collide", false):
 			_rebuild_colliders(layer, cam_tile)
 	if layer.get("near_field", false):
-		# Trees: sorted one by one, whenever the camera has moved a step.
-		var last: Vector3 = layer.get("binned_at", Vector3(1e9, 0, 0))
-		if layer.get("rebin", true) or last.distance_to(at) > NEAR_STEP:
-			_bin_near(layer, at, radius)
+		_near_update(li, at, radius)
 		return
 	# WHICH LEVELS EACH TILE DRAWS, every frame: usually one, and two while any of
 	# its plants are in the band round a hand-over distance (the shader then picks,
@@ -1207,55 +1210,95 @@ func _close_level(mmis: Array) -> void:
 			mmi.queue_free()
 
 
-## How far the camera moves between sortings of the trees, metres. Less than half
-## the narrowest hand-over band, so no tree is ever caught at the wrong level.
-const NEAR_STEP := 0.5
-
-
-## EVERY TREE NEAR THE CAMERA, SORTED INTO ITS OWN LEVEL OF DETAIL. Trees are what
-## the frame is spent on, so they are not drawn a tile at a time (every tree in
-## a tile at every level any of them needs): each tree goes into the one level
-## its own distance calls for, or the two it is passing between. The result is
-## one MultiMesh per kind of tree per level for the whole near wood: a few dozen
-## draws however many tiles are in range, and no tree submitted at a level it
-## is not shown at. Sorting a few hundred trees takes a fraction of a millisecond.
-func _bin_near(layer: Dictionary, at: Vector3, radius: float) -> void:
+## EVERY PLANT NEAR THE CAMERA, SORTED INTO ITS OWN LEVEL OF DETAIL. Trees, bushes,
+## ferns and boulders are not drawn a tile at a time (every plant in a tile at
+## every level any of them needs, and a draw call per tile per kind per level):
+## each plant goes into the one level its own distance calls for, or the two it
+## is passing between, and the result is ONE MultiMesh per kind per level for
+## everything in range. A few dozen draws where there were hundreds, and nothing
+## submitted at a level it is not shown at.
+##
+## The sorting is done on a worker thread, from a snapshot of the tiles in range,
+## whenever the camera has moved `step` metres (a fraction of the narrowest
+## hand-over band, so nothing is ever caught at the wrong level): thousands of
+## bushes are too many to sort between two frames on a phone. The main thread
+## only hands the finished buffers to the MultiMeshes.
+func _near_update(li: int, at: Vector3, radius: float) -> void:
+	var layer := _layers[li]
+	# A sorting that has come back: put it on screen.
+	_near_mutex.lock()
+	var done: Variant = _near_done.get(li)
+	_near_done.erase(li)
+	_near_mutex.unlock()
+	if done != null:
+		_near_show(layer, done)
+		layer["sorting"] = false
+	if layer.get("sorting", false):
+		return
+	var dists: Array = layer["dists"]
+	var step := 0.5
+	if not dists.is_empty():
+		step = clampf(float(dists[0]) * LOD_BAND * 0.45, 0.4, 2.5)
+	var last: Vector3 = layer.get("binned_at", Vector3(1e9, 0, 0))
+	if not layer.get("rebin", true) and last.distance_to(at) <= step:
+		return
 	layer["rebin"] = false
 	layer["binned_at"] = at
-	var dists: Array = layer["dists"]
-	var levels := dists.size() + 1
-	var kinds: Array = layer["kinds"]
-	var tiles: Dictionary = layer["tiles"]
+	layer["sorting"] = true
 	var los := PackedFloat32Array()
 	var his := PackedFloat32Array()
-	for lod in levels:
+	for lod in dists.size() + 1:
 		los.append(0.0 if lod == 0 else float(dists[lod - 1]))
-		his.append(radius if lod == levels - 1 else float(dists[lod]))
+		his.append(radius if lod == dists.size() else float(dists[lod]))
+	# The tiles in range, as they are now. (A tile's buffers are replaced, never
+	# changed in place, so the thread can read these while the game goes on.)
+	var snapshot: Array = []
+	if radius > 0.0:
+		for key in (layer["tiles"] as Dictionary):
+			snapshot.append((layer["tiles"][key]["bufs"] as Array).duplicate())
+	var task := WorkerThreadPool.add_task(
+			_near_sort.bind(li, snapshot, at, los, his, int(layer["stride"]), (layer["kinds"] as Array).size()), false, "flora levels")
+	_near_tasks[li] = task
+
+
+func _near_sort(li: int, snapshot: Array, at: Vector3, los: PackedFloat32Array, his: PackedFloat32Array,
+		stride: int, kinds: int) -> void:
+	var levels := los.size()
 	var packed: Array = []
-	for k in kinds.size():
+	for k in kinds:
 		var per: Array = []
 		for lod in levels:
 			per.append(PackedFloat32Array())
 		packed.append(per)
-	if radius > 0.0:
-		for key in tiles:
-			var bufs: Array = tiles[key]["bufs"]
-			for k in kinds.size():
-				var buf: PackedFloat32Array = bufs[k]
-				for i in range(0, buf.size(), STRIDE):
-					var d := Vector3(buf[i + 3] - at.x, buf[i + 7] - at.y, buf[i + 11] - at.z).length()
-					for lod in levels:
-						if d > his[lod] * (1.0 + LOD_BAND):
-							continue
-						if lod > 0 and d < los[lod] * (1.0 - LOD_BAND):
-							break
-						(packed[k][lod] as PackedFloat32Array).append_array(buf.slice(i, i + STRIDE))
+	for bufs: Array in snapshot:
+		for k in kinds:
+			var buf: PackedFloat32Array = bufs[k]
+			for i in range(0, buf.size(), stride):
+				var d := Vector3(buf[i + 3] - at.x, buf[i + 7] - at.y, buf[i + 11] - at.z).length()
+				for lod in levels:
+					if d > his[lod] * (1.0 + LOD_BAND):
+						continue
+					if lod > 0 and d < los[lod] * (1.0 - LOD_BAND):
+						break
+					(packed[k][lod] as PackedFloat32Array).append_array(buf.slice(i, i + stride))
+	_near_mutex.lock()
+	_near_done[li] = {"packed": packed, "at": at, "los": los, "his": his}
+	_near_mutex.unlock()
+
+
+func _near_show(layer: Dictionary, done: Dictionary) -> void:
+	var packed: Array = done["packed"]
+	var los: PackedFloat32Array = done["los"]
+	var his: PackedFloat32Array = done["his"]
+	var at: Vector3 = done["at"]
+	var kinds: Array = layer["kinds"]
+	var stride := int(layer["stride"])
 	var near: Dictionary = layer.get("near", {})
 	layer["near"] = near
-	var reach := radius * (1.0 + LOD_BAND) + 80.0
+	var reach := his[his.size() - 1] * (1.0 + LOD_BAND) + 80.0
 	var box := AABB(at - Vector3(reach, 80.0, reach), Vector3(reach * 2.0, 220.0, reach * 2.0))
 	for k in kinds.size():
-		for lod in levels:
+		for lod in los.size():
 			var buf: PackedFloat32Array = packed[k][lod]
 			var slot := Vector2i(k, lod)
 			var mmi: MultiMeshInstance3D = near.get(slot)
@@ -1264,12 +1307,13 @@ func _bin_near(layer: Dictionary, at: Vector3, radius: float) -> void:
 					continue
 				var mm := MultiMesh.new()
 				mm.transform_format = MultiMesh.TRANSFORM_3D
+				mm.use_custom_data = stride == STRIDE_CUSTOM
 				mm.mesh = kinds[k]["lods"][mini(lod, (kinds[k]["lods"] as Array).size() - 1)]
 				mmi = MultiMeshInstance3D.new()
 				mmi.multimesh = mm
 				(layer["holder"] as Node3D).add_child(mmi)
 				near[slot] = mmi
-			mmi.multimesh.instance_count = buf.size() / STRIDE
+			mmi.multimesh.instance_count = buf.size() / stride
 			if not buf.is_empty():
 				mmi.multimesh.buffer = buf
 			mmi.custom_aabb = box
