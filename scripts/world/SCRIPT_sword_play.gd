@@ -150,6 +150,11 @@ func _process(delta: float) -> void:
 	_sway(delta)
 	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
 		return
+	# Something to be worked comes first: a door in front of you is opened, not hit.
+	if Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
+		for thing in get_tree().get_nodes_in_group(&"usable"):
+			if bool(thing.call(&"try_use", _cam.global_position, -_cam.global_basis.z)):
+				return
 	if not held:
 		var near: bool = _explorer.global_position.distance_to(_stone.get_child(0).global_position) < reach
 		_prompt.visible = near

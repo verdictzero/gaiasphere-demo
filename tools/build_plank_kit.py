@@ -452,6 +452,103 @@ def gable(planks, beams, seed, eps, rise_right, width=2.0):
     return mesh, used
 
 
+# A doorway's opening, metres: how wide, how tall, and the leaf that fills it.
+DOOR_W = 0.92
+DOOR_H = 1.9
+LEAF_W = DOOR_W - 0.04
+LEAF_H = DOOR_H - 0.05
+
+
+def doorway(planks, beams, seed, eps, width=2.0):
+    """A WALL WITH A DOORWAY IN IT: the wall's planks, but cut away where the door
+    goes (those over the opening stop short above it), the rails stopping at
+    either side of it, and a frame round it: two posts and a lintel."""
+    rng = random.Random(seed)
+    mesh = Mesh()
+    half = DOOR_W / 2
+    # The three parts of a wall that are not the opening.
+    parts = ((lambda v: -half - v[0],), (lambda v: v[0] - half,),
+             (lambda v: v[0] + half, lambda v: half - v[0], lambda v: v[1] - DOOR_H))
+    pool = planks[:]
+    rng.shuffle(pool)
+    x = -width / 2
+    k = 0
+    while x < width / 2 - 0.05:
+        p = pool[k % len(pool)]
+        k += 1
+        w_m, h_m = p["mask"].shape[1] / PX_PER_M, p["mask"].shape[0] / PX_PER_M
+        lift, lean = rng.uniform(0.0, 0.03), rng.uniform(-0.008, 0.008)
+        fx, fy = rng.random() < 0.5, rng.random() < 0.35
+        for cuts in parts:
+            place(mesh, p, eps, (x + w_m / 2, h_m / 2 + lift), lean, fx, fy, 0.0, PLANK_T,
+                  cuts=cuts + (lambda v: width / 2 + 0.01 - v[0],))
+        x += w_m + rng.uniform(0.006, 0.014)
+    order = beams[:]
+    rng.shuffle(order)
+    # The rails, each in two lengths either side of the opening.
+    for k, y in enumerate((0.34, 1.62)):
+        b = order[k % len(order)]
+        length_px = (width + 0.07) * PX_PER_M / RAIL_SCALE
+        start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
+        fx, fy = rng.random() < 0.5, rng.random() < 0.5
+        for cuts in parts[:2]:
+            place(mesh, b, eps, (0.0, y), 0.0, fx, fy, PLANK_T, PLANK_T + RAIL_T, back=False,
+                  crop=(start, start + length_px), scale=RAIL_SCALE, cuts=cuts)
+    # The frame: a post up each side and a lintel across their heads, proud of everything.
+    post = 0.6
+    post_w = order[2 % len(order)]["mask"].shape[0] / PX_PER_M * post
+    for side in (-1, 1):
+        b = order[(2 + (side > 0)) % len(order)]
+        length_px = min((DOOR_H + 0.02) * PX_PER_M / post, b["mask"].shape[1] - 4)
+        start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
+        place(mesh, b, eps, (side * (half + post_w / 2), (DOOR_H + 0.02) / 2), math.pi / 2, side > 0, rng.random() < 0.5,
+              -0.012, PLANK_T + RAIL_T * 1.15, crop=(start, start + length_px), scale=post)
+    b = order[0]
+    length_px = (DOOR_W + post_w * 2 + 0.16) * PX_PER_M / post
+    start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
+    place(mesh, b, eps, (0.0, DOOR_H + post_w / 2), 0.0, rng.random() < 0.5, rng.random() < 0.5,
+          -0.012, PLANK_T + RAIL_T * 1.3, crop=(start, start + length_px), scale=post)
+    return mesh, []
+
+
+def leaf(planks, beams, seed, eps):
+    """THE DOOR ITSELF, ledged and braced: planks side by side, two ledges across
+    them and a brace between, on the face. Its hinge edge is the y axis (x runs
+    from 0 to the leaf's width), so turning it about y swings it."""
+    rng = random.Random(seed)
+    mesh = Mesh()
+    inside = (lambda v: v[0], lambda v: LEAF_W - v[0], lambda v: v[1] - 0.0, lambda v: LEAF_H - v[1])
+    pool = sorted(planks, key=lambda p: p["mask"].shape[1])[:9]          # the narrower ones: a door is not two boards
+    rng.shuffle(pool)
+    x = 0.0
+    k = 0
+    while x < LEAF_W - 0.01:
+        p = pool[k % len(pool)]
+        k += 1
+        w_m, h_m = p["mask"].shape[1] / PX_PER_M, p["mask"].shape[0] / PX_PER_M
+        place(mesh, p, eps, (x + w_m / 2, h_m / 2 - rng.uniform(0.02, 0.1)), 0.0, rng.random() < 0.5, rng.random() < 0.5,
+              0.0, PLANK_T * 0.8, cuts=inside)
+        x += w_m + 0.004
+    order = beams[:]
+    rng.shuffle(order)
+    ledge = 0.5
+    ledge_h = order[0]["mask"].shape[0] / PX_PER_M * ledge
+    ys = (0.28, LEAF_H - 0.3)
+    for k, y in enumerate(ys):
+        b = order[k % len(order)]
+        length_px = (LEAF_W - 0.06) * PX_PER_M / ledge
+        start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
+        place(mesh, b, eps, (LEAF_W / 2, y), 0.0, rng.random() < 0.5, rng.random() < 0.5, PLANK_T * 0.8, PLANK_T * 0.8 + RAIL_T * 0.7,
+              back=False, crop=(start, start + length_px), scale=ledge)
+    # The brace runs up from the hinge side, as it must to hold a door square.
+    low, high = ys[0] + ledge_h / 2 - 0.01, ys[1] - ledge_h / 2 + 0.01
+    b = order[2 % len(order)]
+    place(mesh, b, eps, (LEAF_W / 2, (low + high) / 2), math.atan2(high - low, LEAF_W * 0.8), False, rng.random() < 0.5,
+          PLANK_T * 0.8, PLANK_T * 0.8 + RAIL_T * 0.6, back=False, scale=ledge,
+          cuts=(lambda v: v[1] - low, lambda v: high - v[1], lambda v: v[0] - 0.03, lambda v: LEAF_W - 0.03 - v[0]))
+    return mesh, []
+
+
 def tilted(mesh, pitch):
     """A panel built standing up, leaned back about its foot by `pitch` (radians): a
     quarter turn lays it flat, face up; an eighth makes a 45 degree roof. Its foot
@@ -505,6 +602,8 @@ def main(out_dir):
     #   floor_*       2 m square, lying flat, boards up: a platform
     #   gable_left_*, gable_right_*   the triangle under one roof panel's end, to stand
     #                 on a wall: high on the side it is named for
+    #   doorway_*     a wall with a framed opening in the middle of it
+    #   door_*        the leaf that hangs in it: its hinge edge on the y axis
     everything = photo_planks + drawn_planks
     builds = []
     for i, seed in enumerate((3, 11, 5, 23, 31, 47, 59, 71)):
@@ -523,6 +622,10 @@ def main(out_dir):
             stock = photo_planks if i == 0 else everything
             builds.append((f"gable_{side}_{chr(97 + i)}", lambda eps, seed=seed, stock=stock, side=side:
                            gable(stock, photo_beams, seed, eps, side == "right")))
+    for i, seed in enumerate((61, 67)):
+        stock = photo_planks if i == 0 else everything
+        builds.append((f"doorway_{chr(97 + i)}", lambda eps, seed=seed, stock=stock: doorway(stock, photo_beams, seed, eps)))
+        builds.append((f"door_{chr(97 + i)}", lambda eps, seed=seed, stock=stock: leaf(stock, photo_beams, seed + 1, eps)))
     summary = {}
     for name, build in builds:
         counts = []

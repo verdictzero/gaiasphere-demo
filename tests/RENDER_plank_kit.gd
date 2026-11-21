@@ -11,6 +11,8 @@ var _frames := 0
 var _cam: Camera3D
 var _sun: DirectionalLight3D
 var _shots: Array = []
+var _door_shut: Door
+var _door_open: Door
 
 
 func _put(file: String, at: Vector3, turn := 0.0) -> void:
@@ -70,6 +72,14 @@ func _initialize() -> void:
 		_put("wall_%s_lod0" % "abcdefgh"[i], Vector3(-7.7 + 2.2 * i, 0, -9.0))
 	for lod in 3:
 		_put("roof_a_lod%d" % lod, Vector3(-2.6 + 2.6 * lod, 0, -17.0))
+	# A door on its own, and one beside it standing open.
+	_door_shut = Door.new()
+	_door_shut.position = Vector3(-2.2, 0, 14.0)
+	root.add_child(_door_shut)
+	_door_open = Door.new()
+	_door_open.variant = "b"
+	_door_open.position = Vector3(0.6, 0, 14.0)
+	root.add_child(_door_open)
 	_cam = Camera3D.new()
 	_cam.fov = 40.0
 	root.add_child(_cam)
@@ -82,12 +92,21 @@ func _initialize() -> void:
 		["kit_parts", Vector3(-7.8, 2.2, 7.0), Vector3(-7.8, 1.0, 0), Vector3(-38, 52, 0)],
 		["kit_gables", Vector3(8.2, 1.5, 6.0), Vector3(8.2, 1.0, 0), Vector3(-38, 52, 0)],
 		["kit_walls", Vector3(0.0, 1.6, 2.0), Vector3(0.0, 1.0, -9.0), Vector3(-38, 52, 0)],
+		["kit_doors", Vector3(-0.8, 1.5, 19.5), Vector3(-0.8, 1.0, 14.0), Vector3(-38, 52, 0)],
 		["kit_inside", Vector3(1.4, 1.5, 0.5), Vector3(-2.0, 2.4, -0.6), Vector3(-38, 52, 0)],
 	]
 
 
 func _process(_dt: float) -> bool:
 	_frames += 1
+	if _frames == 2:
+		# Worked the way a player would: from in front, looking at it.
+		var from := _door_open.global_position + Vector3(0, 1.5, 2.0)
+		var worked := _door_open.try_use(from, Vector3(0, -0.15, -1))
+		var ignored := not _door_shut.try_use(from + Vector3(0, 0, 9.0), Vector3(0, 0, -1)) \
+				and not _door_shut.try_use(_door_shut.global_position + Vector3(0, 1.5, 2.0), Vector3(1, 0, 0))
+		_door_open.seconds = 0.01
+		print("door: opened from in front: %s; out of reach or looking away does nothing: %s" % [worked and _door_open.open, ignored])
 	var i := (_frames - 1) / 12
 	if i >= _shots.size():
 		quit(0)

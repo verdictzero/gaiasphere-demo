@@ -125,6 +125,11 @@ func _hotbar_zone(at: Vector2) -> bool:
 
 ## What the big button does just now, said on it.
 func _use_label() -> String:
+	var cam := get_viewport().get_camera_3d()
+	if cam != null:
+		for thing in get_tree().get_nodes_in_group(&"usable"):
+			if bool(thing.call(&"can_use", cam.global_position, -cam.global_basis.z)):
+				return String(thing.call(&"use_label"))
 	if _hand == null:
 		return "USE"
 	var prompt: Variant = _hand.get("_prompt")
