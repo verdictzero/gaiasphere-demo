@@ -157,6 +157,8 @@ func _build_layers() -> void:
 		"shadow_lods": 4 if quality > 0 else 3,
 		"kinds": tree_kinds, "place": _place_trees, "prefill": true,
 		"cross_reach": 480.0 * _scale, "height": 50.0, "collide": true,
+		# Each tree picks its own level (see _bin_near): not a tile at a time.
+		"near_field": true,
 	})
 
 	# --- ferns: three meshes, then their own impostors, then nothing
@@ -295,6 +297,7 @@ func apply_view(veg: float, lod: float, impostor: float, grass: float, grass_kee
 			if layer.has("cross0"):
 				layer["cross_reach"] = maxf(float(layer["cross0"]) * impostor, radius * 1.3)
 		layer["shadow_lods"] = int(layer["shadow_lods0"]) if shadows else 0
+		layer["rebin"] = true
 		var tiles: Dictionary = layer["tiles"]
 		for key in tiles:
 			var held: Dictionary = tiles[key]["lods"]
@@ -1078,6 +1081,7 @@ func fell(tree: Dictionary) -> void:
 	bufs[int(tree["kind"])] = cut
 	# The tile's open levels take the shorter buffer as they stand: nothing is
 	# closed, rebuilt or reopened, so a felling costs one buffer upload a level.
+	layer["rebin"] = true
 	var tiles: Dictionary = layer["tiles"]
 	if tiles.has(key):
 		tiles[key]["bufs"] = bufs
@@ -1111,7 +1115,9 @@ func _tile_span(layer: Dictionary, key: Vector2i, at: Vector3) -> Vector2:
 	var flat := _tile_distance(key, tile, at)
 	var dy := maxf(0.0, at.y - float(layer["height"]))
 	var near := sqrt(flat * flat + dy * dy)
-	return Vector2(near, near + tile * 1.5 + float(layer["height"]))
+	# The farthest a plant's ROOT in it can be (that is what a level is chosen by):
+	# across the tile's diagonal, and a few metres for ground that is not level.
+	return Vector2(near, near + tile * 1.4143 + 6.0)
 
 
 func _update_layer(li: int, at: Vector3) -> void:
@@ -1126,6 +1132,7 @@ func _update_layer(li: int, at: Vector3) -> void:
 	if cam_tile != layer["cam_tile"] or radius != float(layer.get("radius_now", -1.0)):
 		layer["cam_tile"] = cam_tile
 		layer["radius_now"] = radius
+		layer["rebin"] = true          # (the tiles in range are about to change)
 		var cache: Dictionary = layer["cache"]
 		var asked: Dictionary = layer["asked"]
 		# Tiles are held a band (and a tile) past the radius, so the last level can
@@ -1168,6 +1175,12 @@ func _update_layer(li: int, at: Vector3) -> void:
 			_repack_far(layer, at, radius)
 		if layer.get("collide", false):
 			_rebuild_colliders(layer, cam_tile)
+	if layer.get("near_field", false):
+		# Trees: sorted one by one, whenever the camera has moved a step.
+		var last: Vector3 = layer.get("binned_at", Vector3(1e9, 0, 0))
+		if layer.get("rebin", true) or last.distance_to(at) > NEAR_STEP:
+			_bin_near(layer, at, radius)
+		return
 	# WHICH LEVELS EACH TILE DRAWS, every frame: usually one, and two while any of
 	# its plants are in the band round a hand-over distance (the shader then picks,
 	# plant by plant and pixel by pixel, which of the two shows).
@@ -1192,6 +1205,78 @@ func _close_level(mmis: Array) -> void:
 	for mmi in mmis:
 		if mmi != null:
 			mmi.queue_free()
+
+
+## How far the camera moves between sortings of the trees, metres. Less than half
+## the narrowest hand-over band, so no tree is ever caught at the wrong level.
+const NEAR_STEP := 0.5
+
+
+## EVERY TREE NEAR THE CAMERA, SORTED INTO ITS OWN LEVEL OF DETAIL. Trees are what
+## the frame is spent on, so they are not drawn a tile at a time (every tree in
+## a tile at every level any of them needs): each tree goes into the one level
+## its own distance calls for, or the two it is passing between. The result is
+## one MultiMesh per kind of tree per level for the whole near wood: a few dozen
+## draws however many tiles are in range, and no tree submitted at a level it
+## is not shown at. Sorting a few hundred trees takes a fraction of a millisecond.
+func _bin_near(layer: Dictionary, at: Vector3, radius: float) -> void:
+	layer["rebin"] = false
+	layer["binned_at"] = at
+	var dists: Array = layer["dists"]
+	var levels := dists.size() + 1
+	var kinds: Array = layer["kinds"]
+	var tiles: Dictionary = layer["tiles"]
+	var los := PackedFloat32Array()
+	var his := PackedFloat32Array()
+	for lod in levels:
+		los.append(0.0 if lod == 0 else float(dists[lod - 1]))
+		his.append(radius if lod == levels - 1 else float(dists[lod]))
+	var packed: Array = []
+	for k in kinds.size():
+		var per: Array = []
+		for lod in levels:
+			per.append(PackedFloat32Array())
+		packed.append(per)
+	if radius > 0.0:
+		for key in tiles:
+			var bufs: Array = tiles[key]["bufs"]
+			for k in kinds.size():
+				var buf: PackedFloat32Array = bufs[k]
+				for i in range(0, buf.size(), STRIDE):
+					var d := Vector3(buf[i + 3] - at.x, buf[i + 7] - at.y, buf[i + 11] - at.z).length()
+					for lod in levels:
+						if d > his[lod] * (1.0 + LOD_BAND):
+							continue
+						if lod > 0 and d < los[lod] * (1.0 - LOD_BAND):
+							break
+						(packed[k][lod] as PackedFloat32Array).append_array(buf.slice(i, i + STRIDE))
+	var near: Dictionary = layer.get("near", {})
+	layer["near"] = near
+	var reach := radius * (1.0 + LOD_BAND) + 80.0
+	var box := AABB(at - Vector3(reach, 80.0, reach), Vector3(reach * 2.0, 220.0, reach * 2.0))
+	for k in kinds.size():
+		for lod in levels:
+			var buf: PackedFloat32Array = packed[k][lod]
+			var slot := Vector2i(k, lod)
+			var mmi: MultiMeshInstance3D = near.get(slot)
+			if mmi == null:
+				if buf.is_empty():
+					continue
+				var mm := MultiMesh.new()
+				mm.transform_format = MultiMesh.TRANSFORM_3D
+				mm.mesh = kinds[k]["lods"][mini(lod, (kinds[k]["lods"] as Array).size() - 1)]
+				mmi = MultiMeshInstance3D.new()
+				mmi.multimesh = mm
+				(layer["holder"] as Node3D).add_child(mmi)
+				near[slot] = mmi
+			mmi.multimesh.instance_count = buf.size() / STRIDE
+			if not buf.is_empty():
+				mmi.multimesh.buffer = buf
+			mmi.custom_aabb = box
+			mmi.cast_shadow = (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod < int(layer["shadow_lods"])
+					else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+			mmi.set_instance_shader_parameter(&"lod_in", los[lod])
+			mmi.set_instance_shader_parameter(&"lod_out", his[lod])
 
 
 ## One level of detail of one tile: a MultiMeshInstance3D per kind of plant in it,

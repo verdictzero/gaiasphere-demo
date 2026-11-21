@@ -1,6 +1,6 @@
 {
 	"res://scripts/world/SCRIPT_chunk_mesher.gd": "fd51537c4fae2bc1fbca1cda5a3ef461d2d80a55f406c209735d3d8989b5b9b7",
-	"res://scripts/world/SCRIPT_flora.gd": "3d58bfda9ffef388dde21d71675ed9c163145f77a96a26bd9811f1cad77a2211",
+	"res://scripts/world/SCRIPT_flora.gd": "f68b3c6fbda7c9b4a87a16552e40f4d0859420db44de6fc66e2b5365c0766e4e",
 	"res://scripts/world/SCRIPT_flow_terrain.gd": "b39c00279a74c16b3704fec039566fc697be755f3bcdc9aca7cb9f216be7d117",
 	"res://scripts/world/SCRIPT_island_field.gd": "e6b829e08a691015b6bf2412be081d7098ce1a3197c32d442b5317858bfc8cd3",
 	"res://scripts/world/SCRIPT_sword_stone.gd": "61b7ac08210ea36d4c99a011108b8433b91e2f5eba4c1d0bb5f56a23a9b63e73"
