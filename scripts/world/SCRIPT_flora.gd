@@ -1270,6 +1270,9 @@ func _near_sort(li: int, snapshot: Array, at: Vector3, los: PackedFloat32Array, 
 		for lod in levels:
 			per.append(PackedFloat32Array())
 		packed.append(per)
+	var flat: Array = []
+	for i in kinds * levels:
+		flat.append(PackedFloat32Array())
 	for bufs: Array in snapshot:
 		for k in kinds:
 			var buf: PackedFloat32Array = bufs[k]
@@ -1280,7 +1283,17 @@ func _near_sort(li: int, snapshot: Array, at: Vector3, los: PackedFloat32Array, 
 						continue
 					if lod > 0 and d < los[lod] * (1.0 - LOD_BAND):
 						break
-					(packed[k][lod] as PackedFloat32Array).append_array(buf.slice(i, i + stride))
+					# (Taken out of the list while it grows and put back: a packed array
+					# reached through a list is a copy, and appending to one that is
+					# held in two places copies the whole of it every time.)
+					var slot := k * levels + lod
+					var acc: PackedFloat32Array = flat[slot]
+					flat[slot] = null
+					acc.append_array(buf.slice(i, i + stride))
+					flat[slot] = acc
+	for k in kinds:
+		for lod in levels:
+			packed[k][lod] = flat[k * levels + lod]
 	_near_mutex.lock()
 	_near_done[li] = {"packed": packed, "at": at, "los": los, "his": his}
 	_near_mutex.unlock()
