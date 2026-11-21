@@ -74,11 +74,11 @@ func _ready() -> void:
 	_grit_flow.scale_min = 0.4
 	_grit_flow.scale_max = 1.7
 	_dust_mat = StandardMaterial3D.new()
-	_dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
+	_dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	_dust_mat.vertex_color_use_as_albedo = true
-	_dust_mat.albedo_color = Color(0.7, 0.68, 0.64)
+	_dust_mat.albedo_color = Color(0.46, 0.44, 0.41)
 	_dust_mat.albedo_texture = _puff_texture()
 	_dust_mesh = QuadMesh.new()
 	_dust_mesh.size = Vector2(0.5, 0.5)
@@ -102,7 +102,7 @@ func _ready() -> void:
 	swell_tex.curve = swell
 	_dust_flow.scale_curve = swell_tex
 	var thin := Gradient.new()
-	thin.set_color(0, Color(1, 1, 1, 0.42))
+	thin.set_color(0, Color(1, 1, 1, 0.26))
 	thin.set_color(1, Color(1, 1, 1, 0.0))
 	var thin_tex := GradientTexture1D.new()
 	thin_tex.gradient = thin
