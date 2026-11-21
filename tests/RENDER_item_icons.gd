@@ -8,7 +8,7 @@ extends SceneTree
 var _frames := 0
 var _cam: Camera3D
 var _subject: Node3D
-var _queue: Array = ["log", "axe", "sword"]
+var _queue: Array = ["stone", "pickaxe"]
 var _wood: Woodcutting
 
 
@@ -64,6 +64,35 @@ func _stage(what: String) -> void:
 			turn.rotation_degrees = Vector3(0.0, 100.0, -42.0)
 			_subject.add_child(turn)
 			span = 1.0
+		"pickaxe":
+			var model: Node3D = (load("res://assets/pickaxe/pickaxe.glb") as PackedScene).instantiate()
+			var stand := Basis(Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, -1, 0)).scaled(Vector3.ONE * SwordPlay.PICK_SCALE)
+			model.transform = Transform3D(stand, -(stand * Vector3(0.0, 0.0, 8.5)))
+			var turn := Node3D.new()
+			turn.add_child(model)
+			turn.rotation_degrees = Vector3(0.0, 100.0, -42.0)
+			_subject.add_child(turn)
+			span = 1.15
+		"stone":
+			# The same broken rock a boulder comes apart into (SCRIPT_mining.gd).
+			var stone := MeshInstance3D.new()
+			stone.mesh = (load("res://assets/boulder/boulder_c/boulder_c_lod1.gltf") as PackedScene).instantiate().find_children("*", "MeshInstance3D", true, false)[0].mesh
+			var box := stone.mesh.get_aabb()
+			stone.transform = Transform3D(Basis(), -box.get_center())
+			var rock := StandardMaterial3D.new()
+			rock.albedo_texture = load("res://textures/polyhaven/lichen_rock_basecolor.jpg")
+			rock.albedo_color = Color(1.12, 1.1, 1.08)
+			rock.normal_enabled = true
+			rock.normal_texture = load("res://textures/polyhaven/lichen_rock_normal.jpg")
+			rock.orm_texture = load("res://textures/polyhaven/lichen_rock_orm.jpg")
+			rock.uv1_triplanar = true
+			rock.uv1_scale = Vector3.ONE * (1.2 / box.get_longest_axis_size())
+			stone.material_override = rock
+			var turn := Node3D.new()
+			turn.add_child(stone)
+			turn.rotation_degrees = Vector3(0.0, 35.0, 0.0)
+			_subject.add_child(turn)
+			span = box.get_longest_axis_size() * 1.15
 		"sword":
 			var scene: Node3D = (load("res://assets/sword_in_stone/sword_in_stone.gltf") as PackedScene).instantiate()
 			var sword := scene.find_child("sword", true, false) as MeshInstance3D
@@ -84,8 +113,9 @@ func _process(_dt: float) -> bool:
 	if _frames == 2:
 		# (Not in _initialize: the node's _ready, which makes the materials, has to
 		# have run before the mesh is asked for.)
-		_wood = Woodcutting.new()
-		root.add_child(_wood)
+		if "log" in _queue:
+			_wood = Woodcutting.new()
+			root.add_child(_wood)
 	if _frames < 3:
 		return false
 	if (_frames - 3) % 40 == 0:

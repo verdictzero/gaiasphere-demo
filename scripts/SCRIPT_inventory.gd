@@ -19,9 +19,9 @@ const BAG := 36          # the hotbar's nine and twenty-seven more
 const ITEMS := {
 	"log": {"name": "Fir Log", "icon": "res://assets/ui/item_log.png"},
 	"axe": {"name": "Axe", "icon": "res://assets/ui/item_axe.png"},
+	"pickaxe": {"name": "Pickaxe", "icon": "res://assets/ui/item_pickaxe.png"},
 	"sword": {"name": "Sword", "icon": "res://assets/ui/item_sword.png"},
-	# Not handed out by anything yet: the icon and the name are ready for when
-	# berries can be gathered.
+	"stone": {"name": "Stone", "icon": "res://assets/ui/item_stone.png"},
 	"berry": {"name": "Berries", "icon": "res://assets/ui/item_berry.png"},
 }
 

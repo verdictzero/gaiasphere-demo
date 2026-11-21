@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_stone.gd" id="sword"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_play.gd" id="swordplay"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_woodcutting.gd" id="woodcutting"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_mining.gd" id="mining"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_inventory.gd" id="inventory"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_watermark.gd" id="watermark"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_plank_hut.gd" id="plankhut"]
@@ -67,6 +68,9 @@ script = ExtResource("swordplay")
 
 [node name="Woodcutting" type="Node3D" parent="."]
 script = ExtResource("woodcutting")
+
+[node name="Mining" type="Node3D" parent="."]
+script = ExtResource("mining")
 
 [node name="WorldReflection" type="Node3D" parent="."]
 script = ExtResource("worldrefl")

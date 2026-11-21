@@ -1071,7 +1071,78 @@ func tree_mesh(kind: int) -> Mesh:
 ## Take a tree `tree_on` found out of the wood: its meshes, its impostors and its
 ## collider all go, for as long as this run lasts.
 func fell(tree: Dictionary) -> void:
-	var layer := _tree_layer()
+	_take_out(_tree_layer(), tree, 0.6)
+
+
+func _rock_layer() -> Dictionary:
+	for layer in _layers:
+		if String(layer["name"]) == "boulders":
+			return layer
+	return {}
+
+
+## The boulder a reach of `reach` metres from `from` along `dir` strikes, or {}.
+## Boulders near the player are solid (`_rebuild_colliders`), so this is a ray
+## against the real stone: "at" is where it lands on the rock and "normal" the
+## face there. "size" is the boulder's scale, "span" its width in metres.
+func rock_on(from: Vector3, dir: Vector3, reach: float, skip: Array[RID] = []) -> Dictionary:
+	var layer := _rock_layer()
+	var body: StaticBody3D = layer.get("body") if not layer.is_empty() else null
+	if body == null or dir.length() < 0.001:
+		return {}
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir.normalized() * reach)
+	q.exclude = skip
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if hit.is_empty() or hit["collider"] != body:
+		return {}
+	var stone := body.shape_owner_get_owner(body.shape_find_owner(int(hit["shape"]))) as Node3D
+	if stone == null or stone.is_queued_for_deletion():
+		return {}
+	var origin := stone.position
+	var tile := float(layer["tile"])
+	var cache: Dictionary = layer["cache"]
+	var kinds: Array = layer["kinds"]
+	var at_tile := Vector2i(int(floor(origin.x / tile)), int(floor(origin.z / tile)))
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var key := at_tile + Vector2i(dx, dz)
+			var bufs: Variant = cache.get(key)
+			if bufs == null:
+				continue
+			for k in kinds.size():
+				var buf: PackedFloat32Array = bufs[k]
+				for i in range(0, buf.size(), STRIDE):
+					if absf(buf[i + 3] - origin.x) > 0.01 or absf(buf[i + 7] - origin.y) > 0.01 or absf(buf[i + 11] - origin.z) > 0.01:
+						continue
+					var size := Vector3(buf[i + 1], buf[i + 5], buf[i + 9]).length()
+					var box: AABB = (kinds[k]["lods"][0] as Mesh).get_aabb()
+					var basis := Basis(Vector3(buf[i], buf[i + 4], buf[i + 8]), Vector3(buf[i + 1], buf[i + 5], buf[i + 9]),
+							Vector3(buf[i + 2], buf[i + 6], buf[i + 10]))
+					return {"key": key, "kind": k, "index": i, "size": size, "origin": origin, "basis": basis,
+						"centre": origin + basis * box.get_center(),
+						"span": (box.size.x + box.size.y + box.size.z) / 3.0 * size,
+						"at": hit["position"], "normal": hit["normal"]}
+	return {}
+
+
+## The low mesh of a kind of boulder (`rock_on`'s "kind"), for the rubble one
+## breaks into.
+func rock_mesh(kind: int) -> Mesh:
+	var layer := _rock_layer()
+	if layer.is_empty():
+		return null
+	var lods: Array = layer["kinds"][kind]["lods"]
+	return lods[lods.size() - 1] as Mesh
+
+
+## Take a boulder `rock_on` found out of the world: its meshes and its collider.
+func quarry(rock: Dictionary) -> void:
+	_take_out(_rock_layer(), rock, 0.02)
+
+
+## One plant or stone out of a layer's instance buffers, and its collider (the
+## one standing within `near` metres of it) with it.
+func _take_out(layer: Dictionary, tree: Dictionary, near: float) -> void:
 	if layer.is_empty() or tree.is_empty():
 		return
 	var key: Vector2i = tree["key"]
@@ -1099,15 +1170,15 @@ func fell(tree: Dictionary) -> void:
 			mmi.multimesh.instance_count = cut.size() / STRIDE
 			if not cut.is_empty():
 				mmi.multimesh.buffer = cut
-	# Its trunk's collider goes now. The far impostors are not repacked for one
-	# tree (that walks every tile on the island): a tree near enough to fell is
-	# drawn as a mesh, and the impostors catch up at the next tile crossed.
+	# Its collider goes now. The far impostors are not repacked for one tree
+	# (that walks every tile on the island): a tree near enough to fell is drawn
+	# as a mesh, and the impostors catch up at the next tile crossed.
 	var body: StaticBody3D = layer.get("body")
 	var origin: Vector3 = tree["origin"]
 	if body != null:
 		for c in body.get_children():
 			var at: Vector3 = (c as Node3D).position
-			if absf(at.x - origin.x) < 0.6 and absf(at.z - origin.z) < 0.6:
+			if absf(at.x - origin.x) < near and absf(at.z - origin.z) < near:
 				c.queue_free()
 
 

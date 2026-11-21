@@ -44,6 +44,13 @@ const AXE_GRIP := Vector3(0.29, 0.0, 10.6)
 # is canted (degrees about the look). One is picked each swing, never the one
 # before, and every angle is nudged, so no two swings are the same.
 # The axe's one stroke: where it is drawn back to, and where it lands.
+# The pickaxe model: metres per unit, and where on it the hand closes. It lies
+# along its handle like the axe (the head at the low end), the point out to one
+# side, and is forty-four units long.
+const PICK_SCALE := 0.023
+const PICK_GRIP := Vector3(0.0, 0.0, 21.0)
+# The pickaxe's one stroke: straight up over the head, straight down.
+const PICK_BLOW := [Vector3(62.0, -4.0, -10.0), Vector3(-92.0, 4.0, 10.0)]
 const AXE_CHOP := [Vector3(42.0, -14.0, -30.0), Vector3(-96.0, 12.0, 34.0)]
 const CUTS := [
 	[Vector3(38.0, 0.0, -34.0), Vector3(-118.0, 0.0, 38.0), -62.0],     # down, right to left
@@ -71,6 +78,7 @@ var _cant := -62.0
 var _rng := RandomNumberGenerator.new()
 var _swing: Tween
 var _axe: Node3D
+var _pick: Node3D
 var _berries: MeshInstance3D
 var _munch := 0.0
 var _bob: Node3D
@@ -165,7 +173,7 @@ func _process(delta: float) -> void:
 	var now := ""
 	if _bag != null and _bag.slots[_bag.selected] != null:
 		now = String(_bag.slots[_bag.selected][0])
-	if now != "axe" and now != "berry" and not (now == "sword" and held):
+	if now != "axe" and now != "pickaxe" and now != "berry" and not (now == "sword" and held):
 		now = ""
 	if now != tool:
 		tool = now
@@ -178,6 +186,7 @@ func _process(delta: float) -> void:
 		_pivot.position = HAND + Vector3(0, -0.5, 0.15)
 		create_tween().tween_property(_pivot, "position", HAND, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_axe.visible = tool == "axe"
+	_pick.visible = tool == "pickaxe"
 	_berries.visible = tool == "berry"
 	if held:
 		_sword.visible = tool == "sword"
@@ -207,7 +216,7 @@ func _process(delta: float) -> void:
 			_charging = true
 			_charge = 0.0
 		elif Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
-			if tool == "axe" or (Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not DisplayServer.is_touchscreen_available()):
+			if tool == "axe" or tool == "pickaxe" or (Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not DisplayServer.is_touchscreen_available()):
 				_cut(false)          # the mouse has a button of its own for charging
 			else:
 				_charging = true
@@ -329,6 +338,22 @@ func _ensure_hand() -> void:
 	_pivot.add_child(_axe)
 	if _bag != null and _bag.count_of("axe") == 0:
 		_bag.add("axe", 1)
+	# THE PICKAXE, stood up on its grip the same way, its point leading.
+	_pick = Node3D.new()
+	_pick.name = "Pickaxe"
+	var pick_model: Node3D = (load("res://assets/pickaxe/pickaxe.glb") as PackedScene).instantiate()
+	var pick_stand := Basis(Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, -1, 0)).scaled(Vector3.ONE * PICK_SCALE)
+	pick_model.transform = Transform3D(pick_stand, -(pick_stand * PICK_GRIP))
+	_pick.add_child(pick_model)
+	for mi in pick_model.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(mi as MeshInstance3D).layers = 1 << (WorldReflection.MIRROR_LAYER - 1)
+	_pick.visible = false
+	_pick.rotation_degrees = Vector3(0.0, 24.0, 0.0)
+	_pick.position = Vector3(-0.05, 0.02, 0.2)
+	_pivot.add_child(_pick)
+	if _bag != null and _bag.count_of("pickaxe") == 0:
+		_bag.add("pickaxe", 1)
 	# Berries, held up in the fingers when their slot is the one selected.
 	_berries = MeshInstance3D.new()
 	_berries.name = "Berries"
@@ -449,6 +474,14 @@ func _cut(charged: bool) -> void:
 		fall = 0.11
 		back = 0.34
 		reach_to = HAND + Vector3(-0.06, 0.0, -0.2)
+	elif tool == "pickaxe":
+		# The pickaxe likewise: one blow, heavier and a little slower than the axe.
+		from = PICK_BLOW[0]
+		to = PICK_BLOW[1]
+		wind = 0.17
+		fall = 0.12
+		back = 0.4
+		reach_to = HAND + Vector3(-0.12, 0.02, -0.22)
 	else:
 		var pick := _rng.randi_range(0, CUTS.size() - 1)
 		if pick == _last_cut:
@@ -472,13 +505,19 @@ func _cut(charged: bool) -> void:
 	if charged:
 		_swing.tween_callback(_throw)
 	# Carried a little past the end of the cut before it comes home.
-	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * (8.0 if tool != "axe" else 4.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * (8.0 if tool == "sword" else 4.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, settle), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_swing.parallel().tween_property(_pivot, "position", HAND, back).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 ## The cut lands: a tree in reach takes a bite (SCRIPT_woodcutting.gd).
 func _bite() -> void:
+	# The pickaxe is for rock and nothing else (SCRIPT_mining.gd).
+	if tool == "pickaxe":
+		var mine := get_node_or_null(^"../Mining")
+		if mine != null:
+			mine.call(&"strike", _cam.global_position, -_cam.global_basis.z)
+		return
 	var wood := get_node_or_null(^"../Woodcutting")
 	if wood != null and bool(wood.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
 		return

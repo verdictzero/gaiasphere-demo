@@ -138,6 +138,8 @@ func _use_label() -> String:
 	match String(_hand.get("tool")):
 		"axe":
 			return "CHOP"
+		"pickaxe":
+			return "MINE"
 		"sword":
 			return "SWING"
 		"berry":
