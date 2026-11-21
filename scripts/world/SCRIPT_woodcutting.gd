@@ -50,6 +50,7 @@ var _bark: StandardMaterial3D
 var _end: StandardMaterial3D
 var _rng := RandomNumberGenerator.new()
 var _chip_quad: QuadMesh
+var _photo_quad: QuadMesh
 var _chip_mats := {}         # colour -> material
 var _chip_flows := {}        # box and life -> process material
 
@@ -89,6 +90,8 @@ func _ready() -> void:
 	_fresh.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_chip_quad = QuadMesh.new()
 	_chip_quad.size = Vector2(0.07, 0.035)
+	_photo_quad = QuadMesh.new()
+	_photo_quad.size = Vector2(0.15, 0.15)
 	call_deferred(&"_warm_up")
 
 
@@ -135,7 +138,7 @@ func strike(from: Vector3, dir: Vector3, outright := false) -> bool:
 	_carve(cut)
 	var root2: Node3D = cut["root"]
 	var mouth: Vector3 = root2.to_global((cut["centre"] as Vector3) + (cut["toward"] as Vector3) * float(cut["girth"]))
-	_chips(mouth, 30, CHIP)
+	_chips(mouth, 20, CHIP)
 	if int(cut["taken"]) >= int(cut["needed"]):
 		_fall(cut)
 	return true
@@ -664,6 +667,11 @@ func _chips(at: Vector3, amount: int, color: Color, spread := Vector3(0.1, 0.1, 
 		m.angular_velocity_max = 400.0
 		m.scale_min = 0.5
 		m.scale_max = 1.5
+		# Each particle keeps one picture out of the chip atlas, picked at random.
+		m.anim_offset_min = 0.0
+		m.anim_offset_max = 1.0
+		m.anim_speed_min = 0.0
+		m.anim_speed_max = 0.0
 		if _chip_flows.size() > 24:
 			_chip_flows.clear()
 		_chip_flows[flow_key] = m
@@ -671,11 +679,23 @@ func _chips(at: Vector3, amount: int, color: Color, spread := Vector3(0.1, 0.1, 
 	var mat: StandardMaterial3D = _chip_mats.get(color)
 	if mat == null:
 		mat = StandardMaterial3D.new()
-		mat.albedo_color = color
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		if color == CHIP:
+			# WOOD CHIPS: sixteen photographs of splinters, shavings and chunks
+			# (assets/chips, cut from one sheet by tools/build_chip_atlas.py), one to
+			# a particle, tumbling as they fly.
+			mat.albedo_texture = load("res://assets/chips/chips_atlas.png")
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+			mat.alpha_scissor_threshold = 0.45
+			mat.particles_anim_h_frames = 4
+			mat.particles_anim_v_frames = 4
+			mat.particles_anim_loop = false
+			mat.roughness = 0.85
+		else:
+			mat.albedo_color = color
 		_chip_mats[color] = mat
-	p.draw_pass_1 = _chip_quad
+	p.draw_pass_1 = _photo_quad if color == CHIP else _chip_quad
 	p.material_override = mat
 	p.visibility_aabb = AABB(-spread - Vector3.ONE * 12.0, spread * 2.0 + Vector3.ONE * 24.0)
 	add_child(p)

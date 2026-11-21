@@ -91,7 +91,7 @@ func _process(_dt: float) -> bool:
 			if not wood.strike(cam.global_position, -cam.global_basis.z):
 				push_error("chop: the swing met no tree")
 				_failed = true
-			_wait = 12
+			_wait = 2            # soon enough to catch the chips in the air
 		1:
 			_shot("1_first_bite")
 			# One bite short of what it takes.
