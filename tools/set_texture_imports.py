@@ -15,7 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GLOBS = ["textures/polyhaven/*.jpg", "assets/*/textures/*.png", "assets/*/textures/*.jpg",
-         "assets/*/textures/impostors/*.png"]
+         "assets/*/textures/impostors/*.png",
+         "assets/chips/*.png", "assets/leaves/*.png", "assets/berry_bush/*.png"]
 changed = 0
 for g in GLOBS:
     for tex in sorted(ROOT.glob(g)):

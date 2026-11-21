@@ -410,8 +410,12 @@ func _cut(charged: bool) -> void:
 ## The cut lands: a tree in reach takes a bite (SCRIPT_woodcutting.gd).
 func _bite() -> void:
 	var wood := get_node_or_null(^"../Woodcutting")
-	if wood != null:
-		wood.call(&"strike", _cam.global_position, -_cam.global_basis.z)
+	if wood != null and bool(wood.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
+		return
+	# No tree in the way: a berry bush, perhaps (SCRIPT_berry_bushes.gd).
+	var bushes := get_node_or_null(^"../BerryBushes")
+	if bushes != null:
+		bushes.call(&"strike", _cam.global_position, -_cam.global_basis.z)
 
 
 # ------------------------------------------------------------------ the crescent

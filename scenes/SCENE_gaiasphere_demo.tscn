@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_woodcutting.gd" id="woodcutting"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_inventory.gd" id="inventory"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_watermark.gd" id="watermark"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_berry_bushes.gd" id="berrybushes"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_world_reflection.gd" id="worldrefl"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_graphics_menu.gd" id="gfxmenu"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_environment_menu.gd" id="envmenu"]
@@ -67,6 +68,9 @@ script = ExtResource("woodcutting")
 
 [node name="WorldReflection" type="Node3D" parent="."]
 script = ExtResource("worldrefl")
+
+[node name="BerryBushes" type="Node3D" parent="."]
+script = ExtResource("berrybushes")
 
 [node name="ForestMotes" type="Node3D" parent="."]
 script = ExtResource("motes")
