@@ -76,8 +76,9 @@ func _ready() -> void:
 	for g in GIRTHS:
 		_log_mesh(g)
 	_fresh = StandardMaterial3D.new()
-	_fresh.albedo_color = Color(0.86, 0.7, 0.46)
-	_fresh.roughness = 0.8
+	_fresh.albedo_color = Color(1.0, 0.94, 0.84)
+	_fresh.albedo_texture = load("res://assets/log/log_end.jpg")
+	_fresh.roughness = 0.82
 	_fresh.vertex_color_use_as_albedo = true
 	# The level face of a cut: the sawn end's own rings.
 	_rings = StandardMaterial3D.new()
@@ -345,7 +346,7 @@ func _face(st: SurfaceTool, points: PackedVector3Array, normal: Vector3, rings :
 			var at: Vector3 = q
 			var shade := 1.0
 			if not deep.is_empty():
-				shade = lerpf(0.34, 1.0, clampf((at - (deep[0] as Vector3)).dot(deep[1]) / maxf(float(deep[2]), 0.001), 0.0, 1.0))
+				shade = lerpf(0.42, 1.0, clampf((at - (deep[0] as Vector3)).dot(deep[1]) / maxf(float(deep[2]), 0.001), 0.0, 1.0))
 			st.set_color(Color(shade, shade, shade))
 			st.set_normal(normal)
 			if rings.is_empty():
@@ -381,7 +382,9 @@ func _carved(sawn: Dictionary, toward: Vector3, depth: float, gape: float) -> Ar
 		var wood := SurfaceTool.new()
 		wood.begin(Mesh.PRIMITIVE_TRIANGLES)
 		if depth > 0.001:
-			_face(wood, cut_points, -keep, [], [edge, toward, depth])
+			# The same rings as the level face, laid from the trunk's middle straight
+			# down through the cut, so they run on from one face into the other.
+			_face(wood, cut_points, -keep, [centre, girth], [edge, toward, depth])
 			wood.commit(mesh)
 			mesh.surface_set_material(mesh.get_surface_count() - 1, _fresh)
 		var end := SurfaceTool.new()
