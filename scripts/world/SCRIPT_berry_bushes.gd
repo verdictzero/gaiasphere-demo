@@ -16,7 +16,8 @@ extends Node3D
 # where, and the ground decides whether it may (grass or soil, not water, sand,
 # rock, a steep slope or a path). Squares coming within `range` of the player get
 # their bush; squares left behind lose it. What has been stripped is remembered
-# by square for the run.
+# by square, with the day it happened: three days on, once the player is not
+# looking at it, its leaves dither back in.
 
 @export var world_path: NodePath = ^"../GaiaSphere"
 @export var explorer_path: NodePath = ^"../Explorer"
@@ -29,6 +30,13 @@ extends Node3D
 @export var view_range := 130.0
 ## How near a swing has to come, metres.
 @export var reach := 3.2
+## Days (of the game's clock) before a stripped bush is in leaf and berry again.
+## It never starts while the player is looking at it: only once the bush is out
+## of view (`out_of_view` degrees or more off where the camera points) or too far
+## away to exist. Then its leaves dither back in over `regrow_fade` seconds.
+@export var regrow_days := 3.0
+@export var out_of_view := 62.0
+@export var regrow_fade := 3.5
 ## Berries a bush gives: fewest and most.
 @export var berries := Vector2i(3, 7)
 
@@ -39,9 +47,14 @@ var _inventory: Node
 var _bare: Mesh
 var _bare_mat: StandardMaterial3D
 var _leafy: Mesh
-var _leafy_mat: StandardMaterial3D
+var _leafy_mat: ShaderMaterial
+var _growing := {}               # square -> how far its leaves have come back, 0..1
 var _live := {}                  # square -> the bush's node, or null where none stands
-var _stripped := {}              # square -> true
+var _stripped := {}              # square -> the day (and part of a day) it was stripped
+var _enviro: Node
+var _days := 0.0                 # whole days gone by since the game began
+var _hour_was := -1.0
+var _regrow_check := 0.0
 var _at_square := Vector2i(1 << 30, 0)
 var _leaf_mat: StandardMaterial3D
 var _berry_mat: StandardMaterial3D
@@ -55,6 +68,7 @@ func _ready() -> void:
 	_world = get_node_or_null(world_path)
 	_explorer = get_node_or_null(explorer_path)
 	_inventory = get_node_or_null(inventory_path)
+	_enviro = get_node_or_null(^"../Enviro")
 	if _world == null or not _world.has_method(&"get_field"):
 		set_process(false)
 		return
@@ -66,9 +80,11 @@ func _ready() -> void:
 	# The bare twigs are a cool grey-violet in the photograph, which the sky's
 	# light turns blue in shade: brought down to the brown of the wood round it.
 	_bare_mat.albedo_color = Color(0.62, 0.5, 0.4)
-	_leafy_mat = _both_sides(_leafy)
-	_leafy_mat.backlight_enabled = true
-	_leafy_mat.backlight = Color(0.14, 0.2, 0.05)
+	var as_made := _leafy.surface_get_material(0) as StandardMaterial3D
+	_leafy_mat = ShaderMaterial.new()
+	_leafy_mat.shader = load("res://shaders/SHADER_berry_bush.gdshader")
+	_leafy_mat.set_shader_parameter("albedo_tex", as_made.albedo_texture)
+	_leafy_mat.set_shader_parameter("normal_tex", as_made.normal_texture)
 	_leaf_mat = _cutout(load("res://assets/leaves/berry_leaves_atlas.png"), Color(0.78, 0.9, 0.7))
 	_leaf_mat.backlight_enabled = true
 	_leaf_mat.backlight = Color(0.16, 0.24, 0.06)
@@ -173,10 +189,53 @@ func _stand(square: Vector2i, at: Vector3) -> Node3D:
 	return bush
 
 
-func _process(_delta: float) -> void:
+## The day and the part of it gone, counted from the start of the game. The
+## clock's hour runs 0 to 24 and starts again: each time it does is a day.
+func today() -> float:
+	return _days + (float(_enviro.get("hour")) / 24.0 if _enviro != null else 0.0)
+
+
+func _process(delta: float) -> void:
 	if _explorer == null:
 		return
 	var here := _explorer.global_position
+	if _enviro != null:
+		var hour := float(_enviro.get("hour"))
+		if _hour_was >= 0.0 and hour < _hour_was - 12.0:
+			_days += 1.0
+		_hour_was = hour
+	# REGROWTH, looked at once a second: a bush stripped `regrow_days` ago starts
+	# to come back, but never while the player is looking at it.
+	_regrow_check -= delta
+	if _regrow_check <= 0.0 and not _stripped.is_empty():
+		_regrow_check = 1.0
+		var now := today()
+		for sq in _stripped.keys():
+			if now - float(_stripped[sq]) < regrow_days:
+				continue
+			var bush: Node3D = _live.get(sq)
+			if bush != null and _in_view(bush.global_position + Vector3(0, 1.2, 0)):
+				continue
+			_stripped.erase(sq)
+			if bush != null:
+				# Its leaves come in over the bare bush, which stays until they are whole.
+				_growing[sq] = 0.0
+				var leafy := bush.get_node("Leafy") as MeshInstance3D
+				leafy.set_instance_shader_parameter(&"grown", 0.0)
+				leafy.visible = true
+	for sq in _growing.keys():
+		var bush: Node3D = _live.get(sq)
+		if bush == null:
+			_growing.erase(sq)
+			continue
+		var grown := minf(float(_growing[sq]) + delta / maxf(regrow_fade, 0.01), 1.0)
+		_growing[sq] = grown
+		(bush.get_node("Leafy") as MeshInstance3D).set_instance_shader_parameter(&"grown", grown)
+		if grown >= 1.0:
+			(bush.get_node("Bare") as MeshInstance3D).visible = false
+			_growing.erase(sq)
+	if _field == null:
+		return
 	var square := _square_of(here)
 	if square != _at_square:
 		_at_square = square
@@ -204,6 +263,17 @@ func _process(_delta: float) -> void:
 		_live[sq] = _stand(sq, at) if at != null else null
 
 
+## Whether the player is looking toward a point: within `out_of_view` degrees of
+## where the camera points (the player's own facing, where there is no camera).
+func _in_view(at: Vector3) -> bool:
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	var eye: Node3D = cam if cam != null else _explorer
+	var to := at - eye.global_position
+	if to.length() < 0.5:
+		return true
+	return (-eye.global_basis.z).dot(to.normalized()) > cos(deg_to_rad(out_of_view))
+
+
 # ------------------------------------------------------------------ being hit
 
 ## A swing from `from` along `dir`. True if it met a bush. One in leaf is
@@ -221,10 +291,10 @@ func strike(from: Vector3, dir: Vector3) -> bool:
 		if (a + d * t).distance_to(p) > 1.25 * bush.scale.x or absf(from.y - bush.global_position.y - 1.2) > 2.6:
 			continue
 		var leafy := bush.get_node("Leafy") as MeshInstance3D
-		if leafy.visible:
+		if leafy.visible and not _growing.has(sq):
 			leafy.visible = false
 			(bush.get_node("Bare") as MeshInstance3D).visible = true
-			_stripped[sq] = true
+			_stripped[sq] = today()
 			_puff(bush.global_position + Vector3(0, 1.3 * bush.scale.y, 0), bush.scale.x)
 			if _inventory != null:
 				_inventory.call(&"add", "berry", _rng.randi_range(berries.x, berries.y))
