@@ -18,7 +18,8 @@ extends CanvasLayer
 # Eating is what puts it right: berries, with the berries' slot selected in the
 # hotbar, one to a click (SCRIPT_sword_play.gd holds them in the hand).
 #
-# The two bars sit over the hotbar: hunger on the left, stamina on the right.
+# The two bars sit over the hotbar, each under its name: hunger on the left,
+# stamina on the right.
 
 @export var explorer_path: NodePath = ^"../Explorer"
 ## Real minutes for a full stomach to empty doing nothing at all.
@@ -54,7 +55,6 @@ var _explorer: CharacterBody3D
 var _rest := 0.0
 var _view: Control
 var _font: Font
-var _berry: Texture2D
 var _flash := 0.0            # the hunger bar's glow just after eating
 
 
@@ -62,7 +62,6 @@ func _ready() -> void:
 	layer = 29
 	_explorer = get_node_or_null(explorer_path) as CharacterBody3D
 	_font = load("res://branding/fonts/RobotoCondensed-Regular.ttf")
-	_berry = load("res://assets/ui/item_berry.png")
 	_view = Control.new()
 	_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -166,12 +165,9 @@ func _draw_view() -> void:
 			shown = shown.lerp(Color(1, 1, 1), _flash * 0.6)
 		if value > 0.5:
 			_box(Rect2(inner.position, Vector2(inner.size.x * value / 100.0, inner.size.y)), shown, 5.0 * k)
-		# A mark for each: the berries for food, a bolt for wind.
-		var mark := Vector2(r.position.x - 4.0 * k, r.get_center().y)
-		if side == 0:
-			_view.draw_texture_rect(_berry, Rect2(mark - Vector2(13, 13) * k, Vector2(26, 26) * k), false)
-		else:
-			var bolt := PackedVector2Array()
-			for p in [Vector2(3, -12), Vector2(-7, 2), Vector2(-1, 2), Vector2(-4, 12), Vector2(7, -3), Vector2(1, -3)]:
-				bolt.append(mark + (p as Vector2) * k)
-			_view.draw_colored_polygon(bolt, Color(1.0, 0.9, 0.45))
+		# Named, not pictured: a small label over each bar's left end.
+		var fs := int(16.0 * k)
+		var name := "HUNGER" if side == 0 else "STAMINA"
+		var at := Vector2(r.position.x + 2.0 * k, r.position.y - 7.0 * k)
+		_view.draw_string(_font, at + Vector2(1, 1) * k, name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.6))
+		_view.draw_string(_font, at, name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(INK.r, INK.g, INK.b, 0.85))
