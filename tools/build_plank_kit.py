@@ -12,8 +12,8 @@ Reads the sheets in <out>/source (pieces on magenta, none touching) and writes:
     plank_kit.json            what is where: each piece's name, kind, place in the
                               atlas, size in metres and outline
     pieces/<name>.glb         each piece on its own, a slab cut to its outline
-    wall_<a..>_lod{0,1,2}.glb panels assembled from the pieces: planks of mixed widths
-                              side by side, two rails across them, a brace between
+    wall_*, roof_*, floor_*, gable_left_*, gable_right_*  (each _lod0, _lod1, _lod2)
+                              panels assembled from the pieces: see THE SET in main()
 
 WHICH PIECES. Sheet 2 is a photograph's worth of wood, flat lit, and is the kit:
 all eight planks and all three beams. Sheet 1's planks are added as extras with
@@ -362,14 +362,106 @@ def wall(planks, beams, seed, eps, width=2.0):
         place(mesh, b, eps, (0.0, y), rng.uniform(-0.006, 0.006), rng.random() < 0.5, rng.random() < 0.5,
               PLANK_T, PLANK_T + RAIL_T, back=False, crop=(start, start + length_px), scale=RAIL_SCALE)
         edges.append((y - h_m / 2, y + h_m / 2))
-    # The brace: a beam laid from the lower rail to the upper, cut off level where it meets each.
+    # Between the rails: a brace from the foot of one side to the head of the other
+    # (most walls), or a third rail across the middle (some).
     b = order[2 % len(order)]
     low, high = edges[0][1] - 0.01, edges[1][0] + 0.01
-    run = width * 0.72
-    angle = math.atan2(high - low, run) * (1 if rng.random() < 0.5 else -1)
-    place(mesh, b, eps, (0.0, (low + high) / 2), angle, False, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.85, back=False,
-          cuts=(lambda v: v[1] - low, lambda v: high - v[1]), scale=RAIL_SCALE)
+    if rng.random() < 0.72:
+        run = width * rng.uniform(0.62, 0.8)
+        angle = math.atan2(high - low, run) * (1 if rng.random() < 0.5 else -1)
+        place(mesh, b, eps, (0.0, (low + high) / 2), angle, False, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.85, back=False,
+              cuts=(lambda v: v[1] - low, lambda v: high - v[1]), scale=RAIL_SCALE)
+    else:
+        length_px = (width + 0.05) * PX_PER_M / RAIL_SCALE
+        start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
+        place(mesh, b, eps, (0.0, (low + high) / 2 + rng.uniform(-0.08, 0.08)), rng.uniform(-0.006, 0.006), rng.random() < 0.5,
+              rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T, back=False, crop=(start, start + length_px), scale=RAIL_SCALE)
     return mesh, [p["name"] for p in chosen]
+
+
+def deck(planks, beams, seed, eps, length, width=2.0, overhang=0.0):
+    """BOARDS LAID ACROSS, for a roof or a floor: planks on their sides, each
+    running the panel's whole `width`, one above the next for `length` metres (from
+    y = -overhang), on two beams that run the length underneath. In the panel's own
+    plane: x across, y along, the boards' face toward +z."""
+    rng = random.Random(seed)
+    mesh = Mesh()
+    pool = planks[:]
+    rng.shuffle(pool)
+    y = -overhang
+    used = []
+    edge_cuts = (lambda v: v[0] + width / 2 + 0.03, lambda v: width / 2 + 0.03 - v[0],
+                 lambda v: v[1] + overhang + 0.02, lambda v: length - v[1])
+    k = 0
+    while y < length:
+        p = pool[k % len(pool)]
+        k += 1
+        across = p["mask"].shape[1] / PX_PER_M               # a plank's width is what it covers of the length
+        place(mesh, p, eps, (rng.uniform(-0.02, 0.02), y + across / 2), math.pi / 2 * (1 if rng.random() < 0.5 else -1),
+              rng.random() < 0.5, False, 0.0, PLANK_T, cuts=edge_cuts)
+        used.append(p["name"])
+        y += across + rng.uniform(0.004, 0.012)
+    # The beams under them: rafters under a roof, joists under a floor.
+    order = beams[:]
+    rng.shuffle(order)
+    for i, x in enumerate((-width * 0.31, width * 0.31)):
+        b = order[i % len(order)]
+        length_px = min((length + overhang) * PX_PER_M / RAIL_SCALE, b["mask"].shape[1] - 4)
+        start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
+        place(mesh, b, eps, (x, (length - overhang) / 2), math.pi / 2, rng.random() < 0.5, rng.random() < 0.5,
+              -RAIL_T * 1.6, 0.0, crop=(start, start + length_px), scale=RAIL_SCALE,
+              cuts=(lambda v: v[1] + overhang, lambda v: length - v[1]))
+    return mesh, used
+
+
+def gable(planks, beams, seed, eps, rise_right, width=2.0):
+    """THE TRIANGLE BETWEEN A SQUARE WALL AND A 45 DEGREE ROOF: a wall's planks,
+    cut off along the slope, a rail along the foot and a rail up the rake. As tall
+    at its high side as it is wide; `rise_right` says which side that is."""
+    rng = random.Random(seed)
+    mesh = Mesh()
+    sign = 1.0 if rise_right else -1.0
+    under = lambda v: (width / 2 + sign * v[0]) - v[1]            # below the slope
+    pool = planks[:]
+    rng.shuffle(pool)
+    x = -width / 2
+    used = []
+    k = 0
+    while x < width / 2 - 0.02:
+        p = pool[k % len(pool)]
+        k += 1
+        w_m, h_m = p["mask"].shape[1] / PX_PER_M, p["mask"].shape[0] / PX_PER_M
+        place(mesh, p, eps, (x + w_m / 2, h_m / 2 - 0.02), rng.uniform(-0.008, 0.008), rng.random() < 0.5, rng.random() < 0.35,
+              0.0, PLANK_T, cuts=(under, lambda v: width / 2 + 0.005 - v[0], lambda v: v[1]))
+        used.append(p["name"])
+        x += w_m + rng.uniform(0.006, 0.014)
+    order = beams[:]
+    rng.shuffle(order)
+    rail_h = order[0]["mask"].shape[0] / PX_PER_M * RAIL_SCALE
+    # The foot rail, and the rake rail lying just under the slope.
+    length_px = min((width + 0.04) * PX_PER_M / RAIL_SCALE, order[0]["mask"].shape[1] - 4)
+    start = rng.uniform(0, max(order[0]["mask"].shape[1] - length_px, 0))
+    place(mesh, order[0], eps, (0.0, rail_h / 2 + 0.04), 0.0, rng.random() < 0.5, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T,
+          back=False, crop=(start, start + length_px), scale=RAIL_SCALE, cuts=(under, lambda v: v[1]))
+    rake = order[1 % len(order)]
+    inset = rail_h / 2 + 0.03                                       # square in from the slope
+    centre = (0.0 + sign * inset * 0.7071, width / 2 - inset * 0.7071)
+    place(mesh, rake, eps, centre, sign * math.pi / 4, rng.random() < 0.5, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.9,
+          back=False, scale=RAIL_SCALE,
+          cuts=(under, lambda v: v[1] - (rail_h + 0.05), lambda v: v[0] + width / 2 + 0.02, lambda v: width / 2 + 0.02 - v[0]))
+    return mesh, used
+
+
+def tilted(mesh, pitch):
+    """A panel built standing up, leaned back about its foot by `pitch` (radians): a
+    quarter turn lays it flat, face up; an eighth makes a 45 degree roof. Its foot
+    stays on the x axis; its length runs back (toward -z) and up."""
+    c, s_ = math.cos(pitch), math.sin(pitch)
+    turn = lambda v: (v[0], v[1] * c + v[2] * s_, -v[1] * s_ + v[2] * c)
+    mesh.p = [turn(v) for v in mesh.p]
+    mesh.n = [turn(v) for v in mesh.n]
+    mesh.t = [(*turn(v[:3]), v[3]) for v in mesh.t]
+    return mesh
 
 
 def main(out_dir):
@@ -406,15 +498,43 @@ def main(out_dir):
     (out / "plank_kit.json").write_text(json.dumps(dict(px_per_m=PX_PER_M, atlas=list(ATLAS), pieces=manifest), indent=1))
     print("kit: %d planks (%d photo, %d drawn), %d beams" % (len(photo_planks) + len(drawn_planks), len(photo_planks),
                                                               len(drawn_planks), len(photo_beams)))
-    # Walls: two of the photographed wood only, two drawing on everything.
-    for name, seed, stock in (("a", 3, photo_planks), ("b", 11, photo_planks), ("c", 5, photo_planks + drawn_planks),
-                              ("d", 23, photo_planks + drawn_planks)):
+    # THE SET. Every kind in several variants, each at three levels of detail.
+    #   wall_*        2 m square, standing
+    #   roof_*        2 m wide, pitched at 45 degrees: 2 m of run and 2 m of rise, so one
+    #                 sits from the top of a wall to a ridge 2 m in and 2 m up
+    #   floor_*       2 m square, lying flat, boards up: a platform
+    #   gable_left_*, gable_right_*   the triangle under one roof panel's end, to stand
+    #                 on a wall: high on the side it is named for
+    everything = photo_planks + drawn_planks
+    builds = []
+    for i, seed in enumerate((3, 11, 5, 23, 31, 47, 59, 71)):
+        stock = photo_planks if i % 2 == 0 else everything
+        builds.append((f"wall_{chr(97 + i)}", lambda eps, seed=seed, stock=stock: wall(stock, photo_beams, seed, eps)))
+    for i, seed in enumerate((7, 19, 29, 43)):
+        stock = photo_planks if i % 2 == 0 else everything
+        builds.append((f"roof_{chr(97 + i)}", lambda eps, seed=seed, stock=stock:
+                       (lambda m: (tilted(m[0], math.pi / 4), m[1]))(deck(stock, photo_beams, seed, eps, 2.0 * math.sqrt(2.0), overhang=0.12))))
+    for i, seed in enumerate((13, 37, 53)):
+        stock = photo_planks if i % 2 == 0 else everything
+        builds.append((f"floor_{chr(97 + i)}", lambda eps, seed=seed, stock=stock:
+                       (lambda m: (tilted(m[0], math.pi / 2), m[1]))(deck(stock, photo_beams, seed, eps, 2.0))))
+    for side in ("left", "right"):
+        for i, seed in enumerate((17, 41)):
+            stock = photo_planks if i == 0 else everything
+            builds.append((f"gable_{side}_{chr(97 + i)}", lambda eps, seed=seed, stock=stock, side=side:
+                           gable(stock, photo_beams, seed, eps, side == "right")))
+    summary = {}
+    for name, build in builds:
         counts = []
         for lod, eps in enumerate((2.0, 7.0, 22.0)):
-            mesh, used = wall(stock, photo_beams, seed, eps)
-            write_glb(out / f"wall_{name}_lod{lod}.glb", mesh, f"wall_{name}_LOD{lod}", textures)
+            mesh, used = build(eps)
+            write_glb(out / f"{name}_lod{lod}.glb", mesh, f"{name}_LOD{lod}", textures)
             counts.append(mesh.tris)
-        print("wall %s: %s; triangles %s" % (name, " ".join(n.replace("_plank_", ":") for n in used), " / ".join(map(str, counts))))
+        summary.setdefault(name.rsplit("_", 1)[0], []).append(counts)
+    for kind, rows in summary.items():
+        print("%-12s %d variants; triangles lod0 %d-%d, lod1 %d-%d, lod2 %d-%d" % (
+            kind, len(rows), min(r[0] for r in rows), max(r[0] for r in rows), min(r[1] for r in rows), max(r[1] for r in rows),
+            min(r[2] for r in rows), max(r[2] for r in rows)))
     # The atlas with what was cut drawn on it, for checking.
     check = cv2.cvtColor(bled, cv2.COLOR_RGB2BGR)
     check[~mask] = (40, 40, 40)
