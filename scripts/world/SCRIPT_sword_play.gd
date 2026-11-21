@@ -295,9 +295,10 @@ func _ensure_hand() -> void:
 		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		(mi as MeshInstance3D).layers = 1 << (WorldReflection.MIRROR_LAYER - 1)      # the steel mirrors the world too
 	_axe.visible = false
-	# Turned in the hand so the flat of the head shows, not its edge.
-	# and brought in towards the eye, where an arm would carry it.
-	_axe.rotation_degrees = Vector3(0.0, 118.0, 0.0)
+	# The blade leads, away from whoever holds it, turned a little across the view
+	# so some of the head's flat shows; and the whole axe is brought in towards the
+	# eye, where an arm would carry it.
+	_axe.rotation_degrees = Vector3(0.0, 28.0, 0.0)
 	_axe.position = Vector3(-0.05, 0.02, 0.2)
 	_pivot.add_child(_axe)
 	if _bag != null and _bag.count_of("axe") == 0:
