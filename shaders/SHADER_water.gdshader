@@ -268,7 +268,11 @@ void fragment() {
 	float band = near * wave_in * smoothstep(0.4, 0.68, fine * 0.7 + grain * 0.3 + near * 0.15);
 	float line = 1.0 - smoothstep(0.0, shore_foam * 0.045, thick + (fine - 0.5) * 0.06);
 	float shore = clamp((max(line, band) + wash * 0.6) * foam_strength, 0.0, 1.0);
-	float rapids = smoothstep(0.35, 0.9, steep * rapids_foam) * smoothstep(0.4, 0.75, grain);
+	// White water: none on a gentle run, broken streaks as it quickens, and never a
+	// solid sheet even flat out (the threshold the foam texture has to clear comes
+	// down with the speed, it does not vanish).
+	float white = smoothstep(0.3, 1.0, steep * rapids_foam);
+	float rapids = white * 0.85 * smoothstep(mix(0.72, 0.5, white), mix(0.9, 0.78, white), grain);
 	// On the crests: broken by the foam texture, a little always, more in a wind.
 	float lace = smoothstep(0.38, 0.62, fine * 0.6 + grain * 0.4);        // foam is holes and strands, not a sheet
 	// Gusts: whitecaps come in patches tens of metres across that drift, not everywhere.

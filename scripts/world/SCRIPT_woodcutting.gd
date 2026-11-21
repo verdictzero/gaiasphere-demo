@@ -44,6 +44,7 @@ var _sawn := {}              # kind of tree -> its pieces (see _pieces)
 var _falls: Array = []       # trees on their way down
 var _stumps: Array = []
 var _fresh: StandardMaterial3D
+var _rings: StandardMaterial3D
 var _meshes := {}            # radius in cm -> ArrayMesh
 var _bark: StandardMaterial3D
 var _end: StandardMaterial3D
@@ -75,9 +76,15 @@ func _ready() -> void:
 	for g in GIRTHS:
 		_log_mesh(g)
 	_fresh = StandardMaterial3D.new()
-	_fresh.albedo_color = Color(0.93, 0.8, 0.58)
-	_fresh.albedo_texture = load("res://assets/log/log_end.jpg")
-	_fresh.roughness = 0.75
+	_fresh.albedo_color = Color(0.86, 0.7, 0.46)
+	_fresh.roughness = 0.8
+	_fresh.vertex_color_use_as_albedo = true
+	# The level face of a cut: the sawn end's own rings.
+	_rings = StandardMaterial3D.new()
+	_rings.albedo_texture = load("res://assets/log/log_end.jpg")
+	_rings.albedo_color = Color(1.0, 0.94, 0.84)
+	_rings.roughness = 0.85
+	_rings.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_fresh.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_chip_quad = QuadMesh.new()
 	_chip_quad.size = Vector2(0.07, 0.035)
@@ -169,58 +176,74 @@ func _topple(tree: Dictionary, away: Vector3) -> void:
 
 # ------------------------------------------------------------------ the pieces
 
-## A kind of tree, sawn in three once and kept: the stump (everything below the
-## band the axe works in), the top (everything above it), and where the trunk's
-## middle is and how thick it is at the band's two edges. The band between is
-## not part of the model: it is made here, bite by bite (`_band`).
+## A kind of tree, sawn up once and kept: the stump (everything below the band
+## the axe works in), the top (everything above it), and the band itself as the
+## trunk's own bark in two halves, below and above the middle of the cut, which
+## is what the notch is carved out of bite by bite (`_carved`).
 func _pieces(kind: int) -> Dictionary:
 	if _sawn.has(kind):
 		return _sawn[kind]
 	var mesh := _flora.tree_mesh(kind) as ArrayMesh
-	var out := {"stump": ArrayMesh.new(), "top": ArrayMesh.new(), "bark": null,
-		"c0": Vector3(0, BAND_LOW, 0), "c1": Vector3(0, BAND_HIGH, 0), "r0": 0.2, "r1": 0.2}
+	var mid_y := (BAND_LOW + BAND_HIGH) * 0.5
+	var out := {"stump": ArrayMesh.new(), "top": ArrayMesh.new(), "bark": null, "format": 0,
+		"low": [], "high": [], "centre": Vector3(0, mid_y, 0), "girth": 0.2}
 	if mesh != null:
 		out["bark"] = mesh.surface_get_material(0)
+		out["format"] = mesh.surface_get_format(0)
+		var unused := PackedVector3Array()
 		for surface in mesh.get_surface_count():
 			var arrays := mesh.surface_get_arrays(surface)
 			var format := mesh.surface_get_format(surface)
-			for side in 2:
-				var crossings := PackedVector3Array()
-				var kept := _saw(arrays, BAND_HIGH if side == 1 else BAND_LOW, side == 1, crossings)
-				if not kept.is_empty():
-					var into: ArrayMesh = out["top" if side == 1 else "stump"]
-					into.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, kept, [], {}, format)
+			var below := _saw(arrays, Plane(Vector3.DOWN, Vector3(0, BAND_LOW, 0)), unused)
+			var above := _saw(arrays, Plane(Vector3.UP, Vector3(0, BAND_HIGH, 0)), unused)
+			for piece in [["stump", below], ["top", above]]:
+				if not (piece[1] as Array).is_empty():
+					var into: ArrayMesh = out[piece[0]]
+					into.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, piece[1], [], {}, format)
 					into.surface_set_material(into.get_surface_count() - 1, mesh.surface_get_material(surface))
-				if surface == 0 and crossings.size() >= 3:
-					# The trunk where the saw went through: the cluster of crossings
-					# nearest the middle (a low branch crosses the plane too, far out).
-					var dists: Array = []
-					for q in crossings:
-						dists.append(Vector2(q.x, q.z).length())
-					dists.sort()
-					var near := float(dists[dists.size() / 4]) * 1.8 + 0.02
-					var mid := Vector3.ZERO
-					var count := 0
-					for q in crossings:
-						if Vector2(q.x, q.z).length() <= near:
-							mid += q
-							count += 1
-					mid /= float(maxi(count, 1))
-					var r := 0.0
-					for q in crossings:
-						if Vector2(q.x, q.z).length() <= near:
-							r += Vector2(q.x - mid.x, q.z - mid.z).length()
-					out["c1" if side == 1 else "c0"] = mid
-					out["r1" if side == 1 else "r0"] = maxf(r / float(maxi(count, 1)), 0.03)
+			if surface != 0:
+				continue
+			# The band, of bark only: between the two levels, then halved.
+			var band := _saw(arrays, Plane(Vector3.UP, Vector3(0, BAND_LOW, 0)), unused)
+			if band.is_empty():
+				continue
+			band = _saw(band, Plane(Vector3.DOWN, Vector3(0, BAND_HIGH, 0)), unused)
+			if band.is_empty():
+				continue
+			var ring := PackedVector3Array()
+			out["low"] = _saw(band, Plane(Vector3.DOWN, Vector3(0, mid_y, 0)), ring)
+			out["high"] = _saw(band, Plane(Vector3.UP, Vector3(0, mid_y, 0)), unused)
+			# The trunk at the middle of the cut: the crossings nearest the axis (a
+			# low branch crosses the level too, far out), their middle, and how far
+			# out the bark stands from it at most.
+			if ring.size() >= 3:
+				var dists: Array = []
+				for q in ring:
+					dists.append(Vector2(q.x, q.z).length())
+				dists.sort()
+				var near := float(dists[dists.size() / 4]) * 1.8 + 0.02
+				var mid := Vector3.ZERO
+				var count := 0
+				for q in ring:
+					if Vector2(q.x, q.z).length() <= near:
+						mid += q
+						count += 1
+				mid /= float(maxi(count, 1))
+				var girth := 0.03
+				for q in ring:
+					if Vector2(q.x, q.z).length() <= near:
+						girth = maxf(girth, Vector2(q.x - mid.x, q.z - mid.z).length())
+				out["centre"] = Vector3(mid.x, mid_y, mid.z)
+				out["girth"] = girth
 	_sawn[kind] = out
 	return out
 
 
-## One surface's arrays cut by the level plane y = `at`, keeping what is above it
-## (or below). Triangles wholly on the kept side keep their vertices; a triangle
-## the plane crosses is cut, with new vertices (every attribute carried across)
-## where its edges meet the plane. `crossings` collects those points.
-func _saw(arrays: Array, at: float, above: bool, crossings: PackedVector3Array) -> Array:
+## One surface's arrays cut by `plane`, keeping what is on its positive side.
+## Triangles wholly on that side keep their vertices; a triangle the plane
+## crosses is cut, with new vertices (every attribute carried across) where its
+## edges meet the plane. `crossings` collects those points.
+func _saw(arrays: Array, plane: Plane, crossings: PackedVector3Array) -> Array:
 	var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
 	if idx.is_empty():
@@ -234,11 +257,14 @@ func _saw(arrays: Array, at: float, above: bool, crossings: PackedVector3Array) 
 	var oc: PackedColorArray = out[Mesh.ARRAY_COLOR] if out[Mesh.ARRAY_COLOR] != null else PackedColorArray()
 	var ou: PackedVector2Array = out[Mesh.ARRAY_TEX_UV] if out[Mesh.ARRAY_TEX_UV] != null else PackedVector2Array()
 	var ou2: PackedVector2Array = out[Mesh.ARRAY_TEX_UV2] if out[Mesh.ARRAY_TEX_UV2] != null else PackedVector2Array()
-	var sign := 1.0 if above else -1.0
+	var side := PackedFloat32Array()
+	side.resize(v.size())
+	for i in v.size():
+		side[i] = plane.distance_to(v[i])
 	var keep := PackedInt32Array()
 	for tri in range(0, idx.size(), 3):
 		var ids := [idx[tri], idx[tri + 1], idx[tri + 2]]
-		var d := [(v[ids[0]].y - at) * sign, (v[ids[1]].y - at) * sign, (v[ids[2]].y - at) * sign]
+		var d := [side[ids[0]], side[ids[1]], side[ids[2]]]
 		if d[0] >= 0.0 and d[1] >= 0.0 and d[2] >= 0.0:
 			keep.append_array(PackedInt32Array(ids))
 			continue
@@ -290,89 +316,90 @@ func _saw(arrays: Array, at: float, above: bool, crossings: PackedVector3Array) 
 	return out
 
 
-## THE BAND THE AXE WORKS IN: the half metre of trunk between the stump and the
-## top, as two rings (below and above the middle of the cut) that meet at it.
-## The notch is cut out of them as an axe cuts it: two flat faces going in from
-## the bark on the side `toward`, meeting in a line `depth` into the trunk, the
-## mouth `gape` tall. Bark is bark; what the axe has opened is fresh wood, and so
-## is the face each half shows the other, which is what is seen when they part.
-## Returns [lower half, upper half].
-func _band(sawn: Dictionary, toward: Vector3, depth: float, gape: float) -> Array:
-	var c0: Vector3 = sawn["c0"]
-	var c1: Vector3 = sawn["c1"]
-	var r0 := float(sawn["r0"])
-	var r1 := float(sawn["r1"])
-	var mid_y := (BAND_LOW + BAND_HIGH) * 0.5
-	var sides := 28
+## A flat face of fresh wood closing a cut: the points where a plane went through
+## the trunk, put in order round their middle and filled, facing `normal`.
+## `rings` (the trunk's middle and its girth) lays the sawn end's growth rings on
+## it; `deep` (a point on the wedge's inner line, the way out of it, its depth)
+## darkens it toward that line, as the bottom of a notch is darker than its lip.
+func _face(st: SurfaceTool, points: PackedVector3Array, normal: Vector3, rings := [], deep := []) -> void:
+	if points.size() < 3:
+		return
+	var mid := Vector3.ZERO
+	for q in points:
+		mid += q
+	mid /= float(points.size())
+	var u := normal.cross(Vector3.UP if absf(normal.y) < 0.9 else Vector3.RIGHT).normalized()
+	var w := normal.cross(u)
+	var ordered: Array = []
+	for q in points:
+		ordered.append([atan2((q - mid).dot(w), (q - mid).dot(u)), q])
+	ordered.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	for i in ordered.size():
+		var pa: Vector3 = ordered[i][1]
+		var pb: Vector3 = ordered[(i + 1) % ordered.size()][1]
+		var tri: Array = [mid, pa, pb]
+		# (Godot's front is clockwise: turn the triangle to face the way it is lit.)
+		if (pb - mid).cross(pa - mid).dot(normal) < 0.0:
+			tri = [mid, pb, pa]
+		for q in tri:
+			var at: Vector3 = q
+			var shade := 1.0
+			if not deep.is_empty():
+				shade = lerpf(0.34, 1.0, clampf((at - (deep[0] as Vector3)).dot(deep[1]) / maxf(float(deep[2]), 0.001), 0.0, 1.0))
+			st.set_color(Color(shade, shade, shade))
+			st.set_normal(normal)
+			if rings.is_empty():
+				st.set_uv(Vector2(at.dot(u), at.dot(w)) * 1.2)
+			else:
+				var from_mid := at - (rings[0] as Vector3)
+				st.set_uv(Vector2(0.5, 0.5) + Vector2(from_mid.x, from_mid.z) / (float(rings[1]) * 2.1))
+			st.add_vertex(at)
+
+
+## THE NOTCH, CUT OUT OF THE TRUNK ITSELF. The band's two halves of bark are each
+## sawn again by one face of the wedge: two flat cuts going in from the bark on
+## the side `toward`, meeting in a line `depth` into the trunk, the mouth `gape`
+## tall. What each cut exposes is closed with fresh wood, and so is the level
+## face each half shows the other, which is what is seen when they part.
+## Returns [lower half, upper half] as meshes.
+func _carved(sawn: Dictionary, toward: Vector3, depth: float, gape: float) -> Array:
+	var centre: Vector3 = sawn["centre"]
+	var girth := float(sawn["girth"])
+	var edge := centre + toward * (girth - depth)          # the line the two faces meet in
 	var halves: Array = []
 	for half in 2:
-		var rows: Array = []        # each a ring of [point, cut?]
-		for step in 5:
-			var y := lerpf(BAND_LOW, mid_y, float(step) / 4.0) if half == 0 else lerpf(mid_y, BAND_HIGH, float(step) / 4.0)
-			var f := inverse_lerp(BAND_LOW, BAND_HIGH, y)
-			var centre := c0.lerp(c1, f)
-			centre.y = y
-			var r := lerpf(r0, r1, f)
-			# How far in from the bark the notch has reached at this height.
-			var face := r - depth * maxf(0.0, 1.0 - absf(y - mid_y) / maxf(gape * 0.5, 0.001))
-			var ring: Array = []
-			for i in sides + 1:
-				var a := TAU * float(i) / float(sides)
-				var p := centre + Vector3(cos(a), 0.0, sin(a)) * r
-				var out_by := (p - centre).dot(toward) - face
-				var cut := out_by > 0.0005
-				if cut:
-					p -= toward * out_by
-				ring.append([p, cut, Vector3(cos(a), 0.0, sin(a)), float(i) / float(sides)])
-			rows.append(ring)
-		var bark := SurfaceTool.new()
-		bark.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var mesh := ArrayMesh.new()
+		var arrays: Array = sawn["high" if half == 1 else "low"]
+		var up := Vector3.UP if half == 1 else Vector3.DOWN
+		# This half's face of the wedge; what is kept lies behind and beyond it.
+		var keep := (-toward * gape * 0.5 + up * maxf(depth, 0.0001)).normalized()
+		var cut_points := PackedVector3Array()
+		var bark: Array = [] if arrays.is_empty() else _saw(arrays, Plane(keep, edge), cut_points)
+		if not bark.is_empty():
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, bark, [], {}, int(sawn["format"]))
+			mesh.surface_set_material(0, sawn["bark"])
 		var wood := SurfaceTool.new()
 		wood.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var wraps := maxf(1.0, round(TAU * r0 / 1.3))
-		var any_bark := false
-		for row in 4:
-			for i in sides:
-				var quad: Array = [rows[row][i], rows[row][i + 1], rows[row + 1][i + 1], rows[row + 1][i]]
-				var opened: bool = quad[0][1] or quad[1][1] or quad[2][1] or quad[3][1]
-				for tri in [[0, 1, 2], [0, 2, 3]]:
-					var pa: Vector3 = quad[tri[0]][0]
-					var pb: Vector3 = quad[tri[1]][0]
-					var pc: Vector3 = quad[tri[2]][0]
-					if opened:
-						var flat := (pc - pa).cross(pb - pa)
-						if flat.length() < 1e-9:
-							continue
-						for k in tri:
-							wood.set_normal(flat.normalized())
-							wood.set_uv(Vector2((quad[k][0] as Vector3).x, (quad[k][0] as Vector3).z) * 1.5)
-							wood.add_vertex(quad[k][0])
-					else:
-						any_bark = true
-						for k in tri:
-							bark.set_normal(quad[k][2])
-							bark.set_uv(Vector2(float(quad[k][3]) * wraps, (quad[k][0] as Vector3).y / 1.3))
-							bark.set_uv2(Vector2.ZERO)
-							bark.add_vertex(quad[k][0])
-		# The face at the middle of the cut: what is left of the trunk there.
-		var face_ring: Array = rows[4] if half == 0 else rows[0]
-		var hub := Vector3.ZERO
-		for i in sides:
-			hub += face_ring[i][0]
-		hub /= float(sides)
-		for i in sides:
-			var tri: Array = [hub, face_ring[i][0], face_ring[i + 1][0]] if half == 0 else [hub, face_ring[i + 1][0], face_ring[i][0]]
-			for q in tri:
-				wood.set_normal(Vector3.UP if half == 0 else Vector3.DOWN)
-				wood.set_uv(Vector2((q as Vector3).x, (q as Vector3).z) * 1.5)
-				wood.add_vertex(q)
-		var mesh := ArrayMesh.new()
-		if any_bark:
-			bark.generate_tangents()
-			bark.commit(mesh)
-			mesh.surface_set_material(0, sawn["bark"])
-		wood.commit(mesh)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, _fresh)
+		if depth > 0.001:
+			_face(wood, cut_points, -keep, [], [edge, toward, depth])
+			wood.commit(mesh)
+			mesh.surface_set_material(mesh.get_surface_count() - 1, _fresh)
+		var end := SurfaceTool.new()
+		end.begin(Mesh.PRIMITIVE_TRIANGLES)
+		# The level face at the middle of the cut: the rim of what bark is left
+		# there, and the ends of the line the wedge reached.
+		var level := PackedVector3Array()
+		if not bark.is_empty():
+			var seen := {}
+			var bv: PackedVector3Array = bark[Mesh.ARRAY_VERTEX]
+			for i in (bark[Mesh.ARRAY_INDEX] as PackedInt32Array):
+				if not seen.has(i) and absf(bv[i].y - centre.y) < 0.0008:
+					seen[i] = true
+					level.append(bv[i])
+		if level.size() >= 3:
+			_face(end, level, -up, [centre, girth])
+			end.commit(mesh)
+			mesh.surface_set_material(mesh.get_surface_count() - 1, _rings)
 		halves.append(mesh)
 	return halves
 
@@ -407,12 +434,9 @@ func _begin(tree: Dictionary) -> Dictionary:
 	cs.position = Vector3(0, 4.0 / size, 0)
 	body.add_child(cs)
 	root.add_child(body)
-	var mid_y := (BAND_LOW + BAND_HIGH) * 0.5
-	var centre: Vector3 = (sawn["c0"] as Vector3).lerp(sawn["c1"], 0.5)
-	centre.y = mid_y
 	var cut := {"root": root, "top": top, "low": low, "high": high, "shape": cs, "sawn": sawn,
 		"toward": Vector3(1, 0, 0), "taken": 0, "needed": bites_for(float(tree["radius"])),
-		"centre": centre, "girth": (float(sawn["r0"]) + float(sawn["r1"])) * 0.5,
+		"centre": sawn["centre"], "girth": float(sawn["girth"]),
 		"radius": float(tree["radius"]), "height": float(tree["height"]), "origin": origin}
 	_carve(cut)
 	_cuts.append(cut)
@@ -422,8 +446,8 @@ func _begin(tree: Dictionary) -> Dictionary:
 ## The band as deep as the bites taken so far have made it.
 func _carve(cut: Dictionary) -> void:
 	var share := clampf(float(cut["taken"]) / float(maxi(int(cut["needed"]), 1)), 0.0, 1.0)
-	var halves := _band(cut["sawn"], cut["toward"], float(cut["girth"]) * 2.0 * 0.74 * share,
-			(BAND_HIGH - BAND_LOW) * lerpf(0.5, 1.0, share))
+	var halves := _carved(cut["sawn"], cut["toward"], float(cut["girth"]) * 2.0 * 0.74 * share,
+			(BAND_HIGH - BAND_LOW) * lerpf(0.45, 0.92, share))
 	(cut["low"] as MeshInstance3D).mesh = halves[0]
 	(cut["high"] as MeshInstance3D).mesh = halves[1]
 
