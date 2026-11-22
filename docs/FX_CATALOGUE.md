@@ -17,9 +17,9 @@ This file and the JSON are written by `tools/build_fx_library.py`; edit the effe
 
 | Effect | Kind | Lasts | What it is | Textures |
 |---|---|---|---|---|
-| `bonfire` | loops | until freed | A big fire: tall flames, a lot of embers, a heavy column of smoke. | ember_bits_01, flame_loop_03, flame_loop_04, flame_loop_06, smoke_roll_07 |
-| `brazier` | loops | until freed | A bowl of fire: broad low flames and sparks. | ember_bits_01, flame_loop_05, flame_loop_06 |
-| `burning_tree` | loops | until freed | Fire up something tall (8 m): flames along its height, smoke off the top. | ember_bits_01, flame_loop_03, flame_loop_04, smoke_dark_01 |
+| `bonfire` | loops | until freed | A big fire: tall flames, a lot of embers, a heavy column of smoke. | ember_bits_01, flame_loop_03, flame_loop_04, flame_loop_06, flame_puff_02, smoke_roll_07, wisp_flame_03 |
+| `brazier` | loops | until freed | A bowl of fire: broad low flames and sparks. | ember_bits_01, flame_loop_06, wisp_flame_03 |
+| `burning_tree` | loops | until freed | Fire up something tall (8 m): flames along its height, smoke off the top. | ember_bits_01, flame_loop_03, flame_puff_02, flame_puff_03, smoke_dark_01, wisp_flame_03 |
 | `campfire` | loops | until freed | A campfire: flames, embers going up, thin smoke, and its light. | ember_bits_01, flame_loop_01, flame_loop_03, smoke_roll_04 |
 | `campfire_small` | loops | until freed | A small cooking fire, hardly any smoke. | ember_bits_01, flame_loop_06 |
 | `candle` | loops | until freed | A candle flame. | candle_loop_01 |
@@ -31,7 +31,7 @@ This file and the JSON are written by `tools/build_fx_library.py`; edit the effe
 | `impact_fire` | one-shot | 1.0 s | A fireball landing: a splash of flame and sparks. | fire_burst_05, glow_warm_02, ring_02 |
 | `magic_flame` | loops | until freed | Cold blue-white fire. | flame_loop_05, wisp_flame_04 |
 | `torch` | loops | until freed | A torch flame: narrow, restless, a little smoke off the tip. | ember_bits_01, flame_loop_02, wisp_smoke_02 |
-| `wall_of_fire` | loops | until freed | A line of fire 6 m long (along x). Scale it for more. | ember_bits_01, flame_loop_03, flame_loop_04 |
+| `wall_of_fire` | loops | until freed | A line of fire 6 m long (along x). Scale it for more. | ember_bits_01, flame_loop_03, flame_puff_02, wisp_flame_03 |
 
 ## Fire: one per texture
 
