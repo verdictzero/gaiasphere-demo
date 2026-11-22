@@ -954,6 +954,8 @@ func _drain(limit: int) -> void:
 		var layer := _layers[int(item[0])]
 		(layer["cache"] as Dictionary)[item[1]] = item[2]
 		(layer["asked"] as Dictionary).erase(item[1])
+		if not _cleared.is_empty():
+			_sweep(layer, item[1], _cleared)       # (ground built on stays bare as it streams in)
 		layer["cam_tile"] = Vector2i(1 << 30, 0)       # look again: a tile arrived
 
 
@@ -1180,6 +1182,83 @@ func _take_out(layer: Dictionary, tree: Dictionary, near: float) -> void:
 			var at: Vector3 = (c as Node3D).position
 			if absf(at.x - origin.x) < near and absf(at.z - origin.z) < near:
 				c.queue_free()
+
+
+# ------------------------------------------------------------------ building on it
+
+var _cleared: Array = []     # ground that has been built on: [world to its own frame, half its size]
+
+
+## BUILT-ON GROUND GROWS NOTHING. Everything standing in a rectangle of ground
+## (`frame` is its middle and which way it faces, `half` half its width and depth,
+## metres) goes: grass, ferns, bushes, trees, boulders and their colliders. It
+## stays gone for the run, for tiles placed later as well as those here now.
+func clear_ground(frame: Transform3D, half: Vector2) -> void:
+	var zone := [frame.affine_inverse(), half, frame.origin, half.length()]
+	_cleared.append(zone)
+	for layer in _layers:
+		var tile := float(layer["tile"])
+		var cache: Dictionary = layer["cache"]
+		var lo := Vector2i(int(floor((frame.origin.x - half.length()) / tile)), int(floor((frame.origin.z - half.length()) / tile)))
+		var hi := Vector2i(int(floor((frame.origin.x + half.length()) / tile)), int(floor((frame.origin.z + half.length()) / tile)))
+		for z in range(lo.y, hi.y + 1):
+			for x in range(lo.x, hi.x + 1):
+				if cache.has(Vector2i(x, z)):
+					_sweep(layer, Vector2i(x, z), [zone])
+
+
+## One tile of one layer, with whatever stands in any of `zones` taken out.
+func _sweep(layer: Dictionary, key: Vector2i, zones: Array) -> void:
+	var tile := float(layer["tile"])
+	var middle := Vector3((float(key.x) + 0.5) * tile, 0.0, (float(key.y) + 0.5) * tile)
+	var near: Array = []
+	for zone in zones:
+		var c: Vector3 = zone[2]
+		if Vector2(c.x - middle.x, c.z - middle.z).length() <= float(zone[3]) + tile * 0.7072:
+			near.append(zone)
+	if near.is_empty():
+		return
+	var bufs: Array = (layer["cache"] as Dictionary)[key]
+	var stride := int(layer["stride"])
+	var open: Variant = (layer["tiles"] as Dictionary).get(key)
+	var gone := false
+	for k in bufs.size():
+		var buf: PackedFloat32Array = bufs[k]
+		var kept := PackedFloat32Array()
+		for i in range(0, buf.size(), stride):
+			var out := false
+			for zone in near:
+				var at: Vector3 = (zone[0] as Transform3D) * Vector3(buf[i + 3], (zone[2] as Vector3).y, buf[i + 11])
+				if absf(at.x) <= (zone[1] as Vector2).x and absf(at.z) <= (zone[1] as Vector2).y:
+					out = true
+					break
+			if not out:
+				kept.append_array(buf.slice(i, i + stride))
+		if kept.size() == buf.size():
+			continue
+		gone = true
+		bufs[k] = kept
+		if open != null:
+			for lod in open["lods"]:
+				var mmi: MultiMeshInstance3D = open["lods"][lod][k]
+				if mmi == null:
+					continue
+				mmi.multimesh.instance_count = kept.size() / stride
+				if not kept.is_empty():
+					mmi.multimesh.buffer = kept
+	if not gone:
+		return
+	if open != null:
+		open["bufs"] = bufs
+	layer["rebin"] = true
+	var body: StaticBody3D = layer.get("body")
+	if body != null:
+		for c in body.get_children():
+			for zone in near:
+				var at: Vector3 = (zone[0] as Transform3D) * Vector3((c as Node3D).position.x, (zone[2] as Vector3).y, (c as Node3D).position.z)
+				if absf(at.x) <= (zone[1] as Vector2).x and absf(at.z) <= (zone[1] as Vector2).y:
+					c.queue_free()
+					break
 
 
 ## Half the hand-over band, as a share of the distance: SHADERINC_lod_fade's LOD_BAND.

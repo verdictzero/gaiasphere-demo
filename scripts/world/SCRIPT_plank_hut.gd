@@ -106,3 +106,9 @@ func _process(_delta: float) -> void:
 	global_transform = Transform3D(turn, Vector3(at.x, maxf(sill + 0.3, highest + 0.12), at.z))
 	visible = true
 	_placed = true
+	# Nothing grows through a foundation: the ground under the hut and its steps
+	# is cleared, with a hand's width to spare for blades that lean.
+	for patch in [[Vector3(0, 0, 0), Vector2(2.3, 1.3)], [Vector3(-1.0, 0, 2.0), Vector2(0.9, 1.25)]]:
+		for grower in [get_node_or_null(^"../Flora"), get_node_or_null(^"../BerryBushes")]:
+			if grower != null:
+				grower.call(&"clear_ground", global_transform * Transform3D(Basis(), patch[0]), patch[1])

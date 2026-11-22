@@ -214,7 +214,28 @@ func _site(square: Vector2i) -> Variant:
 		return null
 	if Vector2(x, z).distance_to(SwordStone.site(_field)) < SwordStone.MEADOW * 0.6:
 		return null
+	for zone in _cleared:
+		var at: Vector3 = (zone[0] as Transform3D) * Vector3(x, (zone[2] as Vector3).y, z)
+		if absf(at.x) <= (zone[1] as Vector2).x and absf(at.z) <= (zone[1] as Vector2).y:
+			return null
 	return Vector3(x, float(s["height"]) - 0.06, z)
+
+
+var _cleared: Array = []
+
+
+## Ground that has been built on (see Flora.clear_ground): no berry bush stands
+## there from now on, and one that did is gone.
+func clear_ground(frame: Transform3D, half: Vector2) -> void:
+	var inv := frame.affine_inverse()
+	_cleared.append([inv, half, frame.origin])
+	for sq in _live.keys():
+		if _live[sq] == null:
+			continue
+		var at: Vector3 = inv * Vector3((_live[sq] as Transform3D).origin.x, frame.origin.y, (_live[sq] as Transform3D).origin.z)
+		if absf(at.x) <= half.x and absf(at.z) <= half.y:
+			_live[sq] = null
+			_stale = true
 
 
 func _stand(square: Vector2i, at: Vector3) -> Transform3D:
