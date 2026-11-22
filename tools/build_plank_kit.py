@@ -380,7 +380,7 @@ def wall(planks, beams, seed, eps, width=2.0):
     if rng.random() < 0.72:
         run = width * rng.uniform(0.62, 0.8)
         angle = math.atan2(high - low, run) * (1 if rng.random() < 0.5 else -1)
-        place(mesh, b, eps, (0.0, (low + high) / 2), angle, False, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.85, back=False,
+        place(mesh, b, eps, (0.0, (low + high) / 2), angle, False, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.68, back=False,
               cuts=(lambda v: v[1] - low, lambda v: high - v[1]) + bounds(width), scale=RAIL_SCALE)
     else:
         length_px = (width + 0.05) * PX_PER_M / RAIL_SCALE
@@ -458,7 +458,7 @@ def gable(planks, beams, seed, eps, rise_right, width=2.0):
     rake = order[1 % len(order)]
     inset = rail_h / 2 + 0.03                                       # square in from the slope
     centre = (0.0 + sign * inset * 0.7071, width / 2 - inset * 0.7071)
-    place(mesh, rake, eps, centre, sign * math.pi / 4, rng.random() < 0.5, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.9,
+    place(mesh, rake, eps, centre, sign * math.pi / 4, rng.random() < 0.5, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.68,
           back=False, scale=RAIL_SCALE,
           cuts=(under, lambda v: v[1] - (rail_h + 0.05), lambda v: v[0] + width / 2, lambda v: width / 2 - v[0]))
     return mesh, used
@@ -514,12 +514,12 @@ def doorway(planks, beams, seed, eps, width=2.0):
         length_px = min((DOOR_H + 0.02) * PX_PER_M / post, b["mask"].shape[1] - 4)
         start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
         place(mesh, b, eps, (side * (half + post_w / 2), (DOOR_H + 0.02) / 2), math.pi / 2, side > 0, rng.random() < 0.5,
-              -0.012, PLANK_T + RAIL_T * 1.15, crop=(start, start + length_px), scale=post)
+              -0.02, PLANK_T + RAIL_T * 1.3, crop=(start, start + length_px), scale=post)
     b = order[0]
     length_px = (DOOR_W + post_w * 2 + 0.16) * PX_PER_M / post
     start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
     place(mesh, b, eps, (0.0, DOOR_H + post_w / 2), 0.0, rng.random() < 0.5, rng.random() < 0.5,
-          -0.012, PLANK_T + RAIL_T * 1.3, crop=(start, start + length_px), scale=post, cuts=bounds(width))
+          -0.036, PLANK_T + RAIL_T * 1.62, crop=(start, start + length_px), scale=post, cuts=bounds(width))
     return mesh, []
 
 
@@ -556,7 +556,7 @@ def leaf(planks, beams, seed, eps):
     low, high = ys[0] + ledge_h / 2 - 0.01, ys[1] - ledge_h / 2 + 0.01
     b = order[2 % len(order)]
     place(mesh, b, eps, (LEAF_W / 2, (low + high) / 2), math.atan2(high - low, LEAF_W * 0.8), False, rng.random() < 0.5,
-          PLANK_T * 0.8, PLANK_T * 0.8 + RAIL_T * 0.6, back=False, scale=ledge,
+          PLANK_T * 0.8, PLANK_T * 0.8 + RAIL_T * 0.4, back=False, scale=ledge,
           cuts=(lambda v: v[1] - low, lambda v: high - v[1], lambda v: v[0] - 0.03, lambda v: LEAF_W - 0.03 - v[0]))
     return mesh, []
 

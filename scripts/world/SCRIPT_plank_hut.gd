@@ -81,13 +81,14 @@ func _process(_delta: float) -> void:
 		return
 	var start: Vector3 = (explorer as Node3D).global_position
 	var at := start + from_start
-	# Level with the ground outside the door, so you walk straight in; but never
-	# so low that the highest ground under it comes up through the floor.
+	# Level with the ground outside the door, so you walk straight in; but always
+	# clear of the highest ground under it, which would otherwise show through the
+	# floor in patches.
 	var turn := Basis(Vector3.UP, deg_to_rad(facing_degrees))
 	var highest := -1e9
 	for corner in [Vector3(-2, 0, -1), Vector3(2, 0, -1), Vector3(2, 0, 1), Vector3(-2, 0, 1), Vector3.ZERO]:
 		highest = maxf(highest, float(world.call(&"height_at", at + turn * corner, start.y)))
 	var sill := float(world.call(&"height_at", at + turn * Vector3(-1.0, 0, 1.6), start.y))
-	global_transform = Transform3D(turn, Vector3(at.x, maxf(sill, highest - 0.05), at.z))
+	global_transform = Transform3D(turn, Vector3(at.x, maxf(sill, highest + 0.04), at.z))
 	visible = true
 	_placed = true
