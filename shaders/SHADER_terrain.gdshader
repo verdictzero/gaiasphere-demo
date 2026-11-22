@@ -239,6 +239,9 @@ void fragment() {
 	}
 
 	albedo = mix(albedo, rock_a, cw_side);
+	// The web of light is thrown straight down: on a wall it would be drawn out
+	// into streaks, so it thins as the ground steepens.
+	caustic *= smoothstep(0.3, 0.8, geo_n.y);
 	roughness = mix(roughness, 0.6, cw_side);
 	float keep = 1.0 - max(max(w.b, bank_w), cw_side);
 	vec3 world_n = normalize(geo_n + vec3(flat_n.x, 0.0, flat_n.y) * detail * keep);
