@@ -7,6 +7,7 @@ extends SceneTree
 
 var _scene: Node
 var _out := "user://"
+var _walked := 0
 var _step := -1
 var _wait := 0
 
@@ -77,6 +78,32 @@ func _process(_dt: float) -> bool:
 			_wait = 20
 		4:
 			root.get_texture().get_image().save_png(_out.path_join("hut_3_inside.png"))
+			# Now on foot: stood outside the door, and walked at it.
+			explorer.flying = false
+			_look(explorer, door.to_global(Vector3(0.0, 1.9, 2.4)), door.to_global(Vector3(0.0, 1.9, -2.0)))
+			_wait = 25
+		5:
+			Input.action_press(&"wv_forward")
+			_walked += 1
+			var at := door.to_local(explorer.global_position)
+			if at.z < -0.45:
+				Input.action_release(&"wv_forward")
+				print("hut: walked in through the door (%d frames), standing %.2f m above the hut's foot" % [_walked, at.y])
+			elif _walked > 150:
+				Input.action_release(&"wv_forward")
+				print("hut: COULD NOT WALK IN, stopped at ", at)
+				root.get_texture().get_image().save_png(_out.path_join("hut_4_stuck.png"))
+				quit(1)
+				return true
+			else:
+				return false
+			_wait = 10
+		6:
+			root.get_texture().get_image().save_png(_out.path_join("hut_4_walked_in.png"))
+			_look(explorer, door.to_global(Vector3(2.6, 2.3, 3.2)), door.to_global(Vector3(0.6, 1.2, 0.0)))
+			_wait = 20
+		7:
+			root.get_texture().get_image().save_png(_out.path_join("hut_5_corner.png"))
 			print("hut: ok")
 			quit(0)
 			return true

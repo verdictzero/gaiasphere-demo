@@ -20,9 +20,9 @@ extends Node3D
 @export var reach := 3.0
 @export var seconds := 0.7
 
-const OPENING := 0.92        # the doorway's width and height, as the kit builds it
-const HEIGHT := 1.9
-const LEAF := 0.88
+const OPENING := 1.1        # the doorway's width and height, as the kit builds it
+const HEIGHT := 1.95
+const LEAF := 1.06
 
 var open := false
 var _hinge: Node3D

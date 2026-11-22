@@ -265,12 +265,14 @@ def place(mesh, piece, eps, centre, angle, flip_x, flip_y, z_back, z_front, back
     n = len(poly)
     turn = 1.0 if sum(poly[i][0] * poly[(i + 1) % n][1] - poly[(i + 1) % n][0] * poly[i][1] for i in range(n)) > 0 else -1.0
     for i, q in enumerate(poly):
-        along = poly[(i + 1) % n] - poly[i - 1]
+        # (The way in is taken over a few points either side: point to point it
+        # swings about, and the edge's picture came out in zigzags.)
+        along = poly[(i + 3) % n] - poly[i - 3] if n > 8 else poly[(i + 1) % n] - poly[i - 1]
         along = along / max(np.hypot(*along), 1e-6)
         inward = np.array([-along[1], along[0]]) * turn
         if not piece["mask"][int(np.clip(q[1] + inward[1] * 8, 0, h - 1)), int(np.clip(q[0] + inward[0] * 8, 0, w - 1))]:
             inward = -inward
-        verts.append((*to_panel(q), *atlas_uv(q + inward * 3.0), *atlas_uv(q + inward * 12.0)))
+        verts.append((*to_panel(q), *atlas_uv(q + inward * 4.0), *atlas_uv(q + inward * 9.0)))
     for keep in cuts:
         verts = clip(verts, keep)
     if len(verts) < 3:
@@ -320,6 +322,15 @@ def write_glb(path, mesh, name, textures):
 
 # ------------------------------------------------------------------ a wall
 
+PANEL_H = 2.0
+
+
+def bounds(width, top=PANEL_H):
+    """A PANEL KEEPS TO ITS OWN SQUARE. Planks and rails that ran past it lay in
+    the same plane as the next panel's and the two flickered through each other."""
+    return (lambda v: v[0] + width / 2, lambda v: width / 2 - v[0], lambda v: v[1], lambda v: top - v[1])
+
+
 def wall(planks, beams, seed, eps, width=2.0):
     """A panel `width` metres wide: planks stood side by side until it is full, two
     rails across them, a brace from the foot of one side to the head of the other."""
@@ -347,7 +358,7 @@ def wall(planks, beams, seed, eps, width=2.0):
         w_m = p["mask"].shape[1] / PX_PER_M
         h_m = p["mask"].shape[0] / PX_PER_M
         place(mesh, p, eps, (x + w_m / 2, h_m / 2 + rng.uniform(0.0, 0.03)), rng.uniform(-0.008, 0.008),
-              rng.random() < 0.5, rng.random() < 0.35, 0.0, PLANK_T)
+              rng.random() < 0.5, rng.random() < 0.35, 0.0, PLANK_T, cuts=bounds(width))
         x += w_m + gap
     # Rails: a stretch of a beam a little longer than the panel is wide.
     order = beams[:]
@@ -360,7 +371,7 @@ def wall(planks, beams, seed, eps, width=2.0):
         start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
         h_m = b["mask"].shape[0] / PX_PER_M * RAIL_SCALE
         place(mesh, b, eps, (0.0, y), rng.uniform(-0.006, 0.006), rng.random() < 0.5, rng.random() < 0.5,
-              PLANK_T, PLANK_T + RAIL_T, back=False, crop=(start, start + length_px), scale=RAIL_SCALE)
+              PLANK_T, PLANK_T + RAIL_T, back=False, crop=(start, start + length_px), scale=RAIL_SCALE, cuts=bounds(width))
         edges.append((y - h_m / 2, y + h_m / 2))
     # Between the rails: a brace from the foot of one side to the head of the other
     # (most walls), or a third rail across the middle (some).
@@ -370,12 +381,13 @@ def wall(planks, beams, seed, eps, width=2.0):
         run = width * rng.uniform(0.62, 0.8)
         angle = math.atan2(high - low, run) * (1 if rng.random() < 0.5 else -1)
         place(mesh, b, eps, (0.0, (low + high) / 2), angle, False, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.85, back=False,
-              cuts=(lambda v: v[1] - low, lambda v: high - v[1]), scale=RAIL_SCALE)
+              cuts=(lambda v: v[1] - low, lambda v: high - v[1]) + bounds(width), scale=RAIL_SCALE)
     else:
         length_px = (width + 0.05) * PX_PER_M / RAIL_SCALE
         start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
         place(mesh, b, eps, (0.0, (low + high) / 2 + rng.uniform(-0.08, 0.08)), rng.uniform(-0.006, 0.006), rng.random() < 0.5,
-              rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T, back=False, crop=(start, start + length_px), scale=RAIL_SCALE)
+              rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T, back=False, crop=(start, start + length_px), scale=RAIL_SCALE,
+              cuts=bounds(width))
     return mesh, [p["name"] for p in chosen]
 
 
@@ -390,8 +402,8 @@ def deck(planks, beams, seed, eps, length, width=2.0, overhang=0.0):
     rng.shuffle(pool)
     y = -overhang
     used = []
-    edge_cuts = (lambda v: v[0] + width / 2 + 0.03, lambda v: width / 2 + 0.03 - v[0],
-                 lambda v: v[1] + overhang + 0.02, lambda v: length - v[1])
+    edge_cuts = (lambda v: v[0] + width / 2, lambda v: width / 2 - v[0],
+                 lambda v: v[1] + overhang, lambda v: length - v[1])
     k = 0
     while y < length:
         p = pool[k % len(pool)]
@@ -421,7 +433,7 @@ def gable(planks, beams, seed, eps, rise_right, width=2.0):
     rng = random.Random(seed)
     mesh = Mesh()
     sign = 1.0 if rise_right else -1.0
-    under = lambda v: (width / 2 + sign * v[0]) - v[1]            # below the slope
+    under = lambda v: (width / 2 + sign * v[0]) - v[1] - 0.008    # below the slope, and clear of the roof's underside
     pool = planks[:]
     rng.shuffle(pool)
     x = -width / 2
@@ -432,7 +444,7 @@ def gable(planks, beams, seed, eps, rise_right, width=2.0):
         k += 1
         w_m, h_m = p["mask"].shape[1] / PX_PER_M, p["mask"].shape[0] / PX_PER_M
         place(mesh, p, eps, (x + w_m / 2, h_m / 2 - 0.02), rng.uniform(-0.008, 0.008), rng.random() < 0.5, rng.random() < 0.35,
-              0.0, PLANK_T, cuts=(under, lambda v: width / 2 + 0.005 - v[0], lambda v: v[1]))
+              0.0, PLANK_T, cuts=(under,) + bounds(width))
         used.append(p["name"])
         x += w_m + rng.uniform(0.006, 0.014)
     order = beams[:]
@@ -442,19 +454,19 @@ def gable(planks, beams, seed, eps, rise_right, width=2.0):
     length_px = min((width + 0.04) * PX_PER_M / RAIL_SCALE, order[0]["mask"].shape[1] - 4)
     start = rng.uniform(0, max(order[0]["mask"].shape[1] - length_px, 0))
     place(mesh, order[0], eps, (0.0, rail_h / 2 + 0.04), 0.0, rng.random() < 0.5, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T,
-          back=False, crop=(start, start + length_px), scale=RAIL_SCALE, cuts=(under, lambda v: v[1]))
+          back=False, crop=(start, start + length_px), scale=RAIL_SCALE, cuts=(under,) + bounds(width))
     rake = order[1 % len(order)]
     inset = rail_h / 2 + 0.03                                       # square in from the slope
     centre = (0.0 + sign * inset * 0.7071, width / 2 - inset * 0.7071)
     place(mesh, rake, eps, centre, sign * math.pi / 4, rng.random() < 0.5, rng.random() < 0.5, PLANK_T, PLANK_T + RAIL_T * 0.9,
           back=False, scale=RAIL_SCALE,
-          cuts=(under, lambda v: v[1] - (rail_h + 0.05), lambda v: v[0] + width / 2 + 0.02, lambda v: width / 2 + 0.02 - v[0]))
+          cuts=(under, lambda v: v[1] - (rail_h + 0.05), lambda v: v[0] + width / 2, lambda v: width / 2 - v[0]))
     return mesh, used
 
 
 # A doorway's opening, metres: how wide, how tall, and the leaf that fills it.
-DOOR_W = 0.92
-DOOR_H = 1.9
+DOOR_W = 1.1
+DOOR_H = 1.95
 LEAF_W = DOOR_W - 0.04
 LEAF_H = DOOR_H - 0.05
 
@@ -481,7 +493,7 @@ def doorway(planks, beams, seed, eps, width=2.0):
         fx, fy = rng.random() < 0.5, rng.random() < 0.35
         for cuts in parts:
             place(mesh, p, eps, (x + w_m / 2, h_m / 2 + lift), lean, fx, fy, 0.0, PLANK_T,
-                  cuts=cuts + (lambda v: width / 2 + 0.01 - v[0],))
+                  cuts=cuts + bounds(width))
         x += w_m + rng.uniform(0.006, 0.014)
     order = beams[:]
     rng.shuffle(order)
@@ -493,7 +505,7 @@ def doorway(planks, beams, seed, eps, width=2.0):
         fx, fy = rng.random() < 0.5, rng.random() < 0.5
         for cuts in parts[:2]:
             place(mesh, b, eps, (0.0, y), 0.0, fx, fy, PLANK_T, PLANK_T + RAIL_T, back=False,
-                  crop=(start, start + length_px), scale=RAIL_SCALE, cuts=cuts)
+                  crop=(start, start + length_px), scale=RAIL_SCALE, cuts=cuts + bounds(width))
     # The frame: a post up each side and a lintel across their heads, proud of everything.
     post = 0.6
     post_w = order[2 % len(order)]["mask"].shape[0] / PX_PER_M * post
@@ -507,7 +519,7 @@ def doorway(planks, beams, seed, eps, width=2.0):
     length_px = (DOOR_W + post_w * 2 + 0.16) * PX_PER_M / post
     start = rng.uniform(0, max(b["mask"].shape[1] - length_px, 0))
     place(mesh, b, eps, (0.0, DOOR_H + post_w / 2), 0.0, rng.random() < 0.5, rng.random() < 0.5,
-          -0.012, PLANK_T + RAIL_T * 1.3, crop=(start, start + length_px), scale=post)
+          -0.012, PLANK_T + RAIL_T * 1.3, crop=(start, start + length_px), scale=post, cuts=bounds(width))
     return mesh, []
 
 

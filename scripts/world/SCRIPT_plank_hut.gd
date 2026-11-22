@@ -35,14 +35,17 @@ func _ready() -> void:
 	_panel("gable_left_a", Vector3(1.0, 2.0, 1.0), 0.0, Vector3.ZERO)
 	_panel("gable_left_b", Vector3(-1.0, 2.0, -1.0), PI, Vector3.ZERO)
 	_panel("gable_right_b", Vector3(1.0, 2.0, -1.0), PI, Vector3.ZERO)
-	_panel("floor_a", Vector3(-1.0, 0.06, 1.0), 0.0, Vector3.ZERO)
-	_panel("floor_b", Vector3(1.0, 0.06, 1.0), 0.0, Vector3.ZERO)
+	_panel("floor_a", Vector3(-1.0, 0.02, 1.0), 0.0, Vector3.ZERO)
+	_panel("floor_b", Vector3(1.0, 0.02, 1.0), 0.0, Vector3.ZERO)
 	_panel("roof_a", Vector3(-2.0, 2.0, 0), -PI * 0.5, Vector3.ZERO)
 	_panel("roof_b", Vector3(2.0, 2.0, 0), PI * 0.5, Vector3.ZERO)
 	# The floor and the two slopes of the roof, to stand on.
 	var body := StaticBody3D.new()
 	add_child(body)
-	_box(body, Vector3(0, 0.05, 0), Vector3(4.0, 0.12, 2.0), Vector3.ZERO)
+	_box(body, Vector3(0, 0.005, 0), Vector3(4.0, 0.12, 2.0), Vector3.ZERO)
+	# A ramp nobody sees, from the ground outside the door up to the sill, so the
+	# step is never more than a foot can take wherever the ground falls away.
+	_box(body, Vector3(-1.0, -0.27, 1.75), Vector3(1.3, 0.1, 1.6), Vector3(0.36, 0, 0))
 	_box(body, Vector3(-1.0, 3.0, 0), Vector3(2.9, 0.1, 2.1), Vector3(0, 0, PI * 0.25))
 	_box(body, Vector3(1.0, 3.0, 0), Vector3(2.9, 0.1, 2.1), Vector3(0, 0, -PI * 0.25))
 
@@ -78,12 +81,13 @@ func _process(_delta: float) -> void:
 		return
 	var start: Vector3 = (explorer as Node3D).global_position
 	var at := start + from_start
-	# On the lowest ground under its four corners, so no corner hangs in the air.
+	# Level with the ground outside the door, so you walk straight in; but never
+	# so low that the highest ground under it comes up through the floor.
 	var turn := Basis(Vector3.UP, deg_to_rad(facing_degrees))
-	var lowest := 1e9
+	var highest := -1e9
 	for corner in [Vector3(-2, 0, -1), Vector3(2, 0, -1), Vector3(2, 0, 1), Vector3(-2, 0, 1), Vector3.ZERO]:
-		var h := float(world.call(&"height_at", at + turn * corner, start.y))
-		lowest = minf(lowest, h)
-	global_transform = Transform3D(turn, Vector3(at.x, lowest - 0.02, at.z))
+		highest = maxf(highest, float(world.call(&"height_at", at + turn * corner, start.y)))
+	var sill := float(world.call(&"height_at", at + turn * Vector3(-1.0, 0, 1.6), start.y))
+	global_transform = Transform3D(turn, Vector3(at.x, maxf(sill, highest - 0.05), at.z))
 	visible = true
 	_placed = true
