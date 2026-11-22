@@ -222,24 +222,5 @@ def main(out_dir):
             print("%s: %d triangles" % (name, (len(rock.idx) + len(wood.idx)) // 3))
 
 
-    # THE STONE IS MAPPED THROUGH THE WORLD, three ways, by materials/MAT_block_wall.tres:
-    # every model here is told (in its .import, once Godot has written one) to take
-    # that material in place of its own, so courses run unbroken across blocks and
-    # steps however they are set down. The UVs written above are what it falls back to.
-    want = '_subresources={\n"materials": {\n"block_wall": {\n"use_external/enabled": true,\n' \
-           '"use_external/fallback_path": "res://materials/MAT_block_wall.tres",\n' \
-           '"use_external/path": "res://materials/MAT_block_wall.tres"\n}\n}\n}'
-    told = 0
-    for imp in sorted(out.glob("*.glb.import")):
-        text = imp.read_text()
-        if "MAT_block_wall" in text:
-            continue
-        start = text.index("_subresources=")
-        end = text.index("\ngltf/", start)
-        imp.write_text(text[:start] + want + text[end:])
-        told += 1
-    print("%d models told to use the world-mapped stone%s" % (told, "" if list(out.glob("*.glb.import")) else " (none imported yet: import, then run this again)"))
-
-
 if __name__ == "__main__":
     main(sys.argv[1])
