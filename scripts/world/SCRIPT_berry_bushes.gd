@@ -8,8 +8,7 @@ extends Node3D
 #
 # THE BUSH IS TWO MODELS (assets/berry_bush): the viburnum in leaf and berry, and
 # the same bush bare. Each stands as the first until it is hit and as the second
-# after. The cloud between them is single leaves (the drawn leaf atlas) and
-# berry clusters (the photograph the inventory icon is cut from).
+# after. The cloud between them is single leaves (the drawn leaf atlas).
 #
 # THEY ARE DRAWN AS TWO MULTIMESHES, however many there are: one of every bush
 # in leaf, one of every bare one, each instance carrying how much of it is there
@@ -65,9 +64,7 @@ var _hour_was := -1.0
 var _regrow_check := 0.0
 var _at_square := Vector2i(1 << 30, 0)
 var _leaf_mat: StandardMaterial3D
-var _berry_mat: StandardMaterial3D
 var _leaf_puff: StandardMaterial3D
-var _berry_puff: StandardMaterial3D
 var _rng := RandomNumberGenerator.new()
 var _todo: Array = []            # squares still to look at
 
@@ -96,15 +93,11 @@ func _ready() -> void:
 	_leaf_mat = _cutout(load("res://assets/leaves/berry_leaves_atlas.png"), Color(0.78, 0.9, 0.7))
 	_leaf_mat.backlight_enabled = true
 	_leaf_mat.backlight = Color(0.16, 0.24, 0.06)
-	_berry_mat = _cutout(load("res://assets/berry_bush/berry_cluster.png"), Color(1, 1, 1))
-	_berry_mat.roughness = 0.35
 	_leaf_puff = _leaf_mat.duplicate()
 	_leaf_puff.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	_leaf_puff.particles_anim_h_frames = 4
 	_leaf_puff.particles_anim_v_frames = 4
 	_leaf_puff.particles_anim_loop = false
-	_berry_puff = _berry_mat.duplicate()
-	_berry_puff.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	call_deferred(&"_warm_up")
 
 
@@ -363,42 +356,40 @@ func strike(from: Vector3, dir: Vector3) -> bool:
 	return false
 
 
-## The cloud a stripped bush leaves: its leaves thrown out and fluttering down,
-## its berries dropping through them.
+## The cloud a stripped bush leaves: its leaves thrown out and fluttering down.
 func _puff(at: Vector3, size: float) -> void:
-	for kind in 2:
-		var p := GPUParticles3D.new()
-		p.amount = 110 if kind == 0 else 22
-		p.lifetime = 2.6 if kind == 0 else 1.4
-		p.one_shot = true
-		p.explosiveness = 0.95
-		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var m := ParticleProcessMaterial.new()
-		m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-		m.emission_sphere_radius = 1.05 * size
-		m.direction = Vector3.UP
-		m.spread = 180.0
-		m.initial_velocity_min = 0.6 if kind == 0 else 1.0
-		m.initial_velocity_max = 3.2 if kind == 0 else 3.6
-		# Leaves are held up by the air and come down slowly, turning; berries fall.
-		m.gravity = Vector3(0, -1.9 if kind == 0 else -9.0, 0)
-		m.damping_min = 1.2 if kind == 0 else 0.0
-		m.damping_max = 2.4 if kind == 0 else 0.2
-		m.angle_min = 0.0
-		m.angle_max = 360.0
-		m.angular_velocity_min = -260.0
-		m.angular_velocity_max = 260.0
-		m.scale_min = 0.6
-		m.scale_max = 1.3
-		m.anim_offset_min = 0.0
-		m.anim_offset_max = 1.0
-		p.process_material = m
-		var quad := QuadMesh.new()
-		quad.size = Vector2(0.2, 0.2) if kind == 0 else Vector2(0.16, 0.16)
-		p.draw_pass_1 = quad
-		p.material_override = _leaf_puff if kind == 0 else _berry_puff
-		p.visibility_aabb = AABB(Vector3(-8, -8, -8), Vector3(16, 16, 16))
-		add_child(p)
-		p.global_position = at
-		p.emitting = true
-		get_tree().create_timer(p.lifetime + 0.6).timeout.connect(p.queue_free)
+	var p := GPUParticles3D.new()
+	p.amount = 110
+	p.lifetime = 2.6
+	p.one_shot = true
+	p.explosiveness = 0.95
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var m := ParticleProcessMaterial.new()
+	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	m.emission_sphere_radius = 1.05 * size
+	m.direction = Vector3.UP
+	m.spread = 180.0
+	m.initial_velocity_min = 0.6
+	m.initial_velocity_max = 3.2
+	# Leaves are held up by the air and come down slowly, turning.
+	m.gravity = Vector3(0, -1.9, 0)
+	m.damping_min = 1.2
+	m.damping_max = 2.4
+	m.angle_min = 0.0
+	m.angle_max = 360.0
+	m.angular_velocity_min = -260.0
+	m.angular_velocity_max = 260.0
+	m.scale_min = 0.6
+	m.scale_max = 1.3
+	m.anim_offset_min = 0.0
+	m.anim_offset_max = 1.0
+	p.process_material = m
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.2, 0.2)
+	p.draw_pass_1 = quad
+	p.material_override = _leaf_puff
+	p.visibility_aabb = AABB(Vector3(-8, -8, -8), Vector3(16, 16, 16))
+	add_child(p)
+	p.global_position = at
+	p.emitting = true
+	get_tree().create_timer(p.lifetime + 0.6).timeout.connect(p.queue_free)
