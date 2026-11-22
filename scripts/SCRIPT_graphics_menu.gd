@@ -33,6 +33,8 @@ const ROWS := [
 	["impostor_distance", "Tree impostor distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["grass_distance", "Grass distance", "slide", 0.4, 2.0, 0.05, "x"],
 	["grass_density", "Grass density", "slide", 0.2, 1.0, 0.05, "%"],
+	["shadows", "Shadows", "tick"],
+	["shadow_quality", "Shadow quality", "step", 0.0, 2.0, 1.0, "LOW,MEDIUM,HIGH"],
 	["veg_shadows", "Vegetation shadows", "tick"],
 	["terrain_detail", "Terrain detail distance", "slide", 0.5, 1.5, 0.05, "x"],
 	["shadow_distance", "Shadow distance", "slide", 40.0, 400.0, 10.0, "m"],
@@ -42,16 +44,16 @@ const ROWS := [
 const PRESETS := {
 	"LOW": {"veg_distance": 0.6, "lod_distance": 0.6, "impostor_distance": 0.6, "grass_distance": 0.6,
 		"grass_density": 0.5, "terrain_detail": 0.7, "shadow_distance": 90.0, "clouds": 0.0,
-		"veg_shadows": false, "dof": false, "god_rays": false, "bloom": true},
+		"veg_shadows": false, "dof": false, "god_rays": false, "bloom": true, "shadows": true, "shadow_quality": 0.0},
 	"MEDIUM": {"veg_distance": 1.0, "lod_distance": 1.0, "impostor_distance": 1.0, "grass_distance": 1.0,
 		"grass_density": 0.8, "terrain_detail": 1.0, "shadow_distance": 160.0, "clouds": 1.0,
-		"veg_shadows": true, "dof": false, "god_rays": true, "bloom": true},
+		"veg_shadows": true, "dof": false, "god_rays": true, "bloom": true, "shadows": true, "shadow_quality": 1.0},
 	"HIGH": {"veg_distance": 1.3, "lod_distance": 1.3, "impostor_distance": 1.2, "grass_distance": 1.3,
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 240.0, "clouds": 1.0,
-		"veg_shadows": true, "dof": true, "god_rays": true, "bloom": true},
+		"veg_shadows": true, "dof": true, "god_rays": true, "bloom": true, "shadows": true, "shadow_quality": 1.0},
 	"ULTRA": {"veg_distance": 2.0, "lod_distance": 2.0, "impostor_distance": 2.0, "grass_distance": 2.0,
 		"grass_density": 1.0, "terrain_detail": 1.5, "shadow_distance": 400.0, "clouds": 2.0,
-		"veg_shadows": true, "dof": true, "god_rays": true, "bloom": true},
+		"veg_shadows": true, "dof": true, "god_rays": true, "bloom": true, "shadows": true, "shadow_quality": 2.0},
 }
 const BUTTONS := ["LOW", "MEDIUM", "HIGH", "ULTRA", "DEFAULTS"]
 
@@ -92,6 +94,7 @@ func _ready() -> void:
 	_defaults = {"veg_distance": 1.0, "lod_distance": 1.0, "impostor_distance": 1.0, "grass_distance": 1.0,
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 220.0, "render_scale": 1.0,
 		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false,
+		"shadows": true, "shadow_quality": 1.0,
 		"window_mode": 0.0, "resolution": 2.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
 	if _enviro != null:
 		_defaults.merge(_enviro.call(&"graphics_now"), true)

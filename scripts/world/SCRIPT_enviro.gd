@@ -194,6 +194,11 @@ func apply_look() -> void:
 
 
 ## What the menu starts from: the state this machine was given at start-up.
+## Whether the sun and moon cast shadows at all (the graphics menu's switch).
+var shadows := true
+var _shadow_fine := -1
+
+
 func graphics_now() -> Dictionary:
 	return {
 		"dof": _cam_attr != null and _cam_attr.dof_blur_far_enabled,
@@ -201,6 +206,8 @@ func graphics_now() -> Dictionary:
 		"god_rays": god_rays,
 		"shadow_distance": _light.directional_shadow_max_distance if _light != null else 200.0,
 		"clouds": float(quality),
+		"shadows": shadows,
+		"shadow_quality": float(quality),
 		"render_scale": get_viewport().scaling_3d_scale,
 	}
 
@@ -221,6 +228,19 @@ func apply_graphics(g: Dictionary) -> void:
 	god_rays = bool(g.get("god_rays", true))
 	if _rays != null:
 		_rays.visible = god_rays
+	shadows = bool(g.get("shadows", true))
+	# How finely the sun's shadows are drawn: the size of the map they are drawn
+	# into, how many bands of distance share it, and how soft their edges are.
+	var fine := clampi(int(round(float(g.get("shadow_quality", 1.0)))), 0, 2)
+	if fine != _shadow_fine:
+		_shadow_fine = fine
+		RenderingServer.directional_shadow_atlas_set_size([1024, 2048, 4096][fine], false)
+		RenderingServer.directional_soft_shadow_filter_set_quality(
+				[RenderingServer.SHADOW_QUALITY_HARD, RenderingServer.SHADOW_QUALITY_SOFT_LOW, RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM][fine])
+		if _light != null:
+			_light.directional_shadow_mode = (DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if fine == 0
+					else DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS)
+			_light.directional_shadow_blend_splits = fine > 0
 	if _light != null:
 		_light.directional_shadow_max_distance = float(g.get("shadow_distance", 220.0))
 	if _sky_mat != null:
@@ -530,7 +550,7 @@ func _apply(dt: float) -> void:
 	_light.light_energy = energy
 	if light_dir.y > 0.02:
 		_light.global_basis = Basis.looking_at(-light_dir, Vector3.UP)
-	_light.shadow_enabled = energy > 0.02
+	_light.shadow_enabled = energy > 0.02 and shadows
 
 	# Sky colours: night, day, and grey as the cloud closes in.
 	var zenith := Color(0.004, 0.007, 0.018).lerp(Color(0.09, 0.24, 0.62), day)

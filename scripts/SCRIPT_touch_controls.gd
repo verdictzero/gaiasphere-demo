@@ -61,6 +61,8 @@ var _held := {}            # touch index -> thumb button index
 var _on := {}              # action -> toggled on
 var _font: Font
 var _tapped := {}          # row index -> seconds of its flash left
+var _pad := false          # a controller is in use: the stick and the thumb's buttons stand down
+var _pad_spoke := {}       # controllers that have sent anything
 
 
 func _ready() -> void:
@@ -74,6 +76,36 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if visible and OS.has_feature("mobile"):
 		call_deferred(&"_no_phantom_clicks")
+	Input.joy_connection_changed.connect(func(_device: int, _connected: bool) -> void: _find_pad())
+	_find_pad()
+
+
+## WITH A CONTROLLER IN THE HAND the stick and the thumb's buttons are only in the
+## way: they go, and the top row (the menus) and dragging to look stay. A
+## controller counts once it is one the engine knows by name, or has sent
+## something: a phone may list odd devices that are no controller at all.
+func _find_pad() -> void:
+	var found := false
+	for device in Input.get_connected_joypads():
+		if Input.is_joy_known(device) or _pad_spoke.has(device):
+			found = true
+	for device in _pad_spoke.keys():
+		if not Input.get_connected_joypads().has(device):
+			_pad_spoke.erase(device)
+	if found == _pad:
+		return
+	_pad = found
+	if _pad:
+		_stick_touch = -1
+		_set_stick(Vector2.ZERO)
+		for touch in _held:
+			Input.action_release(THUMB[_held[touch]]["action"])
+		_held.clear()
+		for action in _on:
+			if _on[action]:
+				Input.action_release(action)
+		_on.clear()
+	queue_redraw()
 
 
 ## A phone turns every touch into a left click as well, for the menus' sake, and
@@ -152,6 +184,10 @@ func _use_label() -> String:
 
 
 func _input(event: InputEvent) -> void:
+	if (event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) > 0.5)) \
+			and not _pad_spoke.has(event.device):
+		_pad_spoke[event.device] = true
+		_find_pad()
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
 		if t.pressed:
@@ -162,10 +198,10 @@ func _input(event: InputEvent) -> void:
 			if _menu_open() or _hotbar_zone(t.position):
 				return
 			for i in THUMB.size():
-				if _shown(i) and t.position.distance_to(_thumb_centre(i)) <= (float(THUMB[i]["r"]) + 14.0) * _k():
+				if not _pad and _shown(i) and t.position.distance_to(_thumb_centre(i)) <= (float(THUMB[i]["r"]) + 14.0) * _k():
 					_press(i, t.index)
 					return
-			if t.position.x < size.x * 0.45 and _stick_touch < 0:
+			if not _pad and t.position.x < size.x * 0.45 and _stick_touch < 0:
 				_stick_touch = t.index
 				_stick_origin = t.position
 				_stick = Vector2.ZERO
@@ -275,7 +311,7 @@ func _draw() -> void:
 		sb.anti_aliasing = true
 		draw_style_box(sb, r)
 		_text(r.get_center(), ROW[i][1], 22.0, Color(1, 1, 1, 0.9))
-	if _menu_open():
+	if _menu_open() or _pad:
 		return
 	# The left thumb's stick, or a faint ring where it will appear.
 	if _stick_touch >= 0:
