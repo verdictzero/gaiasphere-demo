@@ -82,7 +82,8 @@ func _place(start: Vector3) -> void:
 		if homes.size() >= herds:
 			break
 		var ang := _rng.randf() * TAU
-		var far := lerpf(nearest, farthest, sqrt(_rng.randf()))
+		# (The first herd is always close by, so there are cows to be found at once.)
+		var far := lerpf(nearest, farthest, sqrt(_rng.randf())) if not homes.is_empty() else _rng.randf_range(nearest, nearest + 50.0)
 		var p := Vector2(start.x + cos(ang) * far, start.z + sin(ang) * far)
 		if not _pasture(p.x, p.y):
 			continue
