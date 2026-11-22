@@ -1,14 +1,14 @@
 extends SceneTree
 
 # EVERY EFFECT IN THE LIBRARY, eight to a picture, each picture taken three
-# times (0.4 s, 1.3 s and 3.5 s after they are set going), written to the folder
+# times (0.25 s, 0.9 s and 3.5 s after they are set going), written to the folder
 # given: fx_<page>_a.png, _b.png, _c.png. Each effect stands 11 m from the next
 # with its name under it and a 2 m post beside it for scale.
 #
 #   godot --path . --resolution 1600x900 --script res://tests/RENDER_fx_gallery.gd -- --out=/some/folder [--only=campfire,torch]
 
 const PER_PAGE := 8
-const TIMES := [0.4, 1.3, 3.5]
+const TIMES := [0.25, 0.9, 3.5]
 
 var _out := "user://"
 var _names: PackedStringArray

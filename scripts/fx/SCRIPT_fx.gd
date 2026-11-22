@@ -255,9 +255,6 @@ static func _particles(layer: Dictionary, looping: bool) -> GPUParticles3D:
 				# (The frames of a book are only read out by the billboard path.)
 				mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 				mat.billboard_keep_scale = true
-		if not add and not lit:
-			# Fire drawn blended still wants to glow, not sit there flat.
-			mat.albedo_color = Color(color.r * 1.25, color.g * 1.25, color.b * 1.25, color.a)
 		_materials[mat_key] = mat
 	p.material_override = mat
 	var reach := size * 2.0 + (rise + burst) * p.lifetime + spread + float(layer.get("line", 0.0)) + float(layer.get("column", 0.0)) + 2.0

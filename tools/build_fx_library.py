@@ -30,7 +30,8 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 # source file (its name within the folder, wherever it lies) -> name, columns, rows, kind, how it is read
-#   read: "alpha" as it is; "black" drawn on black; "white" dark on white; "packed" shade/glow/cover in R/B/A
+#   read: "alpha" as it is; "black" drawn on black; "white" dark on white; "packed" shade/glow/cover in R/B/A;
+#         "shade" the same packing with no glow (smoke)
 SHEETS = [
     ("Fire Tileable.jpg", "noise_fire_01", 1, 1, "tile", "rgb"),
     ("Burningtexture.png", "noise_cloud_01", 1, 1, "tile", "rgb"),
@@ -85,8 +86,8 @@ SHEETS = [
     ("Fire1.png", "burst_white_01", 6, 6, "fire_burst_grey", "alpha"),
     ("SparkExolosion2.png", "spark_burst_01", 3, 3, "spark", "black"),
     # whole explosions: flash, fireball and the smoke after, in one book
-    ("Explosion1.png", "blast_01", 12, 8, "blast", "alpha"),
-    ("Explosion2.png", "blast_02", 12, 8, "blast", "alpha"),
+    ("Explosion1.png", "blast_01", 12, 7, "blast", "alpha"),
+    ("Explosion2.png", "blast_02", 12, 7, "blast", "alpha"),
     ("Explosion3.png", "blast_03", 12, 7, "blast", "alpha"),
     ("Explosion4.png", "blast_04", 8, 8, "blast", "alpha"),
     ("Explosion5.png", "blast_05", 12, 7, "blast", "alpha"),
@@ -105,15 +106,15 @@ SHEETS = [
     ("EmberExpl3.png", "blast_18", 8, 8, "blast", "alpha"),
     ("Explosion17.png", "dust_streak_01", 6, 12, "streak", "alpha"),
     # smoke
-    ("T_smoke_01_BC_E_M.png", "smoke_roll_01", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_02_BC_E_M.png", "smoke_roll_02", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_03_BC_E_M.png", "smoke_roll_03", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_04_BC_E_M.png", "smoke_roll_04", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_05_BC_E_M.png", "smoke_roll_05", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_06_BC_E_M.png", "smoke_roll_06", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_07_BC_E_M.png", "smoke_roll_07", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_08_BC_E_M.png", "smoke_roll_08", 8, 8, "smoke_loop", "packed"),
-    ("T_smoke_09_BC_E_M.png", "smoke_roll_09", 8, 8, "smoke_loop", "packed"),
+    ("T_smoke_01_BC_E_M.png", "smoke_roll_01", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_02_BC_E_M.png", "smoke_roll_02", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_03_BC_E_M.png", "smoke_roll_03", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_04_BC_E_M.png", "smoke_roll_04", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_05_BC_E_M.png", "smoke_roll_05", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_06_BC_E_M.png", "smoke_roll_06", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_07_BC_E_M.png", "smoke_roll_07", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_08_BC_E_M.png", "smoke_roll_08", 8, 8, "smoke_loop", "shade"),
+    ("T_smoke_09_BC_E_M.png", "smoke_roll_09", 8, 8, "smoke_loop", "shade"),
     ("SmokeAnim2.png", "smoke_dark_01", 8, 8, "smoke_loop", "alpha"),
     ("SmokeLoop.tif", "smoke_dark_02", 6, 6, "smoke_loop", "alpha"),
     ("SmokeLoop02.tif", "smoke_dark_03", 6, 6, "smoke_loop", "white"),
@@ -155,6 +156,9 @@ def convert(path, read, limit):
         lum = rgb.mean(axis=2)
         alpha = np.clip((1.0 - lum) * 1.6, 0, 1)
         rgb = np.full_like(rgb, 0.22)
+    elif read == "shade":
+        # Smoke packed the same way, with no fire in it: its shade is its picture.
+        rgb = np.repeat(np.clip(rgb[..., 0:1] * 1.05, 0, 1), 3, axis=2)
     elif read == "packed":
         shade, glow = rgb[..., 0], rgb[..., 2]
         fire = np.stack([np.clip(glow * 2.4, 0, 1), np.clip(glow * 1.5 - 0.1, 0, 1), np.clip(glow * 1.2 - 0.55, 0, 1)], axis=2)
@@ -171,19 +175,24 @@ def book(tex, **kw):
     return dict(dict(type="particles", texture=tex, amount=1, play="through"), **kw)
 
 
+def stands(t, size):
+    """How high a picture `size` across its longer side stands, metres."""
+    return size * t["cell_h"] / t["cell_w"] if t["cell_w"] >= t["cell_h"] else size
+
+
 def basic(name, t):
     """The plain effect a texture gets by its kind."""
     kind, frames = t["kind"], t["cols"] * t["rows"]
     if kind == "blast" or kind == "blast_smoke":
         seconds = round(frames / 34.0, 2)
-        layers = [book(name, lifetime=seconds, size=6.0, lift=1.6)]
+        layers = [book(name, lifetime=seconds, size=6.0, lift=round(stands(t, 6.0) * 0.46, 2))]
         if kind == "blast":
             layers.append(dict(type="light", color=[1.0, 0.7, 0.35], energy=14.0, range=18.0, flash=0.55))
         return dict(loop=False, seconds=seconds, about="A whole explosion from one book: flash, fireball, smoke.", layers=layers)
     if kind in ("fire_burst", "fire_burst_grey"):
         seconds = round(frames / 36.0, 2)
         return dict(loop=False, seconds=seconds, about="A burst of fire that swells and breaks up.", layers=[
-            book(name, lifetime=seconds, size=3.2, lift=0.8, blend="add", color=FIRE if kind.endswith("grey") else [1, 1, 1]),
+            book(name, lifetime=seconds, size=3.2, lift=1.5, blend="add", color=FIRE if kind.endswith("grey") else [1, 1, 1]),
             dict(type="light", color=[1.0, 0.65, 0.3], energy=8.0, range=10.0, flash=0.4)])
     if kind == "spark":
         return dict(loop=False, seconds=0.6, about="A burst of sparks.", layers=[
@@ -214,7 +223,7 @@ def basic(name, t):
     if kind == "smoke_once":
         seconds = round(frames / 24.0, 2)
         return dict(loop=False, seconds=seconds, about="A puff of smoke that billows and thins.", layers=[
-            book(name, lifetime=seconds, size=3.0, lift=0.6, lit=True, color=[0.75, 0.74, 0.72, 0.9])])
+            book(name, lifetime=seconds, size=3.0, lift=1.4, lit=True, color=[0.75, 0.74, 0.72, 0.9])])
     if kind == "streak":
         return dict(loop=False, seconds=1.6, about="A low streak of dust thrown along the ground.", layers=[
             book(name, lifetime=1.6, size=5.0, lift=0.4, lit=True)])
@@ -224,7 +233,8 @@ def basic(name, t):
                  spread=0.25, drift=0.3, fade="in_out", color=SMOKE + [0.6], lit=True, turn=25.0)])
     if kind == "glow":
         return dict(loop=True, about="A glow that hangs and pulses.", layers=[
-            dict(type="particles", texture=name, amount=1, lifetime=2.0, play="one", size=2.0, blend="add", fade="in_out")])
+            dict(type="particles", texture=name, amount=1, lifetime=2.0, play="one", size=2.0, blend="add", fade="in_out",
+                 lift=1.0)])
     if kind == "ring":
         return dict(loop=False, seconds=0.7, about="A shock ring that spreads and fades.", layers=[
             dict(type="particles", texture=name, amount=1, lifetime=0.7, play="one", size=1.0, grow=9.0, blend="add",
@@ -370,40 +380,40 @@ COMPOSITES = {
         dict(type="particles", texture="dust_bits_01", amount=6, lifetime=0.9, play="pick", size=0.35, grow=2.0, burst=0.7,
              one_shot=True, fade="out", lit=True, color=[0.62, 0.56, 0.48, 0.5], lift=0.1)]),
     "smoke_puff": dict(loop=False, seconds=1.5, about="One puff of smoke, as from a snuffed flame or a shot.", layers=[
-        book("smoke_burst_03", lifetime=1.5, size=1.6, lift=0.4, lit=True, color=[0.8, 0.8, 0.8, 0.8])]),
+        book("smoke_burst_03", lifetime=1.5, size=1.6, lift=0.8, lit=True, color=[0.8, 0.8, 0.8, 0.8])]),
     "smoke_ring_burst": dict(loop=False, seconds=2.4, about="Smoke thrown outward in a ring.", layers=[
         dict(type="particles", texture="puff_soft_03", amount=1, lifetime=2.4, play="one", size=2.0, grow=4.0, fade="out",
              flat=True, lift=0.4, color=SMOKE + [0.7], lit=True),
         ring(7.0, 0.5, "ring_cloud_01")]),
     # ---- explosions
     "explosion_small": dict(loop=False, seconds=2.2, about="A small explosion: a grenade, a pot of powder.", layers=[
-        book("blast_05", lifetime=2.2, size=4.0, lift=1.1), ring(6.0, 0.45), sparks(30, 7.0), debris(12, 5.0),
+        book("blast_05", lifetime=2.2, size=4.0, lift=1.5), ring(6.0, 0.45), sparks(30, 7.0), debris(12, 5.0),
         flash(12.0, 14.0, 0.45)]),
     "explosion_medium": dict(loop=False, seconds=2.6, about="A barrel going up.", layers=[
-        book("blast_07", lifetime=2.5, size=7.0, lift=2.0), book("fire_burst_03", lifetime=1.2, size=4.5, lift=1.4, blend="add"),
+        book("blast_07", lifetime=2.5, size=7.0, lift=2.7), book("fire_burst_03", lifetime=1.2, size=4.5, lift=2.0, blend="add"),
         ring(10.0, 0.55), sparks(50, 10.0), debris(26, 8.0), flash(20.0, 24.0, 0.6)]),
     "explosion_large": dict(loop=False, seconds=4.0, about="A big one, with a column of smoke left standing after it.", layers=[
-        book("blast_02", lifetime=2.9, size=12.0, lift=3.6), book("fire_burst_04", lifetime=1.6, size=8.0, lift=2.6, blend="add"),
+        book("blast_02", lifetime=2.9, size=15.0, lift=6.6), book("fire_burst_04", lifetime=1.6, size=8.0, lift=3.6, blend="add"),
         ring(18.0, 0.7), ring(12.0, 1.1, "ring_cloud_01"), sparks(80, 14.0), debris(44, 12.0),
         dict(smoke("smoke_dark_01", 14, 4.0, 3.0, 2.4, 2.2, [0.6, 0.6, 0.6, 0.9], lift=3.0, spread=1.5), one_shot=True),
         flash(34.0, 40.0, 0.8)]),
     "explosion_fiery": dict(loop=False, seconds=2.2, about="Mostly fire: fuel, a firebomb.", layers=[
-        book("blast_14", lifetime=2.2, size=8.0, lift=2.2), book("fire_burst_01", lifetime=1.0, size=5.0, lift=1.6, blend="add"),
+        book("blast_14", lifetime=2.2, size=8.0, lift=3.1), book("fire_burst_01", lifetime=1.0, size=5.0, lift=2.2, blend="add"),
         dict(embers(60, 1.5, 3.0), one_shot=True), flash(22.0, 24.0, 0.7)]),
     "explosion_smoky": dict(loop=False, seconds=3.0, about="Mostly smoke and dirt: a charge under earth.", layers=[
-        book("blast_18", lifetime=2.4, size=7.0, lift=2.0), book("blast_15", lifetime=2.6, size=8.0, lift=2.4),
+        book("blast_18", lifetime=2.4, size=7.0, lift=3.1), book("blast_15", lifetime=2.6, size=8.0, lift=3.1),
         book("dust_streak_01", lifetime=1.6, size=9.0, lift=0.5, lit=True), debris(40, 9.0), flash(8.0, 14.0, 0.3)]),
     "explosion_sparks": dict(loop=False, seconds=1.4, about="A crack and a shower of sparks, no fireball.", layers=[
         book("spark_burst_01", lifetime=0.6, size=3.4, blend="add", color=[1.0, 0.85, 0.6]), sparks(90, 12.0),
         ring(5.0, 0.3), flash(10.0, 12.0, 0.25)]),
     "explosion_magic": dict(loop=False, seconds=1.4, about="A blue-white burst, for something unnatural going off.", layers=[
-        book("burst_white_01", lifetime=1.0, size=5.0, lift=1.2, blend="add", color=[0.5, 0.8, 1.0]),
+        book("burst_white_01", lifetime=1.0, size=5.0, lift=2.2, blend="add", color=[0.5, 0.8, 1.0]),
         ring(11.0, 0.6), dict(type="light", color=[0.5, 0.75, 1.0], energy=18.0, range=20.0, flash=0.6)]),
     "airburst": dict(loop=False, seconds=2.4, about="An explosion in the air: no ring on the ground, no debris.", layers=[
         book("blast_11", lifetime=2.4, size=7.0), book("fire_burst_02", lifetime=1.2, size=4.0, blend="add"), sparks(40, 9.0),
         flash(18.0, 26.0, 0.5)]),
     "impact_fire": dict(loop=False, seconds=1.0, about="A fireball landing: a splash of flame and sparks.", layers=[
-        book("fire_burst_05", lifetime=1.0, size=3.0, lift=0.8, blend="add"), sparks(24, 6.0), ring(4.0, 0.3),
+        book("fire_burst_05", lifetime=1.0, size=3.0, lift=1.3, blend="add"), sparks(24, 6.0), ring(4.0, 0.3),
         flash(8.0, 10.0, 0.35)]),
     "shockwave": dict(loop=False, seconds=0.8, about="The ring alone: a blast felt, not seen.", layers=[
         ring(16.0, 0.8), ring(9.0, 0.5, "ring_01")]),

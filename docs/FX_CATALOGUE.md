@@ -137,8 +137,8 @@ This file and the JSON are written by `tools/build_fx_library.py`; edit the effe
 
 | Effect | Kind | Lasts | What it is | Textures |
 |---|---|---|---|---|
-| `blast_01` | one-shot | 2.8 s | A whole explosion from one book: flash, fireball, smoke. | blast_01 |
-| `blast_02` | one-shot | 2.8 s | A whole explosion from one book: flash, fireball, smoke. | blast_02 |
+| `blast_01` | one-shot | 2.5 s | A whole explosion from one book: flash, fireball, smoke. | blast_01 |
+| `blast_02` | one-shot | 2.5 s | A whole explosion from one book: flash, fireball, smoke. | blast_02 |
 | `blast_03` | one-shot | 2.5 s | A whole explosion from one book: flash, fireball, smoke. | blast_03 |
 | `blast_04` | one-shot | 1.9 s | A whole explosion from one book: flash, fireball, smoke. | blast_04 |
 | `blast_05` | one-shot | 2.5 s | A whole explosion from one book: flash, fireball, smoke. | blast_05 |
@@ -172,8 +172,8 @@ This file and the JSON are written by `tools/build_fx_library.py`; edit the effe
 
 | Texture | Grid | Frames | Size | Kind |
 |---|---|---|---|---|
-| `blast_01` | 12 x 8 | 96 | 3072 x 3072 | blast |
-| `blast_02` | 12 x 8 | 96 | 3072 x 3072 | blast |
+| `blast_01` | 12 x 7 | 84 | 3072 x 3072 | blast |
+| `blast_02` | 12 x 7 | 84 | 3072 x 3072 | blast |
 | `blast_03` | 12 x 7 | 84 | 3072 x 1536 | blast |
 | `blast_04` | 8 x 8 | 64 | 2048 x 2048 | blast |
 | `blast_05` | 12 x 7 | 84 | 3072 x 1536 | blast |

@@ -531,23 +531,23 @@
   "blast_01": {
    "file": "blast_01.webp",
    "cols": 12,
-   "rows": 8,
+   "rows": 7,
    "kind": "blast",
    "width": 3072,
    "height": 3072,
    "cell_w": 256,
-   "cell_h": 384,
+   "cell_h": 439,
    "bytes": 2037738
   },
   "blast_02": {
    "file": "blast_02.webp",
    "cols": 12,
-   "rows": 8,
+   "rows": 7,
    "kind": "blast",
    "width": 3072,
    "height": 3072,
    "cell_w": 256,
-   "cell_h": 384,
+   "cell_h": 439,
    "bytes": 2079146
   },
   "blast_03": {
@@ -746,7 +746,7 @@
    "height": 1024,
    "cell_w": 128,
    "cell_h": 128,
-   "bytes": 388054
+   "bytes": 358320
   },
   "smoke_roll_02": {
    "file": "smoke_roll_02.webp",
@@ -757,7 +757,7 @@
    "height": 1024,
    "cell_w": 128,
    "cell_h": 128,
-   "bytes": 563484
+   "bytes": 521622
   },
   "smoke_roll_03": {
    "file": "smoke_roll_03.webp",
@@ -768,7 +768,7 @@
    "height": 1024,
    "cell_w": 128,
    "cell_h": 128,
-   "bytes": 617404
+   "bytes": 584726
   },
   "smoke_roll_04": {
    "file": "smoke_roll_04.webp",
@@ -779,7 +779,7 @@
    "height": 1024,
    "cell_w": 128,
    "cell_h": 128,
-   "bytes": 421464
+   "bytes": 388224
   },
   "smoke_roll_05": {
    "file": "smoke_roll_05.webp",
@@ -790,7 +790,7 @@
    "height": 1024,
    "cell_w": 128,
    "cell_h": 128,
-   "bytes": 342972
+   "bytes": 318450
   },
   "smoke_roll_06": {
    "file": "smoke_roll_06.webp",
@@ -801,7 +801,7 @@
    "height": 1024,
    "cell_w": 128,
    "cell_h": 128,
-   "bytes": 419584
+   "bytes": 389902
   },
   "smoke_roll_07": {
    "file": "smoke_roll_07.webp",
@@ -812,7 +812,7 @@
    "height": 2048,
    "cell_w": 256,
    "cell_h": 256,
-   "bytes": 2012038
+   "bytes": 1839388
   },
   "smoke_roll_08": {
    "file": "smoke_roll_08.webp",
@@ -823,7 +823,7 @@
    "height": 2048,
    "cell_w": 256,
    "cell_h": 256,
-   "bytes": 987820
+   "bytes": 915806
   },
   "smoke_roll_09": {
    "file": "smoke_roll_09.webp",
@@ -834,7 +834,7 @@
    "height": 2048,
    "cell_w": 256,
    "cell_h": 256,
-   "bytes": 1037832
+   "bytes": 985402
   },
   "smoke_dark_01": {
    "file": "smoke_dark_01.webp",
@@ -1204,7 +1204,8 @@
      "play": "one",
      "size": 2.0,
      "blend": "add",
-     "fade": "in_out"
+     "fade": "in_out",
+     "lift": 1.0
     }
    ]
   },
@@ -1220,7 +1221,8 @@
      "play": "one",
      "size": 2.0,
      "blend": "add",
-     "fade": "in_out"
+     "fade": "in_out",
+     "lift": 1.0
     }
    ]
   },
@@ -1236,7 +1238,8 @@
      "play": "one",
      "size": 2.0,
      "blend": "add",
-     "fade": "in_out"
+     "fade": "in_out",
+     "lift": 1.0
     }
    ]
   },
@@ -1252,7 +1255,8 @@
      "play": "one",
      "size": 2.0,
      "blend": "add",
-     "fade": "in_out"
+     "fade": "in_out",
+     "lift": 1.0
     }
    ]
   },
@@ -2042,7 +2046,7 @@
      "play": "through",
      "lifetime": 1.0,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1,
@@ -2075,7 +2079,7 @@
      "play": "through",
      "lifetime": 1.78,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1,
@@ -2108,7 +2112,7 @@
      "play": "through",
      "lifetime": 1.78,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1,
@@ -2141,7 +2145,7 @@
      "play": "through",
      "lifetime": 1.78,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1,
@@ -2174,7 +2178,7 @@
      "play": "through",
      "lifetime": 1.0,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1,
@@ -2207,7 +2211,7 @@
      "play": "through",
      "lifetime": 1.36,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1,
@@ -2240,7 +2244,7 @@
      "play": "through",
      "lifetime": 1.0,
      "size": 3.2,
-     "lift": 0.8,
+     "lift": 1.5,
      "blend": "add",
      "color": [
       1.0,
@@ -2284,7 +2288,7 @@
   },
   "blast_01": {
    "loop": false,
-   "seconds": 2.82,
+   "seconds": 2.47,
    "about": "A whole explosion from one book: flash, fireball, smoke.",
    "layers": [
     {
@@ -2292,9 +2296,9 @@
      "texture": "blast_01",
      "amount": 1,
      "play": "through",
-     "lifetime": 2.82,
+     "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.76
     },
     {
      "type": "light",
@@ -2311,7 +2315,7 @@
   },
   "blast_02": {
    "loop": false,
-   "seconds": 2.82,
+   "seconds": 2.47,
    "about": "A whole explosion from one book: flash, fireball, smoke.",
    "layers": [
     {
@@ -2319,9 +2323,9 @@
      "texture": "blast_02",
      "amount": 1,
      "play": "through",
-     "lifetime": 2.82,
+     "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.76
     },
     {
      "type": "light",
@@ -2348,7 +2352,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2375,7 +2379,7 @@
      "play": "through",
      "lifetime": 1.88,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.76
     },
     {
      "type": "light",
@@ -2402,7 +2406,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2429,7 +2433,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2456,7 +2460,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2483,7 +2487,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2510,7 +2514,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2537,7 +2541,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2564,7 +2568,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2591,7 +2595,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2618,7 +2622,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     }
    ]
   },
@@ -2634,7 +2638,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2661,7 +2665,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     }
    ]
   },
@@ -2677,7 +2681,7 @@
      "play": "through",
      "lifetime": 2.47,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.36
     },
     {
      "type": "light",
@@ -2704,7 +2708,7 @@
      "play": "through",
      "lifetime": 1.88,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.76
     },
     {
      "type": "light",
@@ -2731,7 +2735,7 @@
      "play": "through",
      "lifetime": 1.88,
      "size": 6.0,
-     "lift": 1.6
+     "lift": 2.76
     },
     {
      "type": "light",
@@ -3074,7 +3078,7 @@
      "play": "through",
      "lifetime": 2.67,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -3160,7 +3164,7 @@
      "play": "through",
      "lifetime": 1.04,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -3183,7 +3187,7 @@
      "play": "through",
      "lifetime": 1.5,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -3206,7 +3210,7 @@
      "play": "through",
      "lifetime": 1.5,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -3229,7 +3233,7 @@
      "play": "through",
      "lifetime": 1.04,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -3252,7 +3256,7 @@
      "play": "through",
      "lifetime": 1.04,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -3275,7 +3279,7 @@
      "play": "through",
      "lifetime": 1.04,
      "size": 3.0,
-     "lift": 0.6,
+     "lift": 1.4,
      "lit": true,
      "color": [
       0.75,
@@ -4400,7 +4404,7 @@
      "play": "through",
      "lifetime": 1.5,
      "size": 1.6,
-     "lift": 0.4,
+     "lift": 0.8,
      "lit": true,
      "color": [
       0.8,
@@ -4468,7 +4472,7 @@
      "play": "through",
      "lifetime": 2.2,
      "size": 4.0,
-     "lift": 1.1
+     "lift": 1.5
     },
     {
      "type": "particles",
@@ -4550,7 +4554,7 @@
      "play": "through",
      "lifetime": 2.5,
      "size": 7.0,
-     "lift": 2.0
+     "lift": 2.7
     },
     {
      "type": "particles",
@@ -4559,7 +4563,7 @@
      "play": "through",
      "lifetime": 1.2,
      "size": 4.5,
-     "lift": 1.4,
+     "lift": 2.0,
      "blend": "add"
     },
     {
@@ -4641,8 +4645,8 @@
      "amount": 1,
      "play": "through",
      "lifetime": 2.9,
-     "size": 12.0,
-     "lift": 3.6
+     "size": 15.0,
+     "lift": 6.6
     },
     {
      "type": "particles",
@@ -4651,7 +4655,7 @@
      "play": "through",
      "lifetime": 1.6,
      "size": 8.0,
-     "lift": 2.6,
+     "lift": 3.6,
      "blend": "add"
     },
     {
@@ -4776,7 +4780,7 @@
      "play": "through",
      "lifetime": 2.2,
      "size": 8.0,
-     "lift": 2.2
+     "lift": 3.1
     },
     {
      "type": "particles",
@@ -4785,7 +4789,7 @@
      "play": "through",
      "lifetime": 1.0,
      "size": 5.0,
-     "lift": 1.6,
+     "lift": 2.2,
      "blend": "add"
     },
     {
@@ -4834,7 +4838,7 @@
      "play": "through",
      "lifetime": 2.4,
      "size": 7.0,
-     "lift": 2.0
+     "lift": 3.1
     },
     {
      "type": "particles",
@@ -4843,7 +4847,7 @@
      "play": "through",
      "lifetime": 2.6,
      "size": 8.0,
-     "lift": 2.4
+     "lift": 3.1
     },
     {
      "type": "particles",
@@ -4967,7 +4971,7 @@
      "play": "through",
      "lifetime": 1.0,
      "size": 5.0,
-     "lift": 1.2,
+     "lift": 2.2,
      "blend": "add",
      "color": [
       0.5,
@@ -5072,7 +5076,7 @@
      "play": "through",
      "lifetime": 1.0,
      "size": 3.0,
-     "lift": 0.8,
+     "lift": 1.3,
      "blend": "add"
     },
     {
