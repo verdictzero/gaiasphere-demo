@@ -138,7 +138,7 @@ func _process(_dt: float) -> bool:
 		5:
 			Input.action_press(&"wv_forward")
 			_walked += 1
-			var at := _frame.affine_inverse() * explorer.global_position
+			var at: Vector3 = _frame.affine_inverse() * (explorer.global_position as Vector3)
 			if at.z < 1.2:
 				Input.action_release(&"wv_forward")
 				print("build: walked up the steps and in (%d frames), standing %.2f m above the foundation" % [_walked, at.y])
