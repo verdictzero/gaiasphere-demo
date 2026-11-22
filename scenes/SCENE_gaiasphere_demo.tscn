@@ -15,7 +15,7 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_mining.gd" id="mining"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_inventory.gd" id="inventory"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_watermark.gd" id="watermark"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_plank_hut.gd" id="plankhut"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_building.gd" id="building"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_vitals.gd" id="vitals"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_berry_bushes.gd" id="berrybushes"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_world_reflection.gd" id="worldrefl"]
@@ -78,8 +78,8 @@ script = ExtResource("worldrefl")
 [node name="BerryBushes" type="Node3D" parent="."]
 script = ExtResource("berrybushes")
 
-[node name="PlankHut" type="Node3D" parent="."]
-script = ExtResource("plankhut")
+[node name="Building" type="Node3D" parent="."]
+script = ExtResource("building")
 
 [node name="ForestMotes" type="Node3D" parent="."]
 script = ExtResource("motes")

@@ -512,6 +512,12 @@ func _cut(charged: bool) -> void:
 
 ## The cut lands: a tree in reach takes a bite (SCRIPT_woodcutting.gd).
 func _bite() -> void:
+	# Something built is taken down by the axe before any tree behind it is cut
+	# (SCRIPT_building.gd).
+	if tool == "axe":
+		var built := get_node_or_null(^"../Building")
+		if built != null and bool(built.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
+			return
 	# The pickaxe is for rock and nothing else (SCRIPT_mining.gd).
 	if tool == "pickaxe":
 		var mine := get_node_or_null(^"../Mining")

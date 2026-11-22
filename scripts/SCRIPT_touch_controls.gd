@@ -47,6 +47,7 @@ const ROW := [
 	[&"wv_fly", "FLY"],
 	[&"wv_light", "LIGHT"],
 	[&"wv_bag", "BAG"],
+	[&"wv_turn", "TURN"],
 ]
 const MOVES := [&"wv_left", &"wv_right", &"wv_forward", &"wv_back"]
 
@@ -135,6 +136,9 @@ func _use_label() -> String:
 	var prompt: Variant = _hand.get("_prompt")
 	if prompt != null and (prompt as CanvasItem).visible:
 		return "TAKE"
+	var built := get_node_or_null(^"../../Building")
+	if built != null and String(built.call(&"holding")) != "":
+		return "PLACE"
 	match String(_hand.get("tool")):
 		"axe":
 			return "CHOP"
