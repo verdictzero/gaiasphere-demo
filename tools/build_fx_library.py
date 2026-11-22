@@ -331,29 +331,25 @@ COMPOSITES = {
         smoke("wisp_smoke_02", 6, 2.5, 0.2, 2.5, 0.8, [1, 1, 1, 0.3], lift=0.5, spread=0.03), light(1.6, 7.0, 0.4)]),
     "candle": dict(loop=True, about="A candle flame.", layers=[
         book("candle_loop_01", lifetime=4.2, size=0.09, lift=0.05, blend="add"), light(0.5, 3.0, 0.15, [1.0, 0.72, 0.42])]),
-    "brazier": dict(loop=True, about="A bowl of fire: broad low flames and sparks.", layers=[
+    "brazier": dict(loop=True, about="A bowl of fire: broad low flames, sparks, and a little smoke.", layers=[
         book("flame_loop_06", lifetime=2.1, size=1.4, lift=0.55, blend="add"),
-        licks(14, 0.6, 0.7, 0.3), embers(14, 0.35), light(2.6, 9.0)]),
-    "wall_of_fire": dict(loop=True, about="A line of fire 6 m long (along x). Scale it for more.", layers=[
-        dict(type="particles", texture="flame_loop_03", amount=9, lifetime=2.1, play="through", size=2.0, lift=0.8,
-             blend="add", line=6.0),
-        dict(tongues(12, 1.8, 1.4, 1.6, 0.2), line=6.0), dict(licks(40, 0.8, 1.2, 0.2), line=6.0),
-        dict(embers(40, 0.3, 1.8), line=6.0), light(5.0, 14.0)]),
+        licks(14, 0.6, 0.7, 0.3), embers(14, 0.35),
+        smoke("smoke_roll_05", 10, 5.0, 0.5, 2.6, 1.2, [1, 1, 1, 0.4], lift=1.3, spread=0.15), light(2.6, 9.0)]),
+    "wall_of_fire": dict(loop=True, about="A dense line of fire 6 m long (along x), with its smoke. Scale it for more.", layers=[
+        dict(type="particles", texture="flame_loop_03", amount=18, lifetime=2.1, play="through", size=2.0, lift=0.8,
+             blend="add", line=6.0, spread=0.25),
+        dict(type="particles", texture="flame_loop_06", amount=12, lifetime=2.1, play="through", size=1.5, lift=0.6,
+             blend="add", line=6.0, spread=0.3),
+        dict(tongues(26, 1.8, 1.3, 1.6, 0.25), line=6.0), dict(tongues(12, 1.6, 1.6, 1.9, 0.25, "flame_puff_03"), line=6.0),
+        dict(licks(80, 0.8, 1.1, 0.25), line=6.0), dict(embers(60, 0.3, 1.8), line=6.0),
+        dict(smoke("smoke_roll_02", 26, 7.0, 1.4, 2.8, 1.7, [1, 1, 1, 0.6], lift=2.6, spread=0.3), line=6.0),
+        light(5.0, 14.0)]),
     "ground_fire": dict(loop=True, about="Low fire licking over a patch of ground 3 m across.", layers=[
         dict(type="particles", texture="wisp_flame_03", amount=40, lifetime=0.8, play="pick", size=0.6, grow=0.5, rise=1.4,
              spread=1.5, blend="add", fade="in_out", color=FIRE, turn=30.0),
         dict(type="particles", texture="flame_loop_02", amount=10, lifetime=4.2, play="through", size=0.6, lift=0.3,
              blend="add", spread=1.4),
         smoke("smoke_roll_08", 8, 5.0, 0.8, 2.6, 1.0, [1, 1, 1, 0.3], lift=0.6, spread=1.2), light(2.4, 9.0)]),
-    "burning_tree": dict(loop=True, about="Fire up something tall (8 m): flames along its height, smoke off the top.", layers=[
-        # Up its height only loose tongues and licks of flame, which hang in the air
-        # as fire does; the one book of fire with a flat base sits at its foot.
-        dict(tongues(22, 2.6, 0.0, 1.3, 0.5), column=8.0),
-        dict(tongues(12, 2.0, 0.0, 1.6, 0.5, "flame_puff_03"), column=8.0),
-        dict(licks(60, 1.0, 0.0, 0.5), column=8.0),
-        book("flame_loop_03", lifetime=2.1, size=2.6, lift=1.05, blend="add"),
-        dict(embers(50, 0.8, 2.4), column=8.0), smoke("smoke_dark_01", 20, 9.0, 2.2, 3.2, 2.2, [1, 1, 1, 0.8], lift=8.0, spread=0.7),
-        light(6.0, 18.0)]),
     "ignite": dict(loop=False, seconds=3.3, about="Something catching fire: a line of flame that grows up.", layers=[
         book("flame_ignite_01", lifetime=3.3, size=1.6, lift=0.7, blend="add"), flash(3.0, 7.0, 3.3)]),
     "flare_up": dict(loop=False, seconds=1.6, about="A sudden gout of flame, as when fat hits a fire.", layers=[
