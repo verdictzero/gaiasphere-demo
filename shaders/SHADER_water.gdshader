@@ -92,6 +92,8 @@ uniform vec3 scatter_color : source_color = vec3(0.1, 0.42, 0.33);
 uniform float scatter_strength : hint_range(0.0, 3.0) = 1.1;
 group_uniforms;
 
+// How much of the sky's colour the surface throws back (1 = all of it).
+uniform float sky_reflection : hint_range(0.0, 1.0) = 0.5;
 global uniform vec3 enviro_light_dir;
 global uniform vec4 enviro_light_color;
 global uniform vec4 enviro_ambient;
@@ -248,7 +250,7 @@ void fragment() {
 	vec3 n_w = normalize((INV_VIEW_MATRIX * vec4(nv, 0.0)).xyz);
 	vec3 thrown = reflect(-view_w, n_w);
 	vec3 sky_seen = mix(enviro_sky_horizon.rgb, enviro_sky_zenith.rgb, pow(clamp(thrown.y, 0.0, 1.0), 0.45));
-	under += sky_seen * fresnel * 0.9;
+	under += sky_seen * fresnel * sky_reflection;
 
 	// ---- foam
 	float grain_run = mix(texture(foam_tex, vec2(UV.x * 0.5 - slide1 * 0.5 + 0.4, UV.y * 0.5 + 0.7)).r,
