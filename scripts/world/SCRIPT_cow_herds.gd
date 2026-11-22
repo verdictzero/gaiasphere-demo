@@ -28,7 +28,7 @@ signal mooed(cow: Node3D)
 @export var nearest := 55.0
 @export var farthest := 420.0
 ## How far a herd strays from the middle of its pasture.
-@export var roam := 45.0
+@export var roam := 60.0
 ## Seconds a herd stays put before drifting on.
 @export var stay := Vector2(25.0, 60.0)
 ## Metres of air under a cow, and under one that is eating.
@@ -65,8 +65,12 @@ func _ground(at: Vector3, fallback: float) -> float:
 	return float(_world.call(&"height_at", at, fallback))
 
 
-## Is this somewhere a cow could hang: land, fairly level, not river or mere?
-func _pasture(x: float, z: float) -> bool:
+## Is this somewhere a cow could hang: a meadow (Flora.meadow: the open ground
+## among the trees, at least `open` of the way into one), on land, fairly level,
+## not river or mere? Cows keep out of the wood.
+func _pasture(x: float, z: float, open := 0.9) -> bool:
+	if Flora.meadow(x, z) < open:
+		return false
 	var s := _field.sample(x, z)
 	if not bool(s.get("on_land", false)):
 		return false
@@ -78,14 +82,22 @@ func _place(start: Vector3) -> void:
 	_field = _world.call(&"get_field")
 	var scene := load(MODEL) as PackedScene
 	var homes: Array = []
-	for attempt in 600:
+	for attempt in 2500:
 		if homes.size() >= herds:
 			break
 		var ang := _rng.randf() * TAU
 		# (The first herd is always close by, so there are cows to be found at once.)
-		var far := lerpf(nearest, farthest, sqrt(_rng.randf())) if not homes.is_empty() else _rng.randf_range(nearest, nearest + 50.0)
+		# (For a while the first herd is looked for close by, so there are cows to be
+		# found at once, if there is a meadow that near.)
+		var far := lerpf(nearest, farthest, sqrt(_rng.randf())) if (not homes.is_empty() or attempt > 250) \
+				else _rng.randf_range(nearest, nearest + 90.0)
 		var p := Vector2(start.x + cos(ang) * far, start.z + sin(ang) * far)
-		if not _pasture(p.x, p.y):
+		# Well inside a meadow: open ground here and all round, not its ragged edge.
+		var inside := _pasture(p.x, p.y, 0.97)
+		for k in 6:
+			var round := Vector2(cos(TAU * float(k) / 6.0), sin(TAU * float(k) / 6.0)) * 28.0
+			inside = inside and Flora.meadow(p.x + round.x, p.y + round.y) > 0.8
+		if not inside:
 			continue
 		var crowded := false
 		for h in homes:
@@ -178,6 +190,10 @@ func _rest(cow: Dictionary) -> void:
 
 
 func _go(cow: Dictionary, to: Vector2) -> void:
+	# Never into the trees: a spot outside the meadow is given up for where it is.
+	if Flora.meadow(to.x, to.y) < 0.6:
+		var node: Node3D = cow["node"]
+		to = Vector2(node.position.x, node.position.z)
 	cow["state"] = "move"
 	cow["target"] = to
 	cow["want_air"] = hover

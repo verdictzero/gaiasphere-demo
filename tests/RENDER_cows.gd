@@ -51,6 +51,13 @@ func _process(_dt: float) -> bool:
 				if c.distance_to(Vector2(here.x, here.z)) < best:
 					best = c.distance_to(Vector2(here.x, here.z))
 					_herd = herd
+			var in_wood := 0
+			for herd in cows._herds:
+				for cow in herd["cows"]:
+					var at: Vector3 = (cow["node"] as Node3D).global_position
+					if Flora.meadow(at.x, at.z) < 0.6:
+						in_wood += 1
+			print("cows: %d standing outside a meadow" % in_wood)
 			print("cows: %d herds; the nearest %.0f m off with %d cows" % [cows._herds.size(), best, (_herd["cows"] as Array).size()])
 			explorer.flying = true
 			_step = 0
