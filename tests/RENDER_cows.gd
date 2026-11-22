@@ -85,8 +85,30 @@ func _process(_dt: float) -> bool:
 		3:
 			root.get_texture().get_image().save_png(_out.path_join("cows_2_close.png"))
 			print("cows: ", _doing())
-			print("cows: ok")
-			quit(0)
+			# CHASED AND LET ALONE, stepped by hand: someone at a cow's shoulder sends
+			# it running; with nobody near it comes back to the herd in the meadow.
+			var ok := true
+			cows.set_process(false)
+			var cow: Dictionary = _herd["cows"][0]
+			var node: Node3D = cow["node"]
+			var chaser := node.position + Vector3(1.2, 0, 0)
+			var farthest := 0.0
+			for i in 80:
+				chaser = chaser.move_toward(node.position, 0.22)          # walking after it
+				cows._cow_step(cow, _herd, 0.1, chaser)
+				farthest = maxf(farthest, Vector2(node.position.x, node.position.z).distance_to(_herd["centre"]))
+			print("cows: chased for 8 s it is %s, %.0f m from the herd's middle at most" % [cow["state"], farthest])
+			ok = ok and String(cow["state"]) == "flee"
+			var steps := 0
+			while steps < 1500 and (String(cow["state"]) == "flee" or String(cow["state"]) == "move"):
+				cows._cow_step(cow, _herd, 0.1, Vector3(0, 9000, 0))
+				steps += 1
+			var back := Vector2(node.position.x, node.position.z)
+			print("cows: let alone, after %.0f s it is %s, %.0f m from the herd's middle, meadow %.2f" % [steps * 0.1, cow["state"],
+					back.distance_to(_herd["centre"]), Flora.meadow(back.x, back.y)])
+			ok = ok and steps < 1500 and Flora.meadow(back.x, back.y) >= 0.6 and back.distance_to(_herd["centre"]) < 12.0
+			print("cows: ok" if ok else "cows: FAILED")
+			quit(0 if ok else 1)
 			return true
 	_step += 1
 	return false

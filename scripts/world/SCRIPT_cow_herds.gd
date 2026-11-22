@@ -5,7 +5,7 @@ extends Node3D
 #
 # A cow here is a cube, a metre and a half across, that hangs in the air a
 # little off the ground and drifts about in a herd. Each herd keeps to its own
-# pasture: every so often the whole herd drifts to a new spot in it, and between
+# pasture, in a meadow (Flora.meadow), never in the wood: every so often the whole herd drifts to a new spot in it, and between
 # times each cow does what its animations say it can:
 #
 #   Move_Float     drifting to where it is going
@@ -15,8 +15,10 @@ extends Node3D
 #   Chew, Chomp    working on the mouthful, back upright
 #   Moo            mooing (`mooed` is sent, and `moo_sound` played if there is one)
 #
-# A cow you walk right up to drifts off a few metres. They are solid: you can
-# lean on one. Herds far from the player are hidden and stand still.
+# A cow you walk right up to runs: away from you, wherever that is, out of the
+# meadow and into the wood if need be, and again if you follow. Let alone, it
+# always comes back to its herd in the meadow, and only there does it graze.
+# They are solid: you can lean on one. Herds far from the player are hidden and stand still.
 
 signal mooed(cow: Node3D)
 
@@ -190,7 +192,8 @@ func _rest(cow: Dictionary) -> void:
 
 
 func _go(cow: Dictionary, to: Vector2) -> void:
-	# Never into the trees: a spot outside the meadow is given up for where it is.
+	# Never into the trees of its own accord: a spot outside the meadow is given
+	# up for where it is.
 	if Flora.meadow(to.x, to.y) < 0.6:
 		var node: Node3D = cow["node"]
 		to = Vector2(node.position.x, node.position.z)
@@ -198,6 +201,40 @@ func _go(cow: Dictionary, to: Vector2) -> void:
 	cow["target"] = to
 	cow["want_air"] = hover
 	_play(cow, "Move_Float")
+	(cow["player"] as AnimationPlayer).speed_scale = 1.0
+
+
+## RUNNING AWAY is the one thing that takes a cow out of its meadow: off it goes,
+## fast, wherever away is (into the wood if that is the way), so long as it is
+## dry land. It comes back when it is let alone (see `_cow_step`).
+func _flee(cow: Dictionary, from: Vector2) -> void:
+	var node: Node3D = cow["node"]
+	var at := Vector2(node.position.x, node.position.z)
+	var away := (at - from).normalized() if at.distance_to(from) > 0.05 else Vector2(1, 0)
+	var to := at
+	for attempt in 5:
+		var tried := at + away.rotated(_rng.randf_range(-0.7, 0.7) * (1.0 + 0.4 * float(attempt))) * _rng.randf_range(9.0, 15.0)
+		var s := _field.sample(tried.x, tried.y)
+		if bool(s.get("on_land", false)) and float(s.get("flow_weight", 0.0)) < 0.3 and float(s.get("slope", 1.0)) < 0.45:
+			to = tried
+			break
+	cow["state"] = "flee"
+	cow["target"] = to
+	cow["want_air"] = hover
+	_play(cow, "Move_Float")
+	(cow["player"] as AnimationPlayer).speed_scale = 1.8
+
+
+## Back to the herd in the meadow, to a place of its own round the middle of it.
+func _home(cow: Dictionary, herd: Dictionary) -> void:
+	var a := _rng.randf() * TAU
+	var centre: Vector2 = herd["centre"]
+	var to := centre + Vector2(cos(a), sin(a)) * _rng.randf_range(2.5, 8.5)
+	cow["state"] = "move"
+	cow["target"] = to if Flora.meadow(to.x, to.y) >= 0.6 else centre
+	cow["want_air"] = hover
+	_play(cow, "Move_Float")
+	(cow["player"] as AnimationPlayer).speed_scale = 1.0
 
 
 func _process(delta: float) -> void:
@@ -241,25 +278,34 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 	var node: Node3D = cow["node"]
 	var at := Vector2(node.position.x, node.position.z)
 	var state := String(cow["state"])
-	if state == "move":
+	var near_me := (at - Vector2(me.x, me.z)).length() < 2.6 + float(cow["half"]) and absf(me.y - node.position.y) < 3.5
+	if state == "move" or state == "flee":
 		var to: Vector2 = cow["target"]
 		var gap := to - at
-		if gap.length() < 0.5:
-			_rest(cow)
+		var running := state == "flee"
+		if near_me and not running:
+			_flee(cow, Vector2(me.x, me.z))
+		elif gap.length() < 0.5:
+			(cow["player"] as AnimationPlayer).speed_scale = 1.0
+			if running and (at - Vector2(me.x, me.z)).length() < 7.0:
+				_flee(cow, Vector2(me.x, me.z))          # still being chased
+			elif Flora.meadow(at.x, at.y) < 0.6 or at.distance_to(herd["centre"]) > roam * 0.5:
+				_home(cow, herd)                          # let alone: back to the meadow and the herd
+			else:
+				_rest(cow)
 		else:
 			# It turns to face the way it is going (its face is its +z) and goes that way.
 			var want := atan2(gap.x, gap.y)
-			cow["yaw"] = lerp_angle(float(cow["yaw"]), want, minf(delta * 2.2, 1.0))
+			cow["yaw"] = lerp_angle(float(cow["yaw"]), want, minf(delta * (4.5 if running else 2.2), 1.0))
 			var facing := Vector2(sin(float(cow["yaw"])), cos(float(cow["yaw"])))
-			var pace := speed * clampf(facing.dot(gap.normalized()), 0.15, 1.0) * minf(gap.length() / 1.5 + 0.25, 1.0)
+			var pace := speed * (2.4 if running else 1.0) * clampf(facing.dot(gap.normalized()), 0.15, 1.0) \
+					* minf(gap.length() / 1.5 + 0.25, 1.0)
 			at += facing * pace * delta
 	else:
 		cow["t"] = float(cow["t"]) - delta
-		# Someone is right on top of it: it drifts off a little way.
-		var from_me := at - Vector2(me.x, me.z)
-		if from_me.length() < 2.6 + float(cow["half"]) and absf(me.y - node.position.y) < 3.5:
-			var away := from_me.normalized() if from_me.length() > 0.05 else Vector2(1, 0)
-			_go(cow, at + away.rotated(_rng.randf_range(-0.6, 0.6)) * _rng.randf_range(5.0, 8.0))
+		# Someone is right on top of it: it runs.
+		if near_me:
+			_flee(cow, Vector2(me.x, me.z))
 		elif float(cow["t"]) <= 0.0:
 			match state:
 				"graze":
