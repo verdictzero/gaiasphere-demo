@@ -242,7 +242,9 @@ func info(x: float, z: float, mask: float, out: Array) -> bool:
 			var at := lagoon_at(x, z)
 			var off := -at.x
 			if off < 2.0 * LAGOON_W + CODE_MARGIN:
-				out[0] = clampf(1.0 - (off + LAGOON_W) / (3.0 * LAGOON_W), 0.0, 1.0)
+				# (The top of the causeway is dry land and green: not the mere's ground.)
+				out[0] = clampf(1.0 - (off + LAGOON_W) / (3.0 * LAGOON_W), 0.0, 1.0) \
+						* (1.0 - smoothstep(0.55, 0.92, causeway_weight(x, z)))
 				out[1] = (at.y + PI) * (_lag_in + _lag_out) * 0.5 + float(KIND_LAGOON) * KIND_SPAN
 				out[2] = clampf(at.z - (_lag_in + _lag_out) * 0.5, -ACROSS_MAX, ACROSS_MAX)
 				return true
@@ -307,11 +309,13 @@ func lagoon_at(x: float, z: float) -> Vector3:
 
 # ------------------------------------------------------------- the causeway
 # A LAND BRIDGE TO THE ISLET: a bank of ground left standing across the mere
-# where it is narrowest, a little above the water, cobbled by the terrain shader
+# where it is narrowest, a little above the water: a cobbled way down its middle
+# and a green verge either side, where grass, bushes and trees grow (Flora keeps
+# them off the cobbles), with sand at the water's edge. Cobbled by the terrain shader
 # (SCRIPT_causeway.gd hands it the line). It is terrain: the mesher, the
 # collision and the bake all get it from `lagoon` below.
 
-const CAUSEWAY_HALF := 4.2        ## half the width of its flat top, metres
+const CAUSEWAY_HALF := 10.0        ## half the width of its flat top, metres
 const CAUSEWAY_BANK := 5.0        ## metres its sides take to fall to the bed
 const CAUSEWAY_RISE := 1.1        ## its top, metres over the water
 

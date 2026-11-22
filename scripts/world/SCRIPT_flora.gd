@@ -58,6 +58,9 @@ var _clearing := SwordStone.MEADOW
 # The mere's surface (world metres) and how far from its middle it can reach.
 var _mere_level := -1e9
 var _mere_reach := 0.0
+var _path_a := Vector2.ZERO      # the cobbled way over the causeway: its two ends and half its width
+var _path_b := Vector2.ZERO
+var _path_half := 0.0
 
 
 func _ready() -> void:
@@ -78,9 +81,24 @@ func _ready() -> void:
 	var flows: Variant = _field.flows_for(isl) if isl != null else null
 	if flows != null and flows.has_lagoon():
 		_mere_level = float(isl.base_y) + float(flows.lagoon_level())
+		var ends: PackedVector2Array = flows.causeway_ends()
+		_path_a = ends[0]
+		_path_b = ends[1]
+		_path_half = 2.9
 		_mere_reach = float(_field.get("flow_lagoon_radius")) * 1.25
 	_islet_radius = float(_field.get("flow_lagoon_islet")) * 0.86 if _field.get("flow_lagoon_islet") != null else 0.0
 	_build_layers()
+
+
+## Is a point on the cobbled way across the causeway (or within `spare` metres
+## of it)? Nothing grows on the cobbles; the verges either side are green.
+func _on_path(x: float, z: float, spare: float) -> bool:
+	if _path_half <= 0.0:
+		return false
+	var ab := _path_b - _path_a
+	var p := Vector2(x, z) - _path_a
+	var t := clampf(p.dot(ab) / ab.length_squared(), 0.0, 1.0)
+	return (p - ab * t).length() < _path_half + spare
 
 
 # ------------------------------------------------------------------ assets
@@ -505,6 +523,8 @@ func _place_trees(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var z := (float(cz) + 0.15 + 0.7 * _hash(cx, cz, 2)) * grid
 			if x < x0 or x >= x0 + tile or z < z0 or z >= z0 + tile:
 				continue
+			if _on_path(x, z, 1.3):
+				continue
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)):
 				continue
@@ -555,6 +575,8 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			# A few ferns stray into the meadow's edge; none in its middle.
 			if Vector2(x, z).distance_to(_islet) < _clearing * (0.55 + 0.45 * _hash(cx, cz, 32)):
 				continue
+			if _on_path(x, z, 1.3):
+				continue
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)):
 				continue
@@ -594,6 +616,8 @@ func _place_bushes(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			if _hash(cx, cz, 85) > want * density:
 				continue
 			if Vector2(x, z).distance_to(_islet) < _clearing * 0.9:
+				continue
+			if _on_path(x, z, 1.3):
 				continue
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)):
@@ -662,6 +686,8 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var cz := key.y * n + iz
 			var x := (float(cx) + _hash(cx, cz, 41)) * grid
 			var z := (float(cz) + _hash(cx, cz, 42)) * grid
+			if _on_path(x, z, 1.3):
+				continue
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)) or float(s.get("flatten", 0.0)) > 0.2:
 				continue
@@ -720,6 +746,8 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var cz := key.y * n + iz
 			var s: Dictionary = samples[mini(iz / coarse, m - 1) * m + mini(ix / coarse, m - 1)]
 			if not bool(s.get("on_land", false)):
+				continue
+			if _on_path(x0 + (float(ix) + 0.5) * grid, z0 + (float(iz) + 0.5) * grid, 0.3):
 				continue
 			var w: Color = s.get("weights", Color(1, 0, 0, 0))
 			var want := clampf(w.r * 1.5, 0.0, 1.0) * (1.0 - 0.45 * float(s.get("forest", 0.0)))
