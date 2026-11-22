@@ -10,7 +10,10 @@ extends CanvasLayer
 #   left click     pick a stack up, put it down, swap, or add to a like stack
 #   right click    take half a stack, or put one down
 #
-# There is nothing to craft yet: this holds what is gathered, and that is all.
+# CRAFTING is a list beside the bag: each row a thing that can be made and what
+# it takes. A row you have the makings of is lit; click it and the makings leave
+# the bag and the thing arrives in it. Walls and the rest of the timber are made
+# of logs; foundations and steps of logs and stone.
 
 const STACK := 64
 const HOTBAR := 9
@@ -23,7 +26,25 @@ const ITEMS := {
 	"sword": {"name": "Sword", "icon": "res://assets/ui/item_sword.png"},
 	"stone": {"name": "Stone", "icon": "res://assets/ui/item_stone.png"},
 	"berry": {"name": "Berries", "icon": "res://assets/ui/item_berry.png"},
+	"wall": {"name": "Plank Wall", "icon": "res://assets/ui/item_wall.png"},
+	"doorway": {"name": "Doorway and Door", "icon": "res://assets/ui/item_doorway.png"},
+	"floor": {"name": "Plank Floor", "icon": "res://assets/ui/item_floor.png"},
+	"roof": {"name": "Plank Roof", "icon": "res://assets/ui/item_roof.png"},
+	"gable": {"name": "Gable", "icon": "res://assets/ui/item_gable.png"},
+	"foundation": {"name": "Stone Foundation", "icon": "res://assets/ui/item_foundation.png"},
+	"steps": {"name": "Stone Steps", "icon": "res://assets/ui/item_steps.png"},
 }
+
+## What can be made, in the order the list shows it, and what each takes.
+const RECIPES := [
+	{"makes": "wall", "needs": {"log": 4}},
+	{"makes": "doorway", "needs": {"log": 6}},
+	{"makes": "floor", "needs": {"log": 3}},
+	{"makes": "roof", "needs": {"log": 4}},
+	{"makes": "gable", "needs": {"log": 2}},
+	{"makes": "foundation", "needs": {"log": 2, "stone": 8}},
+	{"makes": "steps", "needs": {"log": 2, "stone": 5}},
+]
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.9)
 const SLOT := Color(1, 1, 1, 0.065)
@@ -41,6 +62,9 @@ var _view: Control
 var _icons := {}
 var _font: Font
 var _hover := -1
+var _craft_hover := -1
+var _made := -1              # the recipe just made, and how long ago: its row flashes
+var _made_for := 0.0
 var _was_captured := false
 var _shown := 0.0            # 0 shut .. 1 open, eased
 
@@ -78,6 +102,9 @@ func _process(delta: float) -> void:
 	var want := 1.0 if menu_open else 0.0
 	if _shown != want:
 		_shown = move_toward(_shown, want, delta * 7.0)
+		_view.queue_redraw()
+	if _made_for > 0.0:
+		_made_for = maxf(_made_for - delta, 0.0)
 		_view.queue_redraw()
 
 
@@ -126,6 +153,52 @@ func count_of(id: String) -> int:
 	return n
 
 
+## Take `count` of `id` out of the bag, wherever it lies. False (and nothing
+## taken) if there is not that much.
+func take(id: String, count: int) -> bool:
+	if count_of(id) < count:
+		return false
+	for i in range(BAG - 1, -1, -1):          # the bag's own rows first, the hotbar last
+		if count <= 0:
+			break
+		if slots[i] != null and slots[i][0] == id:
+			var out := mini(count, int(slots[i][1]))
+			slots[i][1] = int(slots[i][1]) - out
+			count -= out
+			if int(slots[i][1]) <= 0:
+				slots[i] = null
+	if _view != null:
+		_view.queue_redraw()
+	return true
+
+
+# ------------------------------------------------------------------ making things
+
+func can_craft(recipe: int) -> bool:
+	var needs: Dictionary = RECIPES[recipe]["needs"]
+	for id in needs:
+		if count_of(id) < int(needs[id]):
+			return false
+	return true
+
+
+## Make one of recipe `recipe`: its makings out of the bag, the thing into it.
+## False if the makings are not there, or there is nowhere to put it.
+func craft(recipe: int) -> bool:
+	if recipe < 0 or recipe >= RECIPES.size() or not can_craft(recipe):
+		return false
+	var needs: Dictionary = RECIPES[recipe]["needs"]
+	for id in needs:
+		take(id, int(needs[id]))
+	if add(String(RECIPES[recipe]["makes"]), 1) > 0:
+		for id in needs:                         # no room: the makings go back
+			add(id, int(needs[id]))
+		return false
+	_made = recipe
+	_made_for = 0.45
+	return true
+
+
 # ------------------------------------------------------------------ open and shut
 
 func set_open(open: bool) -> void:
@@ -142,6 +215,7 @@ func set_open(open: bool) -> void:
 			add(_held[0], int(_held[1]))
 			_held = null
 		_hover = -1
+		_craft_hover = -1
 		if _was_captured and not DisplayServer.is_touchscreen_available():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_view.queue_redraw()
@@ -183,7 +257,32 @@ func _panel_rect() -> Rect2:
 	var cell := 84.0 * k
 	var w := cell * 9.0 + 56.0 * k
 	var h := cell * 4.0 + 132.0 * k
-	return Rect2((_view.size - Vector2(w, h)) * 0.5, Vector2(w, h))
+	# The bag and the crafting list stand side by side, the pair of them centred.
+	var both := w + (CRAFT_GAP + CRAFT_W) * k
+	return Rect2(Vector2((_view.size.x - both) * 0.5, (_view.size.y - h) * 0.5), Vector2(w, h))
+
+
+const CRAFT_W := 430.0
+const CRAFT_GAP := 22.0
+const CRAFT_ROW := 55.0
+
+
+func _craft_rect() -> Rect2:
+	var p := _panel_rect()
+	return Rect2(Vector2(p.end.x + CRAFT_GAP * _k(), p.position.y), Vector2(CRAFT_W * _k(), p.size.y))
+
+
+func _craft_row(i: int) -> Rect2:
+	var k := _k()
+	var c := _craft_rect()
+	return Rect2(c.position + Vector2(14.0, 70.0 + CRAFT_ROW * float(i)) * k, Vector2(CRAFT_W - 28.0, CRAFT_ROW - 6.0) * k)
+
+
+func _craft_at(at: Vector2) -> int:
+	for i in RECIPES.size():
+		if _craft_row(i).has_point(at):
+			return i
+	return -1
 
 
 func _slot_rect(i: int) -> Rect2:
@@ -215,13 +314,19 @@ func _on_gui_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion:
 		_hover = _slot_at((event as InputEventMouseMotion).position)
+		_craft_hover = _craft_at((event as InputEventMouseMotion).position)
 		return
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed:
 		return
 	var i := _slot_at(mb.position)
 	if i < 0:
-		if not _panel_rect().has_point(mb.position) and _held == null:
+		var row := _craft_at(mb.position)
+		if row >= 0 and mb.button_index == MOUSE_BUTTON_LEFT and _held == null:
+			craft(row)
+			_view.queue_redraw()
+			return
+		if not _panel_rect().has_point(mb.position) and not _craft_rect().has_point(mb.position) and _held == null:
 			set_open(false)       # a click outside shuts the bag
 		return
 	if mb.button_index == MOUSE_BUTTON_LEFT:
@@ -337,6 +442,7 @@ func _draw_view() -> void:
 		var r := _slot_rect(i)
 		_draw_slot(r, i, true)
 		_draw_stack(r, slots[i], ease_in)
+	_draw_crafting(ease_in)
 	var mouse := _view.get_local_mouse_position()
 	if _held != null:
 		_draw_stack(Rect2(mouse - Vector2(40, 40) * k, Vector2(80, 80) * k), _held)
@@ -347,3 +453,46 @@ func _draw_view() -> void:
 		_box(tip, Color(0.03, 0.04, 0.05, 0.95), 12.0, EDGE, 1.5)
 		_label(tip.position + Vector2(14, 26) * k, name, 21.0, INK)
 	_view.draw_set_transform(Vector2.ZERO)
+
+
+## The crafting list: a row to a recipe, its picture and name on the left, what
+## it takes on the right with how many of each you have against how many it wants.
+func _draw_crafting(fade: float) -> void:
+	var k := _k()
+	var c := _craft_rect()
+	_box(c.grow(10.0 * k), Color(0, 0, 0, 0.22 * fade), 34.0)
+	_box(c, Color(PANEL.r, PANEL.g, PANEL.b, PANEL.a * fade), 26.0, EDGE, 1.5)
+	_label(c.position + Vector2(28.0, 50.0) * k, "CRAFTING", 26.0, Color(INK.r, INK.g, INK.b, 0.92 * fade))
+	for i in RECIPES.size():
+		var r := _craft_row(i)
+		var able := can_craft(i)
+		var dim := (1.0 if able else 0.42) * fade
+		var fill := SLOT
+		if i == _made and _made_for > 0.0:
+			fill = Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.1 + 0.5 * _made_for / 0.45)
+		elif i == _craft_hover and able:
+			fill = Color(1, 1, 1, 0.16)
+		_box(r, Color(fill.r, fill.g, fill.b, fill.a * fade), 12.0, ACCENT if (able and i == _craft_hover) else EDGE, 1.5)
+		var id := String(RECIPES[i]["makes"])
+		var icon := Rect2(r.position + Vector2(6.0, 3.0) * k, Vector2(43.0, 43.0) * k)
+		_view.draw_texture_rect(_icons[id], icon, false, Color(1, 1, 1, dim))
+		_label(r.position + Vector2(58.0, 31.0) * k, ITEMS[id]["name"], 20.0, Color(INK.r, INK.g, INK.b, 0.95 * dim))
+		# What it takes, laid out from the right: a small picture and "have / want".
+		var x := r.end.x - 10.0 * k
+		var needs: Dictionary = RECIPES[i]["needs"]
+		var ids := needs.keys()
+		ids.reverse()
+		for need in ids:
+			var have := count_of(need)
+			var text := "%d/%d" % [mini(have, 999), int(needs[need])]
+			var fs := int(18.0 * k)
+			var w := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			x -= w
+			var enough := have >= int(needs[need])
+			var ink := INK if enough else Color(1.0, 0.45, 0.4)
+			_view.draw_string(_font, Vector2(x, r.position.y + 31.0 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+					Color(ink.r, ink.g, ink.b, (0.9 if enough else 0.95) * fade * (1.0 if able or not enough else 0.6)))
+			x -= 34.0 * k
+			_view.draw_texture_rect(_icons[need], Rect2(Vector2(x, r.position.y + 8.0 * k), Vector2(32.0, 32.0) * k), false,
+					Color(1, 1, 1, fade * (1.0 if enough else 0.55)))
+			x -= 14.0 * k

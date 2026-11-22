@@ -1,7 +1,7 @@
 extends SceneTree
 
 # THE BAG ON ITS OWN: opens the inventory over a plain backdrop, checks the
-# clicks, and saves a still.
+# clicks and the crafting, and saves a still.
 #
 #   godot --path . --script res://tests/RENDER_bag.gd -- --out=/some/folder
 
@@ -46,9 +46,21 @@ func _process(_dt: float) -> bool:
 		_click(2)                                  # the rest onto the 22
 		ok = ok and int(_bag.slots[13][1]) == 1 and int(_bag.slots[2][1]) == 53 and _bag._held == null
 		ok = ok and _bag.count_of("log") == 150
-		_bag._hover = 20
+		# CRAFTING: a wall takes four logs; a foundation cannot be made without stone,
+		# and can with it; a click on its row in the list does the same.
+		ok = ok and _bag.craft(0) and _bag.count_of("wall") == 1 and _bag.count_of("log") == 146
+		ok = ok and not _bag.can_craft(5) and not _bag.craft(5) and _bag.count_of("log") == 146
+		_bag.add("stone", 20)
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.pressed = true
+		ev.position = _bag._craft_row(5).get_center()
+		_bag._on_gui_input(ev)
+		ok = ok and _bag.count_of("foundation") == 1 and _bag.count_of("stone") == 12 and _bag.count_of("log") == 144
+		ok = ok and _bag.craft(6) and _bag.count_of("stone") == 7 and not _bag.can_craft(5)
+		_bag._craft_hover = 1
 		_bag._view.queue_redraw()
-		print("bag: clicks %s" % ("ok" if ok else "FAILED"))
+		print("bag: clicks and crafting %s" % ("ok" if ok else "FAILED"))
 		if not ok:
 			quit(1)
 			return true

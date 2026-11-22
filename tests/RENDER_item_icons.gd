@@ -8,7 +8,7 @@ extends SceneTree
 var _frames := 0
 var _cam: Camera3D
 var _subject: Node3D
-var _queue: Array = ["stone", "pickaxe"]
+var _queue: Array = ["wall", "doorway", "floor", "roof", "gable", "foundation", "steps"]
 var _wood: Woodcutting
 
 
@@ -93,6 +93,35 @@ func _stage(what: String) -> void:
 			turn.rotation_degrees = Vector3(0.0, 35.0, 0.0)
 			_subject.add_child(turn)
 			span = box.get_longest_axis_size() * 1.15
+		"wall", "doorway", "floor", "roof", "gable", "foundation", "steps":
+			# A piece of the building kit, turned three-quarters on.
+			var files := {"wall": ["plank_kit/wall_a"], "doorway": ["plank_kit/doorway_a", "plank_kit/door_a"],
+				"floor": ["plank_kit/floor_a"], "roof": ["plank_kit/roof_a"], "gable": ["plank_kit/gable_right_a"],
+				"foundation": ["foundation/foundation_a"], "steps": ["foundation/steps_a"]}
+			var turn := Node3D.new()
+			var box := AABB()
+			var first := true
+			for file in files[what]:
+				var piece: Node3D = (load("res://assets/build/%s_lod0.glb" % file) as PackedScene).instantiate()
+				if String(file).ends_with("door_a"):
+					piece.position = Vector3(-0.53, 0.03, 0.004)       # hung in its doorway (SCRIPT_door.gd)
+					piece.rotation.y = 0.5
+				turn.add_child(piece)
+				for mi in piece.find_children("*", "MeshInstance3D", true, false):
+					var b: AABB = piece.transform * ((mi as MeshInstance3D).transform * (mi as MeshInstance3D).mesh.get_aabb())
+					box = b if first else box.merge(b)
+					first = false
+			if what == "steps":
+				box.position.y = 0.0                                   # (they carry on a metre underground)
+				box.size.y = 1.0
+			for piece in turn.get_children():
+				(piece as Node3D).position -= box.get_center()
+			turn.rotation_degrees = Vector3(0.0, {"floor": 28.0, "steps": 40.0, "foundation": 36.0, "roof": 150.0}.get(what, 30.0), 0.0)
+			_subject.add_child(turn)
+			if what == "steps":
+				# Standing on nothing, the sunk metre would show: a card hides it.
+				pass
+			span = box.size.length() * 0.95
 		"sword":
 			var scene: Node3D = (load("res://assets/sword_in_stone/sword_in_stone.gltf") as PackedScene).instantiate()
 			var sword := scene.find_child("sword", true, false) as MeshInstance3D
