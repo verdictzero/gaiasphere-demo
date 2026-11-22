@@ -85,7 +85,7 @@ func _process(_dt: float) -> bool:
 		3:
 			root.get_texture().get_image().save_png(_out.path_join("cows_2_close.png"))
 			print("cows: ", _doing())
-			# CHASED AND LET ALONE, stepped by hand: someone at a cow's shoulder sends
+			# CHASED AND LET ALONE, stepped by hand: someone who stays at a cow's shoulder sends
 			# it running; with nobody near it comes back to the herd in the meadow.
 			var ok := true
 			cows.set_process(false)
@@ -94,7 +94,7 @@ func _process(_dt: float) -> bool:
 			var chaser := node.position + Vector3(1.2, 0, 0)
 			var farthest := 0.0
 			for i in 80:
-				chaser = chaser.move_toward(node.position, 0.22)          # walking after it
+				chaser = node.position + (chaser - node.position).normalized() * 1.2       # right on its heels, however fast it goes
 				cows._cow_step(cow, _herd, 0.1, chaser)
 				farthest = maxf(farthest, Vector2(node.position.x, node.position.z).distance_to(_herd["centre"]))
 			print("cows: chased for 8 s it is %s, %.0f m from the herd's middle at most" % [cow["state"], farthest])

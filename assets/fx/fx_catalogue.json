@@ -1,0 +1,5263 @@
+{
+ "textures": {
+  "noise_fire_01": {
+   "file": "noise_fire_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "tile",
+   "width": 818,
+   "height": 879,
+   "cell_w": 818,
+   "cell_h": 879,
+   "bytes": 132636
+  },
+  "noise_cloud_01": {
+   "file": "noise_cloud_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "tile",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 1024,
+   "cell_h": 1024,
+   "bytes": 43036
+  },
+  "noise_cloud_02": {
+   "file": "noise_cloud_02.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "tile",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 8072
+  },
+  "puff_soft_01": {
+   "file": "puff_soft_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 11196
+  },
+  "puff_soft_02": {
+   "file": "puff_soft_02.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 21574
+  },
+  "puff_soft_03": {
+   "file": "puff_soft_03.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 1024,
+   "cell_h": 1024,
+   "bytes": 107778
+  },
+  "puff_soft_04": {
+   "file": "puff_soft_04.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 15036
+  },
+  "puff_soft_05": {
+   "file": "puff_soft_05.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 512,
+   "height": 512,
+   "cell_w": 512,
+   "cell_h": 512,
+   "bytes": 54860
+  },
+  "puff_soft_06": {
+   "file": "puff_soft_06.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 21808
+  },
+  "puff_soft_07": {
+   "file": "puff_soft_07.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "puff",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 1024,
+   "cell_h": 1024,
+   "bytes": 101550
+  },
+  "glow_soft_01": {
+   "file": "glow_soft_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "glow",
+   "width": 512,
+   "height": 512,
+   "cell_w": 512,
+   "cell_h": 512,
+   "bytes": 52870
+  },
+  "glow_warm_01": {
+   "file": "glow_warm_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "glow",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 9434
+  },
+  "glow_warm_02": {
+   "file": "glow_warm_02.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "glow",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 10176
+  },
+  "glow_streak_01": {
+   "file": "glow_streak_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "glow",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 15120
+  },
+  "ring_01": {
+   "file": "ring_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "ring",
+   "width": 512,
+   "height": 512,
+   "cell_w": 512,
+   "cell_h": 512,
+   "bytes": 60136
+  },
+  "ring_02": {
+   "file": "ring_02.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "ring",
+   "width": 512,
+   "height": 512,
+   "cell_w": 512,
+   "cell_h": 512,
+   "bytes": 32546
+  },
+  "ring_cloud_01": {
+   "file": "ring_cloud_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "ring",
+   "width": 512,
+   "height": 512,
+   "cell_w": 512,
+   "cell_h": 512,
+   "bytes": 38330
+  },
+  "flame_still_01": {
+   "file": "flame_still_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "still",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 29996
+  },
+  "candle_still_01": {
+   "file": "candle_still_01.webp",
+   "cols": 1,
+   "rows": 1,
+   "kind": "still",
+   "width": 256,
+   "height": 256,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 11122
+  },
+  "wisp_flame_01": {
+   "file": "wisp_flame_01.webp",
+   "cols": 2,
+   "rows": 2,
+   "kind": "bits_fire",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 512,
+   "cell_h": 512,
+   "bytes": 138536
+  },
+  "wisp_flame_02": {
+   "file": "wisp_flame_02.webp",
+   "cols": 2,
+   "rows": 2,
+   "kind": "bits_fire",
+   "width": 128,
+   "height": 128,
+   "cell_w": 64,
+   "cell_h": 64,
+   "bytes": 6040
+  },
+  "wisp_flame_03": {
+   "file": "wisp_flame_03.webp",
+   "cols": 4,
+   "rows": 4,
+   "kind": "bits_fire",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 199136
+  },
+  "wisp_flame_04": {
+   "file": "wisp_flame_04.webp",
+   "cols": 2,
+   "rows": 2,
+   "kind": "bits_fire",
+   "width": 512,
+   "height": 512,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 40950
+  },
+  "ember_bits_01": {
+   "file": "ember_bits_01.webp",
+   "cols": 2,
+   "rows": 2,
+   "kind": "bits_ember",
+   "width": 256,
+   "height": 256,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 15258
+  },
+  "debris_bits_01": {
+   "file": "debris_bits_01.webp",
+   "cols": 2,
+   "rows": 2,
+   "kind": "bits_debris",
+   "width": 256,
+   "height": 256,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 5280
+  },
+  "dust_bits_01": {
+   "file": "dust_bits_01.webp",
+   "cols": 2,
+   "rows": 2,
+   "kind": "bits_dust",
+   "width": 256,
+   "height": 256,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 15634
+  },
+  "flame_loop_01": {
+   "file": "flame_loop_01.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "flame_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 1158420
+  },
+  "flame_loop_02": {
+   "file": "flame_loop_02.webp",
+   "cols": 16,
+   "rows": 8,
+   "kind": "flame_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 128,
+   "cell_h": 256,
+   "bytes": 1247052
+  },
+  "flame_loop_03": {
+   "file": "flame_loop_03.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "flame_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 1061506
+  },
+  "flame_loop_04": {
+   "file": "flame_loop_04.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "flame_loop_grey",
+   "width": 1024,
+   "height": 2048,
+   "cell_w": 128,
+   "cell_h": 256,
+   "bytes": 873070
+  },
+  "flame_loop_05": {
+   "file": "flame_loop_05.webp",
+   "cols": 12,
+   "rows": 6,
+   "kind": "flame_loop_grey",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 171,
+   "cell_h": 341,
+   "bytes": 920442
+  },
+  "flame_loop_06": {
+   "file": "flame_loop_06.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "flame_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 991120
+  },
+  "candle_loop_01": {
+   "file": "candle_loop_01.webp",
+   "cols": 16,
+   "rows": 8,
+   "kind": "flame_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 128,
+   "cell_h": 256,
+   "bytes": 553614
+  },
+  "flame_ignite_01": {
+   "file": "flame_ignite_01.webp",
+   "cols": 10,
+   "rows": 10,
+   "kind": "flame_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 205,
+   "cell_h": 205,
+   "bytes": 622088
+  },
+  "flame_ignite_02": {
+   "file": "flame_ignite_02.webp",
+   "cols": 11,
+   "rows": 11,
+   "kind": "flame_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 186,
+   "cell_h": 186,
+   "bytes": 551294
+  },
+  "flame_puff_01": {
+   "file": "flame_puff_01.webp",
+   "cols": 7,
+   "rows": 7,
+   "kind": "flame_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 293,
+   "cell_h": 293,
+   "bytes": 562162
+  },
+  "flame_puff_02": {
+   "file": "flame_puff_02.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "flame_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 535482
+  },
+  "flame_puff_03": {
+   "file": "flame_puff_03.webp",
+   "cols": 10,
+   "rows": 5,
+   "kind": "flame_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 205,
+   "cell_h": 410,
+   "bytes": 749792
+  },
+  "flame_puff_04": {
+   "file": "flame_puff_04.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "flame_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 364814
+  },
+  "fireball_trail_01": {
+   "file": "fireball_trail_01.webp",
+   "cols": 4,
+   "rows": 16,
+   "kind": "fireball",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 512,
+   "cell_h": 128,
+   "bytes": 967550
+  },
+  "fire_burst_01": {
+   "file": "fire_burst_01.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "fire_burst",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 785212
+  },
+  "fire_burst_02": {
+   "file": "fire_burst_02.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "fire_burst",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 741152
+  },
+  "fire_burst_03": {
+   "file": "fire_burst_03.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "fire_burst",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 761294
+  },
+  "fire_burst_04": {
+   "file": "fire_burst_04.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "fire_burst",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 909834
+  },
+  "fire_burst_05": {
+   "file": "fire_burst_05.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "fire_burst",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 1028250
+  },
+  "fire_burst_06": {
+   "file": "fire_burst_06.webp",
+   "cols": 7,
+   "rows": 7,
+   "kind": "fire_burst",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 293,
+   "cell_h": 293,
+   "bytes": 611524
+  },
+  "burst_white_01": {
+   "file": "burst_white_01.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "fire_burst_grey",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 577572
+  },
+  "spark_burst_01": {
+   "file": "spark_burst_01.webp",
+   "cols": 3,
+   "rows": 3,
+   "kind": "spark",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 83332
+  },
+  "blast_01": {
+   "file": "blast_01.webp",
+   "cols": 12,
+   "rows": 8,
+   "kind": "blast",
+   "width": 3072,
+   "height": 3072,
+   "cell_w": 256,
+   "cell_h": 384,
+   "bytes": 2037738
+  },
+  "blast_02": {
+   "file": "blast_02.webp",
+   "cols": 12,
+   "rows": 8,
+   "kind": "blast",
+   "width": 3072,
+   "height": 3072,
+   "cell_w": 256,
+   "cell_h": 384,
+   "bytes": 2079146
+  },
+  "blast_03": {
+   "file": "blast_03.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 2013018
+  },
+  "blast_04": {
+   "file": "blast_04.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "blast",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 1133728
+  },
+  "blast_05": {
+   "file": "blast_05.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 902166
+  },
+  "blast_06": {
+   "file": "blast_06.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1109856
+  },
+  "blast_07": {
+   "file": "blast_07.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1009682
+  },
+  "blast_08": {
+   "file": "blast_08.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 912502
+  },
+  "blast_09": {
+   "file": "blast_09.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1416372
+  },
+  "blast_10": {
+   "file": "blast_10.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1141352
+  },
+  "blast_11": {
+   "file": "blast_11.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1360674
+  },
+  "blast_12": {
+   "file": "blast_12.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1787036
+  },
+  "blast_13": {
+   "file": "blast_13.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast_smoke",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1127474
+  },
+  "blast_14": {
+   "file": "blast_14.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1644514
+  },
+  "blast_15": {
+   "file": "blast_15.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast_smoke",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1535806
+  },
+  "blast_16": {
+   "file": "blast_16.webp",
+   "cols": 12,
+   "rows": 7,
+   "kind": "blast",
+   "width": 3072,
+   "height": 1536,
+   "cell_w": 256,
+   "cell_h": 219,
+   "bytes": 1630092
+  },
+  "blast_17": {
+   "file": "blast_17.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "blast",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 875328
+  },
+  "blast_18": {
+   "file": "blast_18.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "blast",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 680120
+  },
+  "dust_streak_01": {
+   "file": "dust_streak_01.webp",
+   "cols": 6,
+   "rows": 12,
+   "kind": "streak",
+   "width": 2048,
+   "height": 1024,
+   "cell_w": 341,
+   "cell_h": 85,
+   "bytes": 1078074
+  },
+  "smoke_roll_01": {
+   "file": "smoke_roll_01.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 388054
+  },
+  "smoke_roll_02": {
+   "file": "smoke_roll_02.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 563484
+  },
+  "smoke_roll_03": {
+   "file": "smoke_roll_03.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 617404
+  },
+  "smoke_roll_04": {
+   "file": "smoke_roll_04.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 421464
+  },
+  "smoke_roll_05": {
+   "file": "smoke_roll_05.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 342972
+  },
+  "smoke_roll_06": {
+   "file": "smoke_roll_06.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 419584
+  },
+  "smoke_roll_07": {
+   "file": "smoke_roll_07.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 2012038
+  },
+  "smoke_roll_08": {
+   "file": "smoke_roll_08.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 987820
+  },
+  "smoke_roll_09": {
+   "file": "smoke_roll_09.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 1037832
+  },
+  "smoke_dark_01": {
+   "file": "smoke_dark_01.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 372334
+  },
+  "smoke_dark_02": {
+   "file": "smoke_dark_02.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "smoke_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 725300
+  },
+  "smoke_dark_03": {
+   "file": "smoke_dark_03.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "smoke_loop",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 740118
+  },
+  "smoke_disc_01": {
+   "file": "smoke_disc_01.webp",
+   "cols": 16,
+   "rows": 4,
+   "kind": "smoke_loop",
+   "width": 2048,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 256,
+   "bytes": 745706
+  },
+  "steam_loop_01": {
+   "file": "steam_loop_01.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "steam",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 971170
+  },
+  "wisp_smoke_01": {
+   "file": "wisp_smoke_01.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 256,
+   "cell_h": 256,
+   "bytes": 641568
+  },
+  "wisp_smoke_02": {
+   "file": "wisp_smoke_02.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 358692
+  },
+  "wisp_smoke_03": {
+   "file": "wisp_smoke_03.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 128,
+   "cell_h": 128,
+   "bytes": 411528
+  },
+  "wisp_smoke_04": {
+   "file": "wisp_smoke_04.webp",
+   "cols": 8,
+   "rows": 8,
+   "kind": "smoke_loop",
+   "width": 1024,
+   "height": 2048,
+   "cell_w": 128,
+   "cell_h": 256,
+   "bytes": 427336
+  },
+  "smoke_burst_01": {
+   "file": "smoke_burst_01.webp",
+   "cols": 5,
+   "rows": 5,
+   "kind": "smoke_once",
+   "width": 1024,
+   "height": 1024,
+   "cell_w": 205,
+   "cell_h": 205,
+   "bytes": 235916
+  },
+  "smoke_burst_02": {
+   "file": "smoke_burst_02.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "smoke_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 860422
+  },
+  "smoke_burst_03": {
+   "file": "smoke_burst_03.webp",
+   "cols": 6,
+   "rows": 6,
+   "kind": "smoke_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 341,
+   "cell_h": 341,
+   "bytes": 1066360
+  },
+  "smoke_burst_04": {
+   "file": "smoke_burst_04.webp",
+   "cols": 5,
+   "rows": 5,
+   "kind": "smoke_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 410,
+   "cell_h": 410,
+   "bytes": 875402
+  },
+  "smoke_burst_05": {
+   "file": "smoke_burst_05.webp",
+   "cols": 5,
+   "rows": 5,
+   "kind": "smoke_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 410,
+   "cell_h": 410,
+   "bytes": 814796
+  },
+  "smoke_burst_06": {
+   "file": "smoke_burst_06.webp",
+   "cols": 5,
+   "rows": 5,
+   "kind": "smoke_once",
+   "width": 2048,
+   "height": 2048,
+   "cell_w": 410,
+   "cell_h": 410,
+   "bytes": 814796
+  }
+ },
+ "effects": {
+  "puff_soft_01": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_01",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "puff_soft_02": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_02",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "puff_soft_03": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_03",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "puff_soft_04": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_04",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "puff_soft_05": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_05",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "puff_soft_06": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_06",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "puff_soft_07": {
+   "loop": true,
+   "about": "Soft drifting smoke from a single puff picture.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_07",
+     "amount": 12,
+     "lifetime": 4.5,
+     "play": "one",
+     "size": 0.9,
+     "grow": 2.4,
+     "rise": 0.9,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.6
+     ],
+     "lit": true,
+     "turn": 25.0
+    }
+   ]
+  },
+  "glow_soft_01": {
+   "loop": true,
+   "about": "A glow that hangs and pulses.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "glow_soft_01",
+     "amount": 1,
+     "lifetime": 2.0,
+     "play": "one",
+     "size": 2.0,
+     "blend": "add",
+     "fade": "in_out"
+    }
+   ]
+  },
+  "glow_warm_01": {
+   "loop": true,
+   "about": "A glow that hangs and pulses.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "glow_warm_01",
+     "amount": 1,
+     "lifetime": 2.0,
+     "play": "one",
+     "size": 2.0,
+     "blend": "add",
+     "fade": "in_out"
+    }
+   ]
+  },
+  "glow_warm_02": {
+   "loop": true,
+   "about": "A glow that hangs and pulses.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 1,
+     "lifetime": 2.0,
+     "play": "one",
+     "size": 2.0,
+     "blend": "add",
+     "fade": "in_out"
+    }
+   ]
+  },
+  "glow_streak_01": {
+   "loop": true,
+   "about": "A glow that hangs and pulses.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "glow_streak_01",
+     "amount": 1,
+     "lifetime": 2.0,
+     "play": "one",
+     "size": 2.0,
+     "blend": "add",
+     "fade": "in_out"
+    }
+   ]
+  },
+  "ring_01": {
+   "loop": false,
+   "seconds": 0.7,
+   "about": "A shock ring that spreads and fades.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "ring_01",
+     "amount": 1,
+     "lifetime": 0.7,
+     "play": "one",
+     "size": 1.0,
+     "grow": 9.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.9,
+      0.75,
+      0.5
+     ]
+    }
+   ]
+  },
+  "ring_02": {
+   "loop": false,
+   "seconds": 0.7,
+   "about": "A shock ring that spreads and fades.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.7,
+     "play": "one",
+     "size": 1.0,
+     "grow": 9.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.9,
+      0.75,
+      0.5
+     ]
+    }
+   ]
+  },
+  "ring_cloud_01": {
+   "loop": false,
+   "seconds": 0.7,
+   "about": "A shock ring that spreads and fades.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "ring_cloud_01",
+     "amount": 1,
+     "lifetime": 0.7,
+     "play": "one",
+     "size": 1.0,
+     "grow": 9.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.9,
+      0.75,
+      0.5
+     ]
+    }
+   ]
+  },
+  "flame_still_01": {
+   "loop": true,
+   "about": "A single picture of flame, flickering in size.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_still_01",
+     "amount": 3,
+     "lifetime": 0.5,
+     "play": "one",
+     "size": 1.0,
+     "grow": 1.15,
+     "blend": "add",
+     "fade": "in_out",
+     "lift": 0.5
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.62,
+      0.3
+     ],
+     "energy": 1.2,
+     "range": 5.0,
+     "flicker": 0.3
+    }
+   ]
+  },
+  "candle_still_01": {
+   "loop": true,
+   "about": "A single picture of flame, flickering in size.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "candle_still_01",
+     "amount": 3,
+     "lifetime": 0.5,
+     "play": "one",
+     "size": 1.0,
+     "grow": 1.15,
+     "blend": "add",
+     "fade": "in_out",
+     "lift": 0.5
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.62,
+      0.3
+     ],
+     "energy": 1.2,
+     "range": 5.0,
+     "flicker": 0.3
+    }
+   ]
+  },
+  "wisp_flame_01": {
+   "loop": true,
+   "about": "Loose licks of flame rising, each a different piece.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_flame_01",
+     "amount": 18,
+     "lifetime": 0.9,
+     "play": "pick",
+     "size": 0.7,
+     "grow": 0.4,
+     "rise": 1.7,
+     "spread": 0.3,
+     "blend": "add",
+     "fade": "in_out",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ],
+     "turn": 40.0
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 1.8,
+     "range": 6.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "wisp_flame_02": {
+   "loop": true,
+   "about": "Loose licks of flame rising, each a different piece.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_flame_02",
+     "amount": 18,
+     "lifetime": 0.9,
+     "play": "pick",
+     "size": 0.7,
+     "grow": 0.4,
+     "rise": 1.7,
+     "spread": 0.3,
+     "blend": "add",
+     "fade": "in_out",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ],
+     "turn": 40.0
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 1.8,
+     "range": 6.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "wisp_flame_03": {
+   "loop": true,
+   "about": "Loose licks of flame rising, each a different piece.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_flame_03",
+     "amount": 18,
+     "lifetime": 0.9,
+     "play": "pick",
+     "size": 0.7,
+     "grow": 0.4,
+     "rise": 1.7,
+     "spread": 0.3,
+     "blend": "add",
+     "fade": "in_out",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ],
+     "turn": 40.0
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 1.8,
+     "range": 6.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "wisp_flame_04": {
+   "loop": true,
+   "about": "Loose licks of flame rising, each a different piece.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_flame_04",
+     "amount": 18,
+     "lifetime": 0.9,
+     "play": "pick",
+     "size": 0.7,
+     "grow": 0.4,
+     "rise": 1.7,
+     "spread": 0.3,
+     "blend": "add",
+     "fade": "in_out",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ],
+     "turn": 40.0
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 1.8,
+     "range": 6.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "ember_bits_01": {
+   "loop": true,
+   "about": "Embers lifting and winking out.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 24,
+     "lifetime": 2.4,
+     "play": "pick",
+     "size": 0.09,
+     "rise": 1.3,
+     "spread": 0.5,
+     "drift": 0.8,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 180.0
+    }
+   ]
+  },
+  "debris_bits_01": {
+   "loop": false,
+   "seconds": 2.2,
+   "about": "Chunks thrown out and falling.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "debris_bits_01",
+     "amount": 22,
+     "lifetime": 2.2,
+     "play": "pick",
+     "size": 0.22,
+     "burst": 6.5,
+     "gravity": 9.8,
+     "one_shot": true,
+     "lit": true,
+     "turn": 400.0,
+     "color": [
+      0.5,
+      0.48,
+      0.45
+     ]
+    }
+   ]
+  },
+  "dust_bits_01": {
+   "loop": false,
+   "seconds": 1.4,
+   "about": "A scuff of dust.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "dust_bits_01",
+     "amount": 10,
+     "lifetime": 1.4,
+     "play": "pick",
+     "size": 0.8,
+     "grow": 2.0,
+     "burst": 1.2,
+     "one_shot": true,
+     "fade": "out",
+     "lit": true,
+     "color": [
+      0.62,
+      0.56,
+      0.48,
+      0.6
+     ]
+    }
+   ]
+  },
+  "flame_loop_01": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.13,
+     "size": 1.6,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "flame_loop_02": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 4.27,
+     "size": 1.6,
+     "lift": 1.6,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "flame_loop_03": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.13,
+     "size": 1.6,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "flame_loop_04": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.13,
+     "size": 1.6,
+     "lift": 1.6,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "flame_loop_05": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.4,
+     "size": 1.6,
+     "lift": 1.5953216374269008,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "flame_loop_06": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.13,
+     "size": 1.6,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "candle_loop_01": {
+   "loop": true,
+   "about": "Fire burning on the spot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "candle_loop_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 4.27,
+     "size": 1.6,
+     "lift": 1.6,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.2,
+     "range": 7.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "flame_ignite_01": {
+   "loop": false,
+   "seconds": 3.33,
+   "about": "Fire that catches or goes up once.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_ignite_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 3.33,
+     "size": 1.8,
+     "lift": 0.9,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 3.33
+    }
+   ]
+  },
+  "flame_ignite_02": {
+   "loop": false,
+   "seconds": 4.03,
+   "about": "Fire that catches or goes up once.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_ignite_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 4.03,
+     "size": 1.8,
+     "lift": 0.9,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 4.03
+    }
+   ]
+  },
+  "flame_puff_01": {
+   "loop": false,
+   "seconds": 1.63,
+   "about": "Fire that catches or goes up once.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_puff_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.63,
+     "size": 1.8,
+     "lift": 0.9,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 1.63
+    }
+   ]
+  },
+  "flame_puff_02": {
+   "loop": false,
+   "seconds": 1.2,
+   "about": "Fire that catches or goes up once.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_puff_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.2,
+     "size": 1.8,
+     "lift": 0.9,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 1.2
+    }
+   ]
+  },
+  "flame_puff_03": {
+   "loop": false,
+   "seconds": 1.67,
+   "about": "Fire that catches or goes up once.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_puff_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.67,
+     "size": 1.8,
+     "lift": 0.9,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 1.67
+    }
+   ]
+  },
+  "flame_puff_04": {
+   "loop": false,
+   "seconds": 1.2,
+   "about": "Fire that catches or goes up once.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_puff_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.2,
+     "size": 1.8,
+     "lift": 0.9,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 1.2
+    }
+   ]
+  },
+  "fireball_trail_01": {
+   "loop": true,
+   "about": "A fireball with its tail, lying along x: turn the node to aim it.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fireball_trail_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.13,
+     "size": 3.0,
+     "align": "x"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "energy": 4.0,
+     "range": 8.0,
+     "flicker": 0.2
+    }
+   ]
+  },
+  "fire_burst_01": {
+   "loop": false,
+   "seconds": 1.0,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.0,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "fire_burst_02": {
+   "loop": false,
+   "seconds": 1.78,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.78,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "fire_burst_03": {
+   "loop": false,
+   "seconds": 1.78,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.78,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "fire_burst_04": {
+   "loop": false,
+   "seconds": 1.78,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.78,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "fire_burst_05": {
+   "loop": false,
+   "seconds": 1.0,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.0,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "fire_burst_06": {
+   "loop": false,
+   "seconds": 1.36,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.36,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "burst_white_01": {
+   "loop": false,
+   "seconds": 1.0,
+   "about": "A burst of fire that swells and breaks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "burst_white_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.0,
+     "size": 3.2,
+     "lift": 0.8,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.65,
+      0.3
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.4
+    }
+   ]
+  },
+  "spark_burst_01": {
+   "loop": false,
+   "seconds": 0.6,
+   "about": "A burst of sparks.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "spark_burst_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 0.6,
+     "size": 2.4,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.8,
+      0.5
+     ]
+    }
+   ]
+  },
+  "blast_01": {
+   "loop": false,
+   "seconds": 2.82,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.82,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_02": {
+   "loop": false,
+   "seconds": 2.82,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.82,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_03": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_04": {
+   "loop": false,
+   "seconds": 1.88,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.88,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_05": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_06": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_07": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_07",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_08": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_08",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_09": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_09",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_10": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_10",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_11": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_11",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_12": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_12",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_13": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_13",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    }
+   ]
+  },
+  "blast_14": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_14",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_15": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_15",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    }
+   ]
+  },
+  "blast_16": {
+   "loop": false,
+   "seconds": 2.47,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_16",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.47,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_17": {
+   "loop": false,
+   "seconds": 1.88,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_17",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.88,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "blast_18": {
+   "loop": false,
+   "seconds": 1.88,
+   "about": "A whole explosion from one book: flash, fireball, smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_18",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.88,
+     "size": 6.0,
+     "lift": 1.6
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.7,
+      0.35
+     ],
+     "energy": 14.0,
+     "range": 18.0,
+     "flash": 0.55
+    }
+   ]
+  },
+  "dust_streak_01": {
+   "loop": false,
+   "seconds": 1.6,
+   "about": "A low streak of dust thrown along the ground.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "dust_streak_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.6,
+     "size": 5.0,
+     "lift": 0.4,
+     "lit": true
+    }
+   ]
+  },
+  "smoke_roll_01": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_01",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_02": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_02",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_03": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_03",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_04": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_04",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_05": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_05",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_06": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_06",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_07": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_07",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_08": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_08",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_roll_09": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_09",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_dark_01": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_dark_01",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_dark_02": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_dark_02",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_dark_03": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_dark_03",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_disc_01": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_disc_01",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "steam_loop_01": {
+   "loop": true,
+   "about": "Steam or pale smoke lifting off.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "steam_loop_01",
+     "amount": 12,
+     "lifetime": 3.5,
+     "play": "through",
+     "size": 0.8,
+     "grow": 2.2,
+     "rise": 1.3,
+     "spread": 0.2,
+     "drift": 0.3,
+     "fade": "in_out",
+     "color": [
+      1,
+      1,
+      1,
+      0.55
+     ],
+     "lit": true
+    }
+   ]
+  },
+  "wisp_smoke_01": {
+   "loop": false,
+   "seconds": 2.67,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.67,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "wisp_smoke_02": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_02",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "wisp_smoke_03": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_03",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "wisp_smoke_04": {
+   "loop": true,
+   "about": "A column of rolling smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_04",
+     "amount": 14,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 2.6,
+     "rise": 1.1,
+     "spread": 0.25,
+     "drift": 0.3,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0
+    }
+   ]
+  },
+  "smoke_burst_01": {
+   "loop": false,
+   "seconds": 1.04,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.04,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "smoke_burst_02": {
+   "loop": false,
+   "seconds": 1.5,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.5,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "smoke_burst_03": {
+   "loop": false,
+   "seconds": 1.5,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.5,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "smoke_burst_04": {
+   "loop": false,
+   "seconds": 1.04,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.04,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "smoke_burst_05": {
+   "loop": false,
+   "seconds": 1.04,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.04,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "smoke_burst_06": {
+   "loop": false,
+   "seconds": 1.04,
+   "about": "A puff of smoke that billows and thins.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.04,
+     "size": 3.0,
+     "lift": 0.6,
+     "lit": true,
+     "color": [
+      0.75,
+      0.74,
+      0.72,
+      0.9
+     ]
+    }
+   ]
+  },
+  "campfire": {
+   "loop": true,
+   "about": "A campfire: flames, embers going up, thin smoke, and its light.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.1,
+     "size": 1.5,
+     "lift": 0.6,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.1,
+     "size": 1.1,
+     "lift": 0.5,
+     "blend": "add",
+     "color": [
+      1,
+      0.9,
+      0.8,
+      0.8
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 18,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 1.4,
+     "spread": 0.3,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_roll_04",
+     "amount": 10,
+     "lifetime": 6.0,
+     "play": "through",
+     "size": 0.6,
+     "grow": 2.4,
+     "rise": 1.3,
+     "spread": 0.2,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 1.2,
+     "color": [
+      1,
+      1,
+      1,
+      0.35
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 3.2,
+     "range": 9.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "campfire_small": {
+   "loop": true,
+   "about": "A small cooking fire, hardly any smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.1,
+     "size": 0.9,
+     "lift": 0.38,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 8,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 1.0,
+     "spread": 0.2,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 1.8,
+     "range": 6.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "bonfire": {
+   "loop": true,
+   "about": "A big fire: tall flames, a lot of embers, a heavy column of smoke.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.1,
+     "size": 3.4,
+     "lift": 3.2,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.1,
+     "size": 3.6,
+     "lift": 1.5,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.7,
+     "size": 2.6,
+     "lift": 1.1,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 50,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 2.2,
+     "spread": 1.0,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.6
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_roll_07",
+     "amount": 22,
+     "lifetime": 9.0,
+     "play": "through",
+     "size": 2.0,
+     "grow": 3.4,
+     "rise": 1.9,
+     "spread": 0.6,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 3.5,
+     "color": [
+      1,
+      1,
+      1,
+      0.75
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 7.0,
+     "range": 20.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "torch": {
+   "loop": true,
+   "about": "A torch flame: narrow, restless, a little smoke off the tip.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 4.2,
+     "size": 0.5,
+     "lift": 0.26,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 5,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 0.8,
+     "spread": 0.06,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.3
+    },
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_02",
+     "amount": 6,
+     "lifetime": 2.5,
+     "play": "through",
+     "size": 0.2,
+     "grow": 2.5,
+     "rise": 0.8,
+     "spread": 0.03,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.5,
+     "color": [
+      1,
+      1,
+      1,
+      0.3
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 1.6,
+     "range": 7.0,
+     "flicker": 0.4
+    }
+   ]
+  },
+  "candle": {
+   "loop": true,
+   "about": "A candle flame.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "candle_loop_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 4.2,
+     "size": 0.09,
+     "lift": 0.05,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.42
+     ],
+     "energy": 0.5,
+     "range": 3.0,
+     "flicker": 0.15
+    }
+   ]
+  },
+  "brazier": {
+   "loop": true,
+   "about": "A bowl of fire: broad low flames and sparks.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.1,
+     "size": 1.4,
+     "lift": 0.55,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.4,
+     "size": 1.2,
+     "lift": 0.9,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 14,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 1.4,
+     "spread": 0.35,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.6,
+     "range": 9.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "wall_of_fire": {
+   "loop": true,
+   "about": "A line of fire 6 m long (along x). Scale it for more.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_03",
+     "amount": 9,
+     "lifetime": 2.1,
+     "play": "through",
+     "size": 2.0,
+     "lift": 0.8,
+     "blend": "add",
+     "line": 6.0
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_04",
+     "amount": 7,
+     "lifetime": 2.1,
+     "play": "through",
+     "size": 2.0,
+     "lift": 1.8,
+     "blend": "add",
+     "line": 6.0,
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 40,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 1.8,
+     "spread": 0.3,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2,
+     "line": 6.0
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 5.0,
+     "range": 14.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "ground_fire": {
+   "loop": true,
+   "about": "Low fire licking over a patch of ground 3 m across.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_flame_03",
+     "amount": 40,
+     "lifetime": 0.8,
+     "play": "pick",
+     "size": 0.6,
+     "grow": 0.5,
+     "rise": 1.4,
+     "spread": 1.5,
+     "blend": "add",
+     "fade": "in_out",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ],
+     "turn": 30.0
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_02",
+     "amount": 10,
+     "lifetime": 4.2,
+     "play": "through",
+     "size": 0.6,
+     "lift": 0.3,
+     "blend": "add",
+     "spread": 1.4
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_roll_08",
+     "amount": 8,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 0.8,
+     "grow": 2.6,
+     "rise": 1.0,
+     "spread": 1.2,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.6,
+     "color": [
+      1,
+      1,
+      1,
+      0.3
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 2.4,
+     "range": 9.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "burning_tree": {
+   "loop": true,
+   "about": "Fire up something tall (8 m): flames along its height, smoke off the top.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_03",
+     "amount": 10,
+     "lifetime": 2.1,
+     "play": "through",
+     "size": 2.2,
+     "blend": "add",
+     "column": 8.0
+    },
+    {
+     "type": "particles",
+     "texture": "flame_loop_04",
+     "amount": 6,
+     "lifetime": 2.1,
+     "play": "through",
+     "size": 2.4,
+     "blend": "add",
+     "column": 8.0,
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 50,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 2.4,
+     "spread": 0.8,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2,
+     "column": 8.0
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_dark_01",
+     "amount": 20,
+     "lifetime": 9.0,
+     "play": "through",
+     "size": 2.2,
+     "grow": 3.2,
+     "rise": 2.2,
+     "spread": 0.7,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 8.0,
+     "color": [
+      1,
+      1,
+      1,
+      0.8
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 6.0,
+     "range": 18.0,
+     "flicker": 0.35
+    }
+   ]
+  },
+  "ignite": {
+   "loop": false,
+   "seconds": 3.3,
+   "about": "Something catching fire: a line of flame that grows up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_ignite_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 3.3,
+     "size": 1.6,
+     "lift": 0.7,
+     "blend": "add"
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 3.0,
+     "range": 7.0,
+     "flash": 3.3
+    }
+   ]
+  },
+  "flare_up": {
+   "loop": false,
+   "seconds": 1.6,
+   "about": "A sudden gout of flame, as when fat hits a fire.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_puff_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.6,
+     "size": 2.2,
+     "lift": 1.2,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 20,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 2.4,
+     "spread": 0.3,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 4.0,
+     "range": 8.0,
+     "flash": 1.0
+    }
+   ]
+  },
+  "magic_flame": {
+   "loop": true,
+   "about": "Cold blue-white fire.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "flame_loop_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.4,
+     "size": 1.3,
+     "lift": 0.9,
+     "blend": "add",
+     "color": [
+      0.45,
+      0.75,
+      1.0
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "wisp_flame_04",
+     "amount": 10,
+     "lifetime": 1.1,
+     "play": "pick",
+     "size": 0.5,
+     "grow": 0.5,
+     "rise": 1.3,
+     "spread": 0.25,
+     "blend": "add",
+     "fade": "in_out",
+     "color": [
+      0.5,
+      0.8,
+      1.0
+     ],
+     "turn": 30.0
+    },
+    {
+     "type": "light",
+     "color": [
+      0.5,
+      0.75,
+      1.0
+     ],
+     "energy": 2.4,
+     "range": 8.0,
+     "flicker": 0.3
+    }
+   ]
+  },
+  "fireball": {
+   "loop": true,
+   "about": "A thrown fireball: move the node; it leaves fire and smoke behind it.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.3,
+     "size": 1.3,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "wisp_flame_03",
+     "amount": 24,
+     "lifetime": 0.5,
+     "play": "pick",
+     "size": 0.7,
+     "grow": 0.3,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.62,
+      0.28
+     ],
+     "world": true,
+     "turn": 60.0
+    },
+    {
+     "type": "particles",
+     "texture": "puff_soft_02",
+     "amount": 16,
+     "lifetime": 1.6,
+     "play": "one",
+     "size": 0.5,
+     "grow": 2.6,
+     "fade": "out",
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.5
+     ],
+     "lit": true,
+     "world": true
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.6,
+      0.28
+     ],
+     "energy": 4.0,
+     "range": 9.0,
+     "flicker": 0.2
+    }
+   ]
+  },
+  "embers": {
+   "loop": true,
+   "about": "Embers alone, drifting up from a hot bed.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 30,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 1.2,
+     "spread": 0.6,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2
+    }
+   ]
+  },
+  "smoke_column": {
+   "loop": true,
+   "about": "A tall column of grey smoke, as off a chimney or a wreck.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_02",
+     "amount": 22,
+     "lifetime": 10.0,
+     "play": "through",
+     "size": 1.2,
+     "grow": 3.6,
+     "rise": 1.8,
+     "spread": 0.2,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.0,
+     "color": [
+      1,
+      1,
+      1,
+      0.85
+     ]
+    }
+   ]
+  },
+  "smoke_column_black": {
+   "loop": true,
+   "about": "Thick black smoke, as off burning oil.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_dark_01",
+     "amount": 24,
+     "lifetime": 10.0,
+     "play": "through",
+     "size": 1.4,
+     "grow": 3.4,
+     "rise": 1.9,
+     "spread": 0.2,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.0,
+     "color": [
+      0.55,
+      0.55,
+      0.55,
+      0.95
+     ]
+    }
+   ]
+  },
+  "smoke_thin": {
+   "loop": true,
+   "about": "A thin thread of smoke off something smouldering.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_03",
+     "amount": 10,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 0.25,
+     "grow": 3.0,
+     "rise": 0.9,
+     "spread": 0.04,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.0,
+     "color": [
+      1,
+      1,
+      1,
+      0.45
+     ]
+    }
+   ]
+  },
+  "chimney_smoke": {
+   "loop": true,
+   "about": "Pale smoke leaning with the wind (along +x).",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_roll_05",
+     "amount": 16,
+     "lifetime": 7.0,
+     "play": "through",
+     "size": 0.6,
+     "grow": 3.2,
+     "rise": 1.0,
+     "spread": 0.2,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.0,
+     "color": [
+      1,
+      1,
+      1,
+      0.5
+     ],
+     "wind": [
+      0.9,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  "smoulder": {
+   "loop": true,
+   "about": "What is left of a fire: faint smoke and a few embers.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "wisp_smoke_02",
+     "amount": 8,
+     "lifetime": 5.0,
+     "play": "through",
+     "size": 0.4,
+     "grow": 2.8,
+     "rise": 0.7,
+     "spread": 0.3,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 0.0,
+     "color": [
+      1,
+      1,
+      1,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 5,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 0.6,
+     "spread": 0.3,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.4,
+      0.15
+     ],
+     "energy": 0.5,
+     "range": 3.0,
+     "flicker": 0.5
+    }
+   ]
+  },
+  "steam_vent": {
+   "loop": true,
+   "about": "Steam forced up out of the ground.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "steam_loop_01",
+     "amount": 18,
+     "lifetime": 2.4,
+     "play": "through",
+     "size": 0.5,
+     "grow": 3.0,
+     "rise": 3.2,
+     "spread": 0.1,
+     "drift": 0.4,
+     "fade": "in_out",
+     "color": [
+      1,
+      1,
+      1,
+      0.5
+     ],
+     "lit": true
+    }
+   ]
+  },
+  "ground_fog": {
+   "loop": true,
+   "about": "Low smoke or mist lying over a patch 8 m across.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_07",
+     "amount": 30,
+     "lifetime": 8.0,
+     "play": "one",
+     "size": 2.5,
+     "grow": 1.6,
+     "rise": 0.05,
+     "spread": 4.0,
+     "drift": 0.25,
+     "fade": "in_out",
+     "color": [
+      0.8,
+      0.82,
+      0.85,
+      0.3
+     ],
+     "lit": true,
+     "turn": 6.0,
+     "lift": 0.5
+    }
+   ]
+  },
+  "dust_cloud": {
+   "loop": false,
+   "seconds": 3.0,
+   "about": "A cloud of dust thrown up and settling.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_05",
+     "amount": 10,
+     "lifetime": 3.0,
+     "play": "through",
+     "size": 1.4,
+     "grow": 2.2,
+     "burst": 1.6,
+     "one_shot": true,
+     "fade": "out",
+     "lit": true,
+     "color": [
+      0.66,
+      0.6,
+      0.5,
+      0.7
+     ],
+     "lift": 0.5
+    }
+   ]
+  },
+  "footfall_dust": {
+   "loop": false,
+   "seconds": 0.9,
+   "about": "The scuff a foot or a dropped thing kicks up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "dust_bits_01",
+     "amount": 6,
+     "lifetime": 0.9,
+     "play": "pick",
+     "size": 0.35,
+     "grow": 2.0,
+     "burst": 0.7,
+     "one_shot": true,
+     "fade": "out",
+     "lit": true,
+     "color": [
+      0.62,
+      0.56,
+      0.48,
+      0.5
+     ],
+     "lift": 0.1
+    }
+   ]
+  },
+  "smoke_puff": {
+   "loop": false,
+   "seconds": 1.5,
+   "about": "One puff of smoke, as from a snuffed flame or a shot.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "smoke_burst_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.5,
+     "size": 1.6,
+     "lift": 0.4,
+     "lit": true,
+     "color": [
+      0.8,
+      0.8,
+      0.8,
+      0.8
+     ]
+    }
+   ]
+  },
+  "smoke_ring_burst": {
+   "loop": false,
+   "seconds": 2.4,
+   "about": "Smoke thrown outward in a ring.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "puff_soft_03",
+     "amount": 1,
+     "lifetime": 2.4,
+     "play": "one",
+     "size": 2.0,
+     "grow": 4.0,
+     "fade": "out",
+     "flat": true,
+     "lift": 0.4,
+     "color": [
+      0.34,
+      0.33,
+      0.32,
+      0.7
+     ],
+     "lit": true
+    },
+    {
+     "type": "particles",
+     "texture": "ring_cloud_01",
+     "amount": 1,
+     "lifetime": 0.5,
+     "play": "one",
+     "size": 1.0,
+     "grow": 7.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    }
+   ]
+  },
+  "explosion_small": {
+   "loop": false,
+   "seconds": 2.2,
+   "about": "A small explosion: a grenade, a pot of powder.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.2,
+     "size": 4.0,
+     "lift": 1.1
+    },
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.45,
+     "play": "one",
+     "size": 1.0,
+     "grow": 6.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 30,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 0.07,
+     "burst": 7.0,
+     "gravity": 6.0,
+     "one_shot": true,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.75,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "debris_bits_01",
+     "amount": 12,
+     "lifetime": 2.4,
+     "play": "pick",
+     "size": 0.2,
+     "burst": 5.0,
+     "gravity": 9.8,
+     "one_shot": true,
+     "lit": true,
+     "turn": 420.0,
+     "color": [
+      0.45,
+      0.43,
+      0.4
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 12.0,
+     "range": 14.0,
+     "flash": 0.45
+    }
+   ]
+  },
+  "explosion_medium": {
+   "loop": false,
+   "seconds": 2.6,
+   "about": "A barrel going up.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_07",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.5,
+     "size": 7.0,
+     "lift": 2.0
+    },
+    {
+     "type": "particles",
+     "texture": "fire_burst_03",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.2,
+     "size": 4.5,
+     "lift": 1.4,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.55,
+     "play": "one",
+     "size": 1.0,
+     "grow": 10.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 50,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 0.07,
+     "burst": 10.0,
+     "gravity": 6.0,
+     "one_shot": true,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.75,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "debris_bits_01",
+     "amount": 26,
+     "lifetime": 2.4,
+     "play": "pick",
+     "size": 0.2,
+     "burst": 8.0,
+     "gravity": 9.8,
+     "one_shot": true,
+     "lit": true,
+     "turn": 420.0,
+     "color": [
+      0.45,
+      0.43,
+      0.4
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 20.0,
+     "range": 24.0,
+     "flash": 0.6
+    }
+   ]
+  },
+  "explosion_large": {
+   "loop": false,
+   "seconds": 4.0,
+   "about": "A big one, with a column of smoke left standing after it.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.9,
+     "size": 12.0,
+     "lift": 3.6
+    },
+    {
+     "type": "particles",
+     "texture": "fire_burst_04",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.6,
+     "size": 8.0,
+     "lift": 2.6,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.7,
+     "play": "one",
+     "size": 1.0,
+     "grow": 18.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ring_cloud_01",
+     "amount": 1,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 1.0,
+     "grow": 12.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 80,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 0.07,
+     "burst": 14.0,
+     "gravity": 6.0,
+     "one_shot": true,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.75,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "debris_bits_01",
+     "amount": 44,
+     "lifetime": 2.4,
+     "play": "pick",
+     "size": 0.2,
+     "burst": 12.0,
+     "gravity": 9.8,
+     "one_shot": true,
+     "lit": true,
+     "turn": 420.0,
+     "color": [
+      0.45,
+      0.43,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_dark_01",
+     "amount": 14,
+     "lifetime": 4.0,
+     "play": "through",
+     "size": 3.0,
+     "grow": 2.4,
+     "rise": 2.2,
+     "spread": 1.5,
+     "drift": 0.35,
+     "fade": "in_out",
+     "lit": true,
+     "turn": 20.0,
+     "lift": 3.0,
+     "color": [
+      0.6,
+      0.6,
+      0.6,
+      0.9
+     ],
+     "one_shot": true
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 34.0,
+     "range": 40.0,
+     "flash": 0.8
+    }
+   ]
+  },
+  "explosion_fiery": {
+   "loop": false,
+   "seconds": 2.2,
+   "about": "Mostly fire: fuel, a firebomb.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_14",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.2,
+     "size": 8.0,
+     "lift": 2.2
+    },
+    {
+     "type": "particles",
+     "texture": "fire_burst_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.0,
+     "size": 5.0,
+     "lift": 1.6,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "ember_bits_01",
+     "amount": 60,
+     "lifetime": 2.6,
+     "play": "pick",
+     "size": 0.07,
+     "rise": 3.0,
+     "spread": 1.5,
+     "drift": 0.9,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "turn": 200.0,
+     "lift": 0.2,
+     "one_shot": true
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 22.0,
+     "range": 24.0,
+     "flash": 0.7
+    }
+   ]
+  },
+  "explosion_smoky": {
+   "loop": false,
+   "seconds": 3.0,
+   "about": "Mostly smoke and dirt: a charge under earth.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_18",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.4,
+     "size": 7.0,
+     "lift": 2.0
+    },
+    {
+     "type": "particles",
+     "texture": "blast_15",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.6,
+     "size": 8.0,
+     "lift": 2.4
+    },
+    {
+     "type": "particles",
+     "texture": "dust_streak_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.6,
+     "size": 9.0,
+     "lift": 0.5,
+     "lit": true
+    },
+    {
+     "type": "particles",
+     "texture": "debris_bits_01",
+     "amount": 40,
+     "lifetime": 2.4,
+     "play": "pick",
+     "size": 0.2,
+     "burst": 9.0,
+     "gravity": 9.8,
+     "one_shot": true,
+     "lit": true,
+     "turn": 420.0,
+     "color": [
+      0.45,
+      0.43,
+      0.4
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 8.0,
+     "range": 14.0,
+     "flash": 0.3
+    }
+   ]
+  },
+  "explosion_sparks": {
+   "loop": false,
+   "seconds": 1.4,
+   "about": "A crack and a shower of sparks, no fireball.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "spark_burst_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 0.6,
+     "size": 3.4,
+     "blend": "add",
+     "color": [
+      1.0,
+      0.85,
+      0.6
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 90,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 0.07,
+     "burst": 12.0,
+     "gravity": 6.0,
+     "one_shot": true,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.75,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.3,
+     "play": "one",
+     "size": 1.0,
+     "grow": 5.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 10.0,
+     "range": 12.0,
+     "flash": 0.25
+    }
+   ]
+  },
+  "explosion_magic": {
+   "loop": false,
+   "seconds": 1.4,
+   "about": "A blue-white burst, for something unnatural going off.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "burst_white_01",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.0,
+     "size": 5.0,
+     "lift": 1.2,
+     "blend": "add",
+     "color": [
+      0.5,
+      0.8,
+      1.0
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.6,
+     "play": "one",
+     "size": 1.0,
+     "grow": 11.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      0.5,
+      0.75,
+      1.0
+     ],
+     "energy": 18.0,
+     "range": 20.0,
+     "flash": 0.6
+    }
+   ]
+  },
+  "airburst": {
+   "loop": false,
+   "seconds": 2.4,
+   "about": "An explosion in the air: no ring on the ground, no debris.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "blast_11",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 2.4,
+     "size": 7.0
+    },
+    {
+     "type": "particles",
+     "texture": "fire_burst_02",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.2,
+     "size": 4.0,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 40,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 0.07,
+     "burst": 9.0,
+     "gravity": 6.0,
+     "one_shot": true,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.75,
+      0.4
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 18.0,
+     "range": 26.0,
+     "flash": 0.5
+    }
+   ]
+  },
+  "impact_fire": {
+   "loop": false,
+   "seconds": 1.0,
+   "about": "A fireball landing: a splash of flame and sparks.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "fire_burst_05",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 1.0,
+     "size": 3.0,
+     "lift": 0.8,
+     "blend": "add"
+    },
+    {
+     "type": "particles",
+     "texture": "glow_warm_02",
+     "amount": 24,
+     "lifetime": 1.1,
+     "play": "one",
+     "size": 0.07,
+     "burst": 6.0,
+     "gravity": 6.0,
+     "one_shot": true,
+     "blend": "add",
+     "fade": "out",
+     "color": [
+      1.0,
+      0.75,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.3,
+     "play": "one",
+     "size": 1.0,
+     "grow": 4.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 8.0,
+     "range": 10.0,
+     "flash": 0.35
+    }
+   ]
+  },
+  "shockwave": {
+   "loop": false,
+   "seconds": 0.8,
+   "about": "The ring alone: a blast felt, not seen.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "ring_02",
+     "amount": 1,
+     "lifetime": 0.8,
+     "play": "one",
+     "size": 1.0,
+     "grow": 16.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "ring_01",
+     "amount": 1,
+     "lifetime": 0.5,
+     "play": "one",
+     "size": 1.0,
+     "grow": 9.0,
+     "blend": "add",
+     "fade": "out",
+     "flat": true,
+     "lift": 0.15,
+     "color": [
+      1.0,
+      0.88,
+      0.7,
+      0.45
+     ]
+    }
+   ]
+  },
+  "muzzle_flash": {
+   "loop": false,
+   "seconds": 0.35,
+   "about": "A short hard flash with a lick of smoke, along x.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "glow_streak_01",
+     "amount": 1,
+     "lifetime": 0.12,
+     "play": "one",
+     "size": 1.2,
+     "blend": "add",
+     "fade": "out",
+     "align": "x"
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_burst_06",
+     "amount": 1,
+     "play": "through",
+     "lifetime": 0.9,
+     "size": 0.8,
+     "lit": true,
+     "color": [
+      0.8,
+      0.8,
+      0.8,
+      0.5
+     ]
+    },
+    {
+     "type": "light",
+     "color": [
+      1.0,
+      0.72,
+      0.4
+     ],
+     "energy": 6.0,
+     "range": 8.0,
+     "flash": 0.1
+    }
+   ]
+  },
+  "debris_burst": {
+   "loop": false,
+   "seconds": 2.4,
+   "about": "Chunks and dust thrown out, no fire: something breaking.",
+   "layers": [
+    {
+     "type": "particles",
+     "texture": "debris_bits_01",
+     "amount": 34,
+     "lifetime": 2.4,
+     "play": "pick",
+     "size": 0.2,
+     "burst": 7.0,
+     "gravity": 9.8,
+     "one_shot": true,
+     "lit": true,
+     "turn": 420.0,
+     "color": [
+      0.45,
+      0.43,
+      0.4
+     ]
+    },
+    {
+     "type": "particles",
+     "texture": "smoke_burst_05",
+     "amount": 6,
+     "lifetime": 2.0,
+     "play": "through",
+     "size": 1.0,
+     "grow": 2.2,
+     "burst": 1.2,
+     "one_shot": true,
+     "fade": "out",
+     "lit": true,
+     "color": [
+      0.62,
+      0.58,
+      0.52,
+      0.7
+     ],
+     "lift": 0.4
+    }
+   ]
+  }
+ }
+}

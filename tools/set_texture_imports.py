@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GLOBS = ["textures/polyhaven/*.jpg", "assets/*/textures/*.png", "assets/*/textures/*.jpg",
          "assets/*/textures/impostors/*.png",
          "assets/chips/*.png", "assets/leaves/*.png", "assets/berry_bush/*.png",
-         "assets/build/*/*.png", "assets/build/*/*.jpg"]
+         "assets/build/*/*.png", "assets/build/*/*.jpg", "assets/fx/*.webp"]
 changed = 0
 for g in GLOBS:
     for tex in sorted(ROOT.glob(g)):
