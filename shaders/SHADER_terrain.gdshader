@@ -62,7 +62,7 @@ uniform vec4 causeway = vec4(0.0);
 uniform float causeway_half = 0.0;
 // How far from its middle line the causeway's banks reach, metres.
 uniform float causeway_reach = 0.0;
-uniform float cobble_size = 2.2;
+uniform float cobble_size = 4.4;
 uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
 uniform sampler2D caustic_tex : filter_linear_mipmap_anisotropic, repeat_enable;
