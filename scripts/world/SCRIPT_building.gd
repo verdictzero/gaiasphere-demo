@@ -97,8 +97,8 @@ func _ready() -> void:
 	_hint.add_theme_constant_override(&"outline_size", 5)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_hint.offset_top = -150.0
-	_hint.offset_bottom = -124.0
+	_hint.offset_top = -182.0
+	_hint.offset_bottom = -156.0
 	_hint.offset_left = -400.0
 	_hint.offset_right = 400.0
 	_hint.visible = false
