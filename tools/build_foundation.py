@@ -16,8 +16,12 @@ little in from the timbers' faces, so no two surfaces share a plane.
     foundation_<a..c>_lod0.glb        2 m x 1 m x 2 m
     foundation_step_<a..b>_lod0.glb   1.2 m x 1 m x 0.6 m, a doorstep
 
+    steps_<a..b>_lod0.glb             five steps up a metre in a run of two, 2 m wide
+    steps_narrow_<a..b>_lod0.glb      the same, 1.2 m wide: a door's worth
+
 They are a metre tall to be sunk into the ground to whatever depth the slope
-asks for.
+asks for; the steps climb toward -z from their foot at y = 0 and carry on a metre
+below it.
 """
 import json
 import random
@@ -70,9 +74,9 @@ def faces(lo, hi, along=None, skip=()):
             yield corner, t * (hi[i] - lo[i]), up * (hi[j] - lo[j]), k, s
 
 
-def stone(part, lo, hi, rng):
-    shift = (rng.random(), rng.random())
-    for corner, t, up, k, s in faces(lo, hi, skip=((1, -1.0),)):
+def stone(part, lo, hi, rng, shift=None, skip=((1, -1.0),)):
+    shift = shift or (rng.random(), rng.random())
+    for corner, t, up, k, s in faces(lo, hi, skip=skip):
         # Mapped by where it is in the world, so courses carry on round a corner's
         # worth of blocks; each block starts somewhere else in the picture.
         ti, ui = int(np.argmax(np.abs(t))), int(np.argmax(np.abs(up)))
@@ -124,6 +128,33 @@ def block(size, beam, beams, atlas, seed):
         for sx in (-1, 1):
             a = (min(sx * x, sx * (x - beam)), y0, -z + beam)
             timber(wood, a, (a[0] + beam, y0 + t, z - beam), 2, beams, atlas, rng)
+    return rock, wood
+
+
+STEPS = 5
+SUNK = 1.0              # how far the steps go on down below their foot, for sloping ground
+
+
+def steps(width, beam, beams, atlas, seed, run=2.0, rise=1.0):
+    """STONE STEPS IN TIMBER: five of them, climbing a metre in two (toward -z), so
+    a flight reaches the top of a foundation block from the ground beside it. Each
+    step is its own block of stone with a timber along its nose, a post under each
+    end of that, and a timber down each side of the tread. All of it carries on a
+    metre below the foot, to be sunk like the blocks."""
+    rng = random.Random(seed)
+    rock, wood = Part(), Part()
+    shift = (rng.random(), rng.random())
+    tread, lift = run / STEPS, rise / STEPS
+    x = width / 2
+    for i in range(STEPS):
+        front, back, top = run / 2 - i * tread, run / 2 - (i + 1) * tread, (i + 1) * lift
+        hidden = ((1, -1.0),) + (((2, -1.0),) if i < STEPS - 1 else ())     # the next step stands against its back
+        stone(rock, (-x + INSET, -SUNK, back), (x - INSET, top - INSET * 0.6, front - INSET), rng, shift, hidden)
+        timber(wood, (-x + beam, top - beam, front - beam), (x - beam, top, front), 0, beams, atlas, rng)
+        for sx in (-1, 1):
+            a = min(sx * x, sx * (x - beam))
+            timber(wood, (a, -SUNK, front - beam), (a + beam, top, front), 1, beams, atlas, rng)
+            timber(wood, (a, top - beam, back), (a + beam, top, front - beam), 2, beams, atlas, rng)
     return rock, wood
 
 
@@ -179,6 +210,14 @@ def main(out_dir):
         for i in range(count):
             name = f"{stem}_{chr(97 + i)}"
             rock, wood = block(size, beam, beams, kit["atlas"], 900 + i * 17 + len(stem))
+            write_glb(out / f"{name}_lod0.glb", name, rock, wood)
+            print("%s: %d triangles" % (name, (len(rock.idx) + len(wood.idx)) // 3))
+
+
+    for stem, width, beam, count in (("steps", 2.0, 0.1, 2), ("steps_narrow", 1.2, 0.09, 2)):
+        for i in range(count):
+            name = f"{stem}_{chr(97 + i)}"
+            rock, wood = steps(width, beam, beams, kit["atlas"], 700 + i * 13 + len(stem))
             write_glb(out / f"{name}_lod0.glb", name, rock, wood)
             print("%s: %d triangles" % (name, (len(rock.idx) + len(wood.idx)) // 3))
 

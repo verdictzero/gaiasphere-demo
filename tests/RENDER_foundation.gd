@@ -50,7 +50,8 @@ func _initialize() -> void:
 	for i in 3:
 		_put(kit + "foundation_%s_lod0.glb" % "abc"[i], Vector3(0.0 + 2.0 * i, 0, 0))
 		_put("res://assets/build/plank_kit/wall_%s_lod0.glb" % "abc"[i], Vector3(0.0 + 2.0 * i, 1.0, 1.0))
-	_put(kit + "foundation_step_a_lod0.glb", Vector3(2.0, -0.8, 1.3))
+	_put(kit + "steps_a_lod0.glb", Vector3(2.0, 0.0, 2.0))
+	_put(kit + "steps_narrow_a_lod0.glb", Vector3(-4.0, 0.0, 2.0))
 	_cam = Camera3D.new()
 	_cam.fov = 40.0
 	root.add_child(_cam)
@@ -58,7 +59,8 @@ func _initialize() -> void:
 	_shots = [
 		["foundation_one", Vector3(-1.2, 2.2, 4.2), Vector3(-4.0, 0.5, 0)],
 		["foundation_run", Vector3(7.5, 2.6, 7.5), Vector3(2.0, 1.0, 0.5)],
-		["foundation_close", Vector3(-2.6, 1.3, 2.0), Vector3(-3.4, 0.7, 1.0)],
+		["foundation_steps", Vector3(5.4, 2.0, 5.6), Vector3(2.0, 0.5, 1.6)],
+		["foundation_steps_side", Vector3(-7.4, 1.4, 3.4), Vector3(-4.0, 0.5, 1.6)],
 	]
 
 

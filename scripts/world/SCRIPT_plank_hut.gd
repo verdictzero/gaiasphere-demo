@@ -41,19 +41,20 @@ func _ready() -> void:
 	_panel("roof_b", Vector3(2.0, 2.0, 0), PI * 0.5, Vector3.ZERO)
 	# It stands on two foundation blocks (assets/build/foundation), a metre of
 	# stone in a timber frame sunk into the ground as far as the slope asks, with
-	# a doorstep of the same before the door.
+	# a flight of steps of the same up to the door (as many showing as the ground
+	# leaves).
 	_block("foundation_a", Vector3(-1.0, -1.0, 0.0))
 	_block("foundation_b", Vector3(1.0, -1.0, 0.0))
-	_block("foundation_step_a", Vector3(-1.0, -1.16, 1.3))
+	_block("steps_narrow_a", Vector3(-1.0, -1.0, 2.0))
 	# The floor and the two slopes of the roof, to stand on.
 	var body := StaticBody3D.new()
 	add_child(body)
 	_box(body, Vector3(0, 0.005, 0), Vector3(4.0, 0.12, 2.0), Vector3.ZERO)
-	# A ramp nobody sees, from the ground outside the door up to the sill, so the
-	# step is never more than a foot can take wherever the ground falls away.
-	_box(body, Vector3(-1.0, -0.27, 1.75), Vector3(1.3, 0.1, 1.6), Vector3(0.36, 0, 0))
+	# The steps are climbed as a slope laid along their noses (a foot does not
+	# take a 20 cm step), with the top one flat before the door.
+	_box(body, Vector3(-1.0, -0.589, 2.355), Vector3(1.2, 0.2, 2.236), Vector3(0.4636, 0, 0))
+	_box(body, Vector3(-1.0, -0.5, 1.2), Vector3(1.2, 1.0, 0.4), Vector3.ZERO)
 	_box(body, Vector3(0, -0.5, 0), Vector3(4.0, 1.0, 2.0), Vector3.ZERO)
-	_box(body, Vector3(-1.0, -0.66, 1.3), Vector3(1.2, 1.0, 0.6), Vector3.ZERO)
 	_box(body, Vector3(-1.0, 3.0, 0), Vector3(2.9, 0.1, 2.1), Vector3(0, 0, PI * 0.25))
 	_box(body, Vector3(1.0, 3.0, 0), Vector3(2.9, 0.1, 2.1), Vector3(0, 0, -PI * 0.25))
 
