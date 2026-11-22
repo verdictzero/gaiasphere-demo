@@ -283,9 +283,15 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 		var to: Vector2 = cow["target"]
 		var gap := to - at
 		var running := state == "flee"
+		# (Close enough is enough: another cow may be hanging right where it meant to
+		# go, and one that has been trying for a while gives up and stays where it is.)
+		cow["going"] = float(cow.get("going", 0.0)) + delta
+		var there := gap.length() < 0.9 or (float(cow["going"]) > 14.0 and not running)
 		if near_me and not running:
+			cow["going"] = 0.0
 			_flee(cow, Vector2(me.x, me.z))
-		elif gap.length() < 0.5:
+		elif there:
+			cow["going"] = 0.0
 			(cow["player"] as AnimationPlayer).speed_scale = 1.0
 			if running and (at - Vector2(me.x, me.z)).length() < 7.0:
 				_flee(cow, Vector2(me.x, me.z))          # still being chased
