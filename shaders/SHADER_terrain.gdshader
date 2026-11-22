@@ -60,6 +60,8 @@ uniform sampler2D cobble_albedo : source_color, filter_linear_mipmap_anisotropic
 uniform sampler2D cobble_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 causeway = vec4(0.0);
 uniform float causeway_half = 0.0;
+// How far from its middle line the causeway's banks reach, metres.
+uniform float causeway_reach = 0.0;
 uniform float cobble_size = 2.2;
 uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
@@ -137,7 +139,17 @@ void fragment() {
 	if (mere) {
 		bank_w = 0.0;
 	}
-	float rock_w = max(w.b, bank_w);
+	// THE CAUSEWAY'S SIDES, under the water, are cliff: wherever its bank stands
+	// steep it is rock, not the sand of the bed stretched down a wall.
+	float cw_side = 0.0;
+	if (causeway_reach > 0.0) {
+		vec2 cab = causeway.zw - causeway.xy;
+		float ct = clamp(dot(p - causeway.xy, cab) / dot(cab, cab), 0.0, 1.0);
+		float coff = length(p - causeway.xy - cab * ct);
+		cw_side = (1.0 - smoothstep(0.55, 0.86, geo_n.y)) * (1.0 - smoothstep(causeway_reach, causeway_reach + 2.5, coff))
+				* smoothstep(mere_level + 0.5, mere_level - 0.1, world_pos.y);
+	}
+	float rock_w = max(max(w.b, bank_w), cw_side);
 	if (rock_w > 0.003) {
 		rock_a = (textureGrad(rock_albedo, rp.zy, dzy_x, dzy_y).rgb * bw.x
 				+ textureGrad(rock_albedo, rp.xz, dxz_x, dxz_y).rgb * bw.y
@@ -226,16 +238,18 @@ void fragment() {
 		}
 	}
 
-	float keep = 1.0 - max(w.b, bank_w);
+	albedo = mix(albedo, rock_a, cw_side);
+	roughness = mix(roughness, 0.6, cw_side);
+	float keep = 1.0 - max(max(w.b, bank_w), cw_side);
 	vec3 world_n = normalize(geo_n + vec3(flat_n.x, 0.0, flat_n.y) * detail * keep);
-	world_n = normalize(mix(world_n, rock_world_n, max(w.b, bank_w)));
+	world_n = normalize(mix(world_n, rock_world_n, max(max(w.b, bank_w), cw_side)));
 
 	if (causeway_half > 0.0) {
 		vec2 ab = causeway.zw - causeway.xy;
 		float t = clamp(dot(p - causeway.xy, ab) / dot(ab, ab), 0.0, 1.0);
 		float off = length(p - causeway.xy - ab * t);
 		// A ragged edge: the stones give out into the bank unevenly.
-		float cw = 1.0 - smoothstep(causeway_half - 0.7, causeway_half + 0.7, off + (macro2 - 0.5) * 0.9);
+		float cw = 1.0 - smoothstep(causeway_half - 0.7, causeway_half + 0.7, off + (macro2 - 0.5) * 0.45);
 		if (cw > 0.0) {
 			// Laid ALONG the path: the texture's v runs down the causeway and its u
 			// across, so the courses of stone follow the way you walk.

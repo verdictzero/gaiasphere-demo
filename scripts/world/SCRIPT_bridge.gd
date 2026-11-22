@@ -9,7 +9,7 @@ extends Node3D
 @export var world_path: NodePath = ^"../GaiaSphere"
 @export var water_path: NodePath = ^"../RiverWater"
 ## Half the width of the cobbled strip, metres. The bank it runs on is wider.
-@export var cobble_half_width := 1.25
+@export var cobble_half_width := 2.9
 
 var start := Vector3.ZERO       # on the outer shore
 var finish := Vector3.ZERO      # on the islet
@@ -35,6 +35,8 @@ func _ready() -> void:
 		ground.set_shader_parameter("cobble_normal", load("res://textures/polyhaven/cobblestone_floor_04_normal.jpg"))
 		ground.set_shader_parameter("causeway", Vector4(ends[0].x, ends[0].y, ends[1].x, ends[1].y))
 		ground.set_shader_parameter("causeway_half", cobble_half_width)
+		# How far out its banks run: under the water their steep faces are cliff.
+		ground.set_shader_parameter("causeway_reach", FlowTerrain.CAUSEWAY_HALF + FlowTerrain.CAUSEWAY_BANK + 1.5)
 		ground.set_shader_parameter("mere_level", float(isl.base_y) + float(flows.lagoon_level()))
 	var water := get_node_or_null(water_path)
 	if water != null and water.get(&"material") is ShaderMaterial:

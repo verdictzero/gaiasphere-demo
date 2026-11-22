@@ -311,8 +311,8 @@ func lagoon_at(x: float, z: float) -> Vector3:
 # (SCRIPT_causeway.gd hands it the line). It is terrain: the mesher, the
 # collision and the bake all get it from `lagoon` below.
 
-const CAUSEWAY_HALF := 2.1        ## half the width of its flat top, metres
-const CAUSEWAY_BANK := 4.0        ## metres its sides take to fall to the bed
+const CAUSEWAY_HALF := 4.2        ## half the width of its flat top, metres
+const CAUSEWAY_BANK := 5.0        ## metres its sides take to fall to the bed
 const CAUSEWAY_RISE := 1.1        ## its top, metres over the water
 
 ## A LEVEL SPOT at the middle of the islet, so what stands there (the sword in the
@@ -352,10 +352,13 @@ func causeway_weight(x: float, z: float) -> float:
 	if along < _cw_in - 14.0 or along > _cw_out + 14.0:
 		return 0.0
 	var off := absf(d.dot(Vector2(-_cw_dir.y, _cw_dir.x)))
-	# A little wander in its edge, so it is a bank and not a ruled strip.
-	off -= 0.4 * sin(along * 0.21) + 0.25 * sin(along * 0.53 + 1.3)
+	# A little wander in its edge, so it is a bank and not a ruled strip: long and
+	# slow, since anything quicker than the ground's own grid comes out as teeth.
+	off -= 0.3 * sin(along * 0.13) + 0.12 * sin(along * 0.29 + 1.3)
 	var ends := smoothstep(_cw_in - 14.0, _cw_in - 4.0, along) * (1.0 - smoothstep(_cw_out + 4.0, _cw_out + 14.0, along))
-	return (1.0 - smoothstep(CAUSEWAY_HALF, CAUSEWAY_HALF + CAUSEWAY_BANK, off)) * ends
+	# Eased twice over: a rounded shoulder at the top and a rounded foot on the bed.
+	var side := 1.0 - smoothstep(CAUSEWAY_HALF, CAUSEWAY_HALF + CAUSEWAY_BANK, off)
+	return side * side * (3.0 - 2.0 * side) * ends
 
 
 ## THE LAGOON CARVED into the ground `g` (metres over the base, the zones'
