@@ -44,7 +44,10 @@ var _given := {}              # cow number -> beef taken from it so far
 var _cows := 0
 var _slow_until := 0
 var _rng := RandomNumberGenerator.new()
-var _drop_mesh: BoxMesh
+var _drop_mesh: SphereMesh
+var _gib_mat: StandardMaterial3D
+var _gib_quad: QuadMesh
+var _gib_flow: ParticleProcessMaterial
 var _drop_mat: StandardMaterial3D
 var _drop_flow: ParticleProcessMaterial
 
@@ -72,8 +75,43 @@ func _ready() -> void:
 	_meat = ShaderMaterial.new()
 	_meat.shader = load("res://shaders/SHADER_cut_meat.gdshader")
 	_meat.set_shader_parameter("marbling", marbled)
-	_drop_mesh = BoxMesh.new()
-	_drop_mesh.size = Vector3(0.035, 0.035, 0.035)
+	# GIBS: sixteen photographs of torn meat (assets/chips/gib_atlas.png, cut from
+	# one sheet by tools/build_chip_atlas.py), one to a particle, tumbling as they fly.
+	_gib_mat = StandardMaterial3D.new()
+	_gib_mat.albedo_texture = load("res://assets/chips/gib_atlas.png")
+	_gib_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	_gib_mat.alpha_scissor_threshold = 0.45
+	_gib_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_gib_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	_gib_mat.particles_anim_h_frames = 4
+	_gib_mat.particles_anim_v_frames = 4
+	_gib_mat.particles_anim_loop = false
+	_gib_mat.roughness = 0.3
+	_gib_mat.metallic_specular = 0.7
+	_gib_quad = QuadMesh.new()
+	_gib_quad.size = Vector2(0.2, 0.2)
+	_gib_flow = ParticleProcessMaterial.new()
+	_gib_flow.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	_gib_flow.emission_sphere_radius = 0.25
+	_gib_flow.direction = Vector3(0, 0, -1)
+	_gib_flow.spread = 50.0
+	_gib_flow.initial_velocity_min = 1.2
+	_gib_flow.initial_velocity_max = 5.0
+	_gib_flow.gravity = Vector3(0, -9.8, 0)
+	_gib_flow.angle_max = 360.0
+	_gib_flow.angular_velocity_min = -420.0
+	_gib_flow.angular_velocity_max = 420.0
+	_gib_flow.scale_min = 0.45
+	_gib_flow.scale_max = 1.5
+	_gib_flow.anim_offset_min = 0.0
+	_gib_flow.anim_offset_max = 1.0
+	_gib_flow.anim_speed_min = 0.0
+	_gib_flow.anim_speed_max = 0.0
+	_drop_mesh = SphereMesh.new()
+	_drop_mesh.radius = 0.011
+	_drop_mesh.height = 0.022
+	_drop_mesh.radial_segments = 6
+	_drop_mesh.rings = 3
 	_drop_mat = StandardMaterial3D.new()
 	_drop_mat.albedo_color = Color(0.62, 0.05, 0.06)
 	_drop_mat.roughness = 0.3
@@ -163,20 +201,23 @@ func _hold_time() -> void:
 	_slow_until = Time.get_ticks_msec() + int(slow_for * 1000.0)
 
 
+## What flies off a cut: gobbets of meat, and a spray of drops, thrown the way the blade was going.
 func _spray(at: Vector3, travel: Vector3) -> void:
-	var p := GPUParticles3D.new()
-	p.amount = 26
-	p.lifetime = 0.9
-	p.one_shot = true
-	p.explosiveness = 0.95
-	p.process_material = _drop_flow
-	p.draw_pass_1 = _drop_mesh
-	p.material_override = _drop_mat
-	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(p)
-	p.global_transform = Transform3D(Basis.looking_at(travel.normalized() + Vector3.UP * 0.35), at)
-	p.emitting = true
-	get_tree().create_timer(1.6).timeout.connect(p.queue_free)
+	for pass_ in [[14, 1.3, _gib_flow, _gib_quad, _gib_mat], [34, 0.9, _drop_flow, _drop_mesh, _drop_mat]]:
+		var p := GPUParticles3D.new()
+		p.amount = int(pass_[0])
+		p.lifetime = float(pass_[1])
+		p.one_shot = true
+		p.explosiveness = 0.95
+		p.process_material = pass_[2]
+		p.draw_pass_1 = pass_[3]
+		p.material_override = pass_[4]
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.visibility_aabb = AABB(Vector3.ONE * -8.0, Vector3.ONE * 16.0)
+		add_child(p)
+		p.global_transform = Transform3D(Basis.looking_at(travel.normalized() + Vector3.UP * 0.35), at)
+		p.emitting = true
+		get_tree().create_timer(float(pass_[1]) + 0.8).timeout.connect(p.queue_free)
 
 
 # ------------------------------------------------------------------ pieces
