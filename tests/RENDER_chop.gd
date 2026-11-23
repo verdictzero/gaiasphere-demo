@@ -49,7 +49,9 @@ func _process(_dt: float) -> bool:
 			enviro.hour = 8.5
 			enviro.set_weather("clear", 0.0)
 			# The nearest tree of some size, and a place to stand at its foot.
-			var here: Vector3 = explorer.global_position
+			# (The game starts in the mere now: the wood is looked for from the old
+			# landing place on the shore.)
+			var here: Vector3 = _scene.get_node("LandingSpot").call(&"hatch_spot")
 			var tree := {}
 			for i in 400:
 				var ang := float(i) * 0.7
