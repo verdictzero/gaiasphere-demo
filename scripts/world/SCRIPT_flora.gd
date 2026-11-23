@@ -627,7 +627,8 @@ func _place_bushes(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 					or float(s.get("flow_weight", 0.0)) > 0.35 or float(s.get("flatten", 0.0)) > 0.25:
 				continue
 			var variant := float(int(_hash(cx, cz, 86) * 4.0) % 4)
-			var tall := 1.5 + 2.4 * _hash(cx, cz, 87) * _hash(cx, cz, 88)
+			# Knee to waist high: undergrowth, not a wall of green at head height.
+			var tall := 0.5 + 0.8 * _hash(cx, cz, 87) * _hash(cx, cz, 88)
 			var wide := tall * (1.05 + 0.35 * _hash(cx, cz, 89))
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 90) * TAU).scaled(Vector3(wide, tall, wide))
 			var buf: PackedFloat32Array = bufs[int(_hash(cx, cz, 92) * 3.0) % 3]
