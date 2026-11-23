@@ -278,11 +278,25 @@ func _cut(piece: Dictionary, plane: Plane) -> Array:
 	centre /= float(ring.size())
 	var u := plane.normal.cross(Vector3.UP if absf(plane.normal.y) < 0.9 else Vector3.RIGHT).normalized()
 	var w := plane.normal.cross(u)
-	var around: Array = []
+	# THE OUTLINE of the cut is the hull of those points, not the points in order
+	# round the middle: the blade goes through the mouth, the lips and the tongue
+	# as well as the hide, and a fan through every one of those rings is a burst
+	# of spikes. The hull is the hide's own outline, and the meat fills it flat.
+	var flat: PackedVector2Array = []
 	for p in ring:
 		var rel := p - centre
-		around.append([atan2(rel.dot(w), rel.dot(u)), p])
-	around.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+		flat.append(Vector2(rel.dot(u), rel.dot(w)))
+	var hull := Geometry2D.convex_hull(flat)
+	if hull.size() < 4:
+		return []
+	var around: Array = []
+	var mid := Vector2.ZERO
+	for i in hull.size() - 1:          # (the hull comes back closed: its last point is its first)
+		mid += hull[i]
+	mid /= float(hull.size() - 1)
+	centre += u * mid.x + w * mid.y
+	for i in hull.size() - 1:
+		around.append([0.0, centre + u * (hull[i].x - mid.x) + w * (hull[i].y - mid.y)])
 	for side in 2:
 		var face: Vector3 = -plane.normal if side == 0 else plane.normal          # each half's meat faces the other half
 		var mv: PackedVector3Array = meats[side][0]
