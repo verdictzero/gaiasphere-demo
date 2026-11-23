@@ -108,7 +108,20 @@ func _process(_dt: float) -> bool:
 			_wait = 60
 		4:
 			var got := bag.count_of("beef")
-			print("slice: %d beef in the bag, %d pieces left lying" % [got, slicing._pieces.size()])
+			# The cuts of beef are walked up to; the chunks are left to go into the ground.
+			var thrown := slicing._steaks.size() + got
+			for entry in slicing._steaks.duplicate():
+				entry[1] = 5.0
+				explorer.global_position = (entry[0] as Node3D).global_position - Vector3(0, 0.9, 0)
+				slicing._process(0.0)
+			got = bag.count_of("beef")
+			var lying := slicing._pieces.size()
+			for piece in slicing._pieces:
+				piece["age"] = slicing.lie_for + 1.0
+			slicing._process(0.0)
+			print("slice: %d cuts of beef thrown out, %d in the bag; %d chunks lay there, %d still solid after their time" % [thrown, got, lying, slicing._pieces.size()])
+			if slicing._pieces.size() != 0 or got != thrown:
+				_fail("the chunks did not go, or the beef was not all taken")
 			if got < 1:
 				_fail("no beef was gathered")
 			print("slice: ok" if not _failed else "slice: FAILED")

@@ -9,8 +9,10 @@ extends Node3D
 # every cut, so a run of them can be laid one after another across the same
 # animal before any of it has reached the ground.
 #
-# Each piece is beef: left alone for a moment and walked up to, it goes in the
-# bag (up to `beef_per_cow` from one animal, however fine it was cut).
+# THE BEEF COMES OUT OF THE CUTS: each one throws two or three cuts of raw beef
+# clear, to lie in the grass and be walked up to (up to `beef_per_cow` from one
+# animal, however fine it is cut). The chunks themselves are not for the bag:
+# they lie a while and then go into the ground.
 #
 # HOW A CUT IS MADE. The cow's skin is a mesh; the cut is a plane (through where
 # the swing landed, holding the line of sight and the line the blade travelled).
@@ -33,6 +35,11 @@ extends Node3D
 @export var slow := 0.28
 @export var slow_for := 0.4
 @export var max_pieces := 70
+## Cuts of beef a single cut throws out (until the cow has given `beef_per_cow`).
+@export var steaks_per_cut := Vector2i(2, 3)
+## Seconds a chunk lies before it goes into the ground, and how long that takes.
+@export var lie_for := 14.0
+@export var sink_for := 3.5
 @export var gather_radius := 1.5
 
 var _herds: CowHerds
@@ -40,6 +47,9 @@ var _explorer: Node3D
 var _bag: Node
 var _pieces: Array = []       # each {"body", "skin": [verts, normals, uvs], "meat": [verts, normals, uvs], "age", "cow"}
 var _meat: ShaderMaterial
+var _steaks: Array = []       # each [body, seconds lain]
+var _steak_quad: QuadMesh
+var _steak_shape: SphereShape3D
 var _given := {}              # cow number -> beef taken from it so far
 var _cows := 0
 var _slow_until := 0
@@ -191,6 +201,12 @@ func slice(from: Vector3, dir: Vector3, travel: Vector3) -> bool:
 		(made["body"] as RigidBody3D).angular_velocity = spin + away.cross(dir) * _rng.randf_range(0.5, 1.6)
 		_pieces.append(made)
 	_spray(hit["position"], travel)
+	# Every cut lets some beef go, until the cow has given all it has.
+	var cow_no := int(piece["cow"])
+	var gives := mini(_rng.randi_range(steaks_per_cut.x, steaks_per_cut.y), beef_per_cow - int(_given.get(cow_no, 0)))
+	if gives > 0:
+		_given[cow_no] = int(_given.get(cow_no, 0)) + gives
+		_drop_steaks(hit["position"], normal, travel, gives)
 	_hold_time()
 	while _pieces.size() > max_pieces:
 		((_pieces.pop_front() as Dictionary)["body"] as Node).queue_free()
@@ -445,33 +461,94 @@ func _split(part: Array, plane: Plane, into: Array, ring: PackedVector3Array) ->
 func _process(delta: float) -> void:
 	if Engine.time_scale < 1.0 and Time.get_ticks_msec() >= _slow_until:
 		Engine.time_scale = 1.0
-	if _pieces.is_empty() or _explorer == null:
+	if _explorer == null:
 		return
 	var here := _explorer.global_position + Vector3(0, 0.9, 0)
+	# THE CHUNKS ARE NOT FOR THE BAG. They lie where they fell for a while and then
+	# go into the ground: sinking, and thinning away as they sink.
 	for i in range(_pieces.size() - 1, -1, -1):
 		var piece: Dictionary = _pieces[i]
 		var body: RigidBody3D = piece["body"]
 		piece["age"] = float(piece["age"]) + delta
-		if body.global_position.y < -400.0 or float(piece["age"]) > 150.0:
+		if body.global_position.y < -400.0:
 			_pieces.remove_at(i)
 			body.queue_free()
 			continue
-		# Not while the cutting is still going on: only what has lain a moment.
-		if float(piece["age"]) < 2.5 or body.global_position.distance_to(here) > gather_radius:
+		if float(piece["age"]) < lie_for:
 			continue
-		var cow := int(piece["cow"])
-		if int(_given.get(cow, 0)) < beef_per_cow:
-			if _bag == null or int(_bag.call(&"add", "beef", 1)) > 0:
-				continue          # nowhere to put it
-			_given[cow] = int(_given.get(cow, 0)) + 1
 		_pieces.remove_at(i)
 		body.freeze = true
 		body.collision_layer = 0
 		body.collision_mask = 0
+		var down := float(piece["across"]) * 0.9 + 0.15
+		var gone := create_tween()
+		gone.tween_property(body, "global_position:y", body.global_position.y - down, sink_for).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		gone.parallel().tween_property(body, "scale", Vector3(1.08, 0.35, 1.08), sink_for)
+		gone.tween_callback(body.queue_free)
+	# THE STEAKS ARE: each a cut of raw beef, taken by walking up to it.
+	for i in range(_steaks.size() - 1, -1, -1):
+		var entry: Array = _steaks[i]
+		var steak: RigidBody3D = entry[0]
+		entry[1] = float(entry[1]) + delta
+		if steak.global_position.y < -400.0 or float(entry[1]) > 300.0:
+			_steaks.remove_at(i)
+			steak.queue_free()
+			continue
+		if float(entry[1]) < 1.2 or steak.global_position.distance_to(here) > gather_radius:
+			continue
+		if _bag == null or int(_bag.call(&"add", "beef", 1)) > 0:
+			continue          # nowhere to put it
+		_steaks.remove_at(i)
+		steak.freeze = true
+		steak.collision_layer = 0
+		steak.collision_mask = 0
 		var pull := create_tween()
-		pull.tween_property(body, "global_position", here, 0.16)
-		pull.parallel().tween_property(body, "scale", Vector3.ONE * 0.15, 0.16)
-		pull.tween_callback(body.queue_free)
+		pull.tween_property(steak, "global_position", here, 0.16)
+		pull.parallel().tween_property(steak, "scale", Vector3.ONE * 0.2, 0.16)
+		pull.tween_callback(steak.queue_free)
+
+
+## Cuts of raw beef thrown out of a cut: `count` of them, out to either side of
+## the blade's line and up, to drop and lie in the grass.
+func _drop_steaks(at: Vector3, normal: Vector3, travel: Vector3, count: int) -> void:
+	if _steak_quad == null:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_texture = load("res://assets/ui/item_beef.png")
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		mat.alpha_scissor_threshold = 0.45
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		mat.roughness = 1.0
+		mat.metallic = 0.0
+		mat.metallic_specular = 0.0
+		_steak_quad = QuadMesh.new()
+		_steak_quad.size = Vector2(0.3, 0.3)
+		_steak_quad.material = mat
+		_steak_shape = SphereShape3D.new()
+		_steak_shape.radius = 0.1
+	for i in count:
+		var body := RigidBody3D.new()
+		body.mass = 0.4
+		body.linear_damp = 0.4
+		body.angular_damp = 3.0
+		var soft := PhysicsMaterial.new()
+		soft.friction = 1.0
+		soft.bounce = 0.2
+		body.physics_material_override = soft
+		var cs := CollisionShape3D.new()
+		cs.shape = _steak_shape
+		body.add_child(cs)
+		var card := MeshInstance3D.new()
+		card.mesh = _steak_quad
+		card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		body.add_child(card)
+		add_child(body)
+		body.global_position = at + Vector3(_rng.randf_range(-0.2, 0.2), _rng.randf_range(0.0, 0.3), _rng.randf_range(-0.2, 0.2))
+		var side := normal * (1.0 if _rng.randf() < 0.5 else -1.0)
+		body.linear_velocity = side * _rng.randf_range(0.8, 2.4) + travel.normalized() * _rng.randf_range(-0.6, 1.6) + Vector3.UP * _rng.randf_range(2.0, 4.0)
+		_steaks.append([body, 0.0])
+	while _steaks.size() > 60:
+		(_steaks.pop_front()[0] as Node).queue_free()
 
 
 func _exit_tree() -> void:
