@@ -692,6 +692,10 @@ func _fly_blasts(delta: float) -> void:
 		var hit := space.intersect_ray(q) if space != null else {}
 		b[2] = float(b[2]) - delta
 		if not hit.is_empty() or float(b[2]) <= 0.0:
+			# A cow in the beam's way is burst (SCRIPT_cow_slicing.gd).
+			var slicing := get_node_or_null(^"../CowSlicing")
+			if not hit.is_empty() and slicing != null:
+				slicing.call(&"burst", hit["collider"], hit["position"], (b[1] as Vector3).normalized())
 			_burst(hit.get("position", to), not hit.is_empty(), (b[1] as Vector3).normalized())
 			node.queue_free()
 			_blasts.remove_at(i)

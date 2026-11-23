@@ -35,6 +35,8 @@ extends Node3D
 @export var slow := 0.28
 @export var slow_for := 0.4
 @export var max_pieces := 70
+## How many times over a cow struck by the blade's beam is cut (4: sixteen chunks).
+@export var burst_cuts := 4
 ## Cuts of beef a single cut throws out (until the cow has given `beef_per_cow`).
 @export var steaks_per_cut := Vector2i(2, 3)
 ## Seconds a chunk lies before it goes into the ground, and how long that takes.
@@ -211,6 +213,88 @@ func slice(from: Vector3, dir: Vector3, travel: Vector3) -> bool:
 	while _pieces.size() > max_pieces:
 		((_pieces.pop_front() as Dictionary)["body"] as Node).queue_free()
 	return true
+
+
+# ------------------------------------------------------------------ the blade's beam
+
+## THE BEAM THROWN OFF A CHARGED BLADE DOES NOT CUT A COW, IT BURSTS IT. `struck`
+## is what the beam landed on (a cow, or a piece of one), `at` where, `heading`
+## the way the beam was going. The cow is cut along a dozen planes at once into
+## a heap of small chunks, each thrown out hard from the middle and on the way
+## the beam was going, in a ball of fire with its light, a cloud of gobbets and
+## drops, and all the beef it had left. True if there was a cow there.
+func burst(struck: Object, at: Vector3, heading: Vector3) -> bool:
+	if struck == null:
+		return false
+	var piece := {}
+	if struck.has_meta(&"cow_piece"):
+		for p in _pieces:
+			if p["body"] == struck:
+				piece = p
+		if piece.is_empty():
+			return false
+		_pieces.erase(piece)
+	elif _herds != null and struck.has_meta(&"cow"):
+		var found := _herds.cow_of(struck)
+		if found.is_empty():
+			return false
+		piece = _whole(_herds.butcher(found, at - heading * 3.0))
+	else:
+		return false
+	var body: RigidBody3D = piece["body"]
+	var where := body.global_transform
+	var middle := where.origin
+	# Cut and cut again: every part in two by a plane through its own middle, at
+	# whatever angle, `burst_cuts` times over.
+	var parts: Array = [{"skin": piece["skin"], "meat": piece["meat"]}]
+	for round_ in burst_cuts:
+		var next: Array = []
+		for part in parts:
+			var box := _box_of(part)
+			var across := maxf(box.size.x, maxf(box.size.y, box.size.z))
+			var normal := Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), _rng.randf_range(-1, 1)).normalized()
+			var through := box.get_center() + box.size * Vector3(_rng.randf_range(-0.15, 0.15), _rng.randf_range(-0.15, 0.15), _rng.randf_range(-0.15, 0.15))
+			var halves := _cut({"skin": part["skin"], "meat": part["meat"], "across": across}, Plane(normal, through))
+			if halves.is_empty():
+				next.append(part)
+			else:
+				next.append_array(halves)
+		parts = next
+	body.queue_free()
+	var away := heading.normalized()
+	for part in parts:
+		var made := _body(part, where, int(piece["cow"]), int(piece["cuts"]) + burst_cuts, piece["material"])
+		var chunk: RigidBody3D = made["body"]
+		var out := (chunk.global_position - middle)
+		out = out.normalized() if out.length() > 0.02 else Vector3.UP
+		chunk.linear_velocity = out * _rng.randf_range(6.0, 11.0) + away * _rng.randf_range(2.0, 5.0) + Vector3.UP * _rng.randf_range(2.5, 6.5)
+		chunk.angular_velocity = Vector3(_rng.randf_range(-9, 9), _rng.randf_range(-9, 9), _rng.randf_range(-9, 9))
+		_pieces.append(made)
+	# Fire, and its light (the effects library's small explosion), and the gore.
+	Fx.spawn(self, "explosion_small", to_local(middle - Vector3(0, 0.6, 0)), 0.9)
+	for n in 4:
+		_spray(middle + Vector3(_rng.randf_range(-0.4, 0.4), _rng.randf_range(-0.2, 0.5), _rng.randf_range(-0.4, 0.4)),
+				(away + Vector3(_rng.randf_range(-1, 1), _rng.randf_range(0.0, 1.0), _rng.randf_range(-1, 1))).normalized())
+	var cow_no := int(piece["cow"])
+	var gives := beef_per_cow - int(_given.get(cow_no, 0))
+	if gives > 0:
+		_given[cow_no] = beef_per_cow
+		_drop_steaks(middle, away.cross(Vector3.UP).normalized(), away, gives)
+	_hold_time()
+	while _pieces.size() > max_pieces:
+		((_pieces.pop_front() as Dictionary)["body"] as Node).queue_free()
+	return true
+
+
+func _box_of(part: Dictionary) -> AABB:
+	var verts: PackedVector3Array = part["skin"][0]
+	var meat: PackedVector3Array = part["meat"][0]
+	var box := AABB(verts[0] if not verts.is_empty() else meat[0], Vector3.ZERO)
+	for p in verts:
+		box = box.expand(p)
+	for p in meat:
+		box = box.expand(p)
+	return box
 
 
 ## Time slows for a breath at a cut; a run of cuts keeps it slow.

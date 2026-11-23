@@ -40,6 +40,17 @@ func _physics_process(_dt: float) -> bool:
 		var cut := _slicing.slice(at + Vector3(0, 0, 3.0), Vector3(0, 0, -1), Vector3(1, 0.3, 0))
 		print("again:   slice %s, %d -> %d pieces" % [cut, before, _slicing._pieces.size()])
 		ok = ok and cut and _slicing._pieces.size() == before + 1
+	# The beam: a piece struck by it goes to a heap of small chunks, all moving fast.
+	var target: Dictionary = _slicing._pieces[0]
+	var before2 := _slicing._pieces.size()
+	(target["body"] as RigidBody3D).freeze = false
+	var burst := _slicing.burst(target["body"], (target["body"] as Node3D).global_position, Vector3(0, 0, -1))
+	var slowest := 1e9
+	for piece in _slicing._pieces.slice(before2 - 1):
+		slowest = minf(slowest, (piece["body"] as RigidBody3D).linear_velocity.length())
+	print("again: beam %s, %d -> %d pieces, the slowest new chunk leaving at %.1f m/s, %d cuts of beef thrown" % [burst, before2,
+			_slicing._pieces.size(), slowest, _slicing._steaks.size()])
+	ok = ok and burst and _slicing._pieces.size() >= before2 + 5 and slowest > 2.0
 	Engine.time_scale = 1.0
 	print("again: ok" if ok else "again: FAILED")
 	quit(0 if ok else 1)
