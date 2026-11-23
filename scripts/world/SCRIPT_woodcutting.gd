@@ -205,41 +205,90 @@ func _pieces(kind: int) -> Dictionary:
 					var into: ArrayMesh = out[piece[0]]
 					into.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, piece[1], [], {}, format)
 					into.surface_set_material(into.get_surface_count() - 1, mesh.surface_get_material(surface))
-			if surface != 0:
-				continue
-			# The band, of bark only: between the two levels, then halved.
+			# The band between the two levels.
 			var band := _saw(arrays, Plane(Vector3.UP, Vector3(0, BAND_LOW, 0)), unused)
 			if band.is_empty():
 				continue
 			band = _saw(band, Plane(Vector3.DOWN, Vector3(0, BAND_HIGH, 0)), unused)
 			if band.is_empty():
 				continue
-			var ring := PackedVector3Array()
-			out["low"] = _saw(band, Plane(Vector3.DOWN, Vector3(0, mid_y, 0)), ring)
-			out["high"] = _saw(band, Plane(Vector3.UP, Vector3(0, mid_y, 0)), unused)
+			if surface != 0:
+				# Needles hanging in the band are not cut either (they used to be left
+				# out altogether, and a low bough lost a slice out of its middle): they
+				# stay whole, with the tree above.
+				var crown: ArrayMesh = out["top"]
+				crown.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, band, [], {}, format)
+				crown.surface_set_material(crown.get_surface_count() - 1, mesh.surface_get_material(surface))
+				continue
 			# The trunk at the middle of the cut: the crossings nearest the axis (a
 			# low branch crosses the level too, far out), their middle, and how far
 			# out the bark stands from it at most.
+			var ring := PackedVector3Array()
+			_saw(band, Plane(Vector3.DOWN, Vector3(0, mid_y, 0)), ring)
+			var mid := Vector3.ZERO
+			var girth := 0.03
 			if ring.size() >= 3:
 				var dists: Array = []
 				for q in ring:
 					dists.append(Vector2(q.x, q.z).length())
 				dists.sort()
 				var near := float(dists[dists.size() / 4]) * 1.8 + 0.02
-				var mid := Vector3.ZERO
 				var count := 0
 				for q in ring:
 					if Vector2(q.x, q.z).length() <= near:
 						mid += q
 						count += 1
 				mid /= float(maxi(count, 1))
-				var girth := 0.03
 				for q in ring:
 					if Vector2(q.x, q.z).length() <= near:
 						girth = maxf(girth, Vector2(q.x - mid.x, q.z - mid.z).length())
 				out["centre"] = Vector3(mid.x, mid_y, mid.z)
 				out["girth"] = girth
+			# ONLY THE TRUNK IS CUT INTO. A short tree has boughs as low as the axe
+			# works, and they are bark too: carved with the trunk, a bough was sliced
+			# open in mid air with rings on its end. What of the band is not trunk (any
+			# triangle with a corner further from the trunk's middle than its bark
+			# stands) is left whole and goes with the tree above, to fall with it.
+			var parts := _trunk_and_boughs(band, Vector2(mid.x, mid.z), girth * 1.3 + 0.03)
+			if not (parts[1] as Array).is_empty():
+				var top: ArrayMesh = out["top"]
+				top.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, parts[1], [], {}, format)
+				top.surface_set_material(top.get_surface_count() - 1, mesh.surface_get_material(surface))
+			var trunk: Array = parts[0]
+			if not trunk.is_empty():
+				out["low"] = _saw(trunk, Plane(Vector3.DOWN, Vector3(0, mid_y, 0)), unused)
+				out["high"] = _saw(trunk, Plane(Vector3.UP, Vector3(0, mid_y, 0)), unused)
 	_sawn[kind] = out
+	return out
+
+
+## A surface's arrays as two: the triangles all of whose corners are within
+## `reach` of the upright line through `axis` (the trunk), and the rest (boughs).
+## The corners are shared; only the lists of triangles differ. Either may be [].
+func _trunk_and_boughs(arrays: Array, axis: Vector2, reach: float) -> Array:
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var index: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var near := PackedInt32Array()
+	var far := PackedInt32Array()
+	for t in range(0, index.size(), 3):
+		var inside := true
+		for k in 3:
+			var p := verts[index[t + k]]
+			if Vector2(p.x, p.z).distance_to(axis) > reach:
+				inside = false
+		for k in 3:
+			if inside:
+				near.append(index[t + k])
+			else:
+				far.append(index[t + k])
+	var out: Array = []
+	for list in [near, far]:
+		if (list as PackedInt32Array).is_empty():
+			out.append([])
+			continue
+		var part := arrays.duplicate()
+		part[Mesh.ARRAY_INDEX] = list
+		out.append(part)
 	return out
 
 
