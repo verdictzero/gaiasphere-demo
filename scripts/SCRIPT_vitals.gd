@@ -334,10 +334,9 @@ func _draw_view() -> void:
 	var wide := (cell * 9.0 - 10.0 * k - gap * 2.0) / 3.0
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
 	if debug:
-		var note := "GOD MODE   nothing hurts, building is free   (F3)"
-		var nfs := int(17.0 * k)
-		var nw := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x
-		_view.draw_string(_font, Vector2((_view.size.x - nw) * 0.5, 34.0 * k), note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs, Color(1.0, 0.85, 0.3, 0.95))
+		# Small, in the bottom left corner, just over the mark there.
+		_view.draw_string(_font, Vector2(24.0 * k, _view.size.y - 176.0 * k), "GOD MODE", HORIZONTAL_ALIGNMENT_LEFT, -1, int(15.0 * k),
+				Color(1.0, 0.85, 0.3, 0.9))
 	# AIR: a bar of its own over the other three, there only while it matters
 	# (under water, or still getting a breath back).
 	if under or oxygen < 99.5:
