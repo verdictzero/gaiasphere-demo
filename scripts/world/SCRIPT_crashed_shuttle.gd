@@ -11,10 +11,11 @@ extends Node3D
 # behind the seats, looking out of the door and up the slope to the light. You
 # come to in the water: swim out and up.
 #
-# WHERE: on the shore side of the mere (the islet is the other way), at a
-# bearing looked for round it where the bed is deep enough to cover the hull,
-# sloping but not a cliff, and well away from the causeway. The hull lies along
-# the fall of the ground, pitched to it, rolled a little to one side.
+# WHERE: on the shore side of the mere (the islet is the other way), at the foot
+# of the shelf that falls from the shore to the bed, at a bearing looked for
+# round it well away from the causeway. The hull lies along the fall of the
+# ground, its tail up the shelf and its nose out on the bed, rolled a little to
+# one side.
 #
 # The hull is solid (its own mesh, both faces), so its floor can be stood on and
 # its walls stop you; what grew or lay on the bed under it is cleared.
@@ -25,7 +26,7 @@ extends Node3D
 ## The model's size against how it was made (its aisle is 1.8 m high as made).
 @export var size := 1.25
 ## Metres of water wanted over the bed where it lies.
-@export var depth := Vector2(7.0, 9.5)
+@export var depth := Vector2(9.8, 10.9)
 ## Degrees it lies over to one side.
 @export var roll := 7.0
 ## How many places on the hull leak air.
@@ -91,10 +92,10 @@ func _ready() -> void:
 			var gz := field.height_at(p.x, p.y + 2.0, h) - field.height_at(p.x, p.y - 2.0, h)
 			var grade := Vector2(gx, gz) / 4.0
 			var angle := rad_to_deg(atan(grade.length()))
-			if angle < 9.0 or angle > 26.0:
+			if angle < 8.0 or angle > 30.0:
 				continue
-			# Liked best: about 17 degrees, and opposite the causeway.
-			var score := absf(angle - 17.0) + absf(absf(angle_difference(th, causeway)) - PI) * 6.0
+			# Liked best: about 16 degrees, and opposite the causeway.
+			var score := absf(angle - 16.0) + absf(absf(angle_difference(th, causeway)) - PI) * 6.0
 			if score < best:
 				best = score
 				at = p
@@ -104,6 +105,14 @@ func _ready() -> void:
 		push_warning("crashed_shuttle: nowhere on the bed suits")
 		return
 	var ground := field.height_at(at.x, at.y, 0.0)
+	# THE HULL IS LONGER THAN THE SLOPE IS EVEN: the shelf steepens above it and
+	# flattens into the bed below. It lies on the two ends of itself, tail up the
+	# shelf and nose out on the flat, at whatever pitch that comes to.
+	var reach := 4.4 * size
+	var tail := field.height_at(at.x - fall.x * reach, at.y - fall.y * reach, ground)
+	var nose := field.height_at(at.x + fall.x * reach, at.y + fall.y * reach, ground)
+	steep = atan2(tail - nose, reach * 2.0)
+	ground = maxf((tail + nose) * 0.5, ground - 0.4)
 	# Its nose (the model's +z) down the fall of the ground and along it; its
 	# belly on the bed, a hand's depth into the sand.
 	var along := Vector3(fall.x * cos(steep), -sin(steep), fall.y * cos(steep)).normalized()
