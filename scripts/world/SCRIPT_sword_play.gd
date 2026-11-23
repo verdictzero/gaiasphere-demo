@@ -57,7 +57,7 @@ const FOOD := {
 	"beef": ["beef_food", "res://assets/ui/item_beef.png"],
 }
 # The katana model: metres per unit, and how far up from its middle (its own units) the hand closes.
-const KATANA_SCALE := 0.0038
+const KATANA_SCALE := 0.0046
 const KATANA_GRIP := -44.0
 const AXE_CHOP := [Vector3(42.0, -14.0, -30.0), Vector3(-96.0, 12.0, 34.0)]
 const CUTS := [
@@ -374,7 +374,7 @@ func _ensure_hand() -> void:
 	_katana.visible = false
 	_katana.position = Vector3(-0.03, 0.0, 0.12)
 	# Edge-on to the eye a blade is a line: turned so its flat shows, edge still leading.
-	_katana.rotation_degrees = Vector3(0.0, -58.0, 0.0)
+	_katana.rotation_degrees = Vector3(-12.0, -72.0, 24.0)
 	_pivot.add_child(_katana)
 	if _bag != null and _bag.count_of("katana") == 0:
 		_bag.add("katana", 1)
