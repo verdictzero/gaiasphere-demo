@@ -1402,8 +1402,28 @@ func _close_level(mmis: Array) -> void:
 ## hand-over band, so nothing is ever caught at the wrong level): thousands of
 ## bushes are too many to sort between two frames on a phone. The main thread
 ## only hands the finished buffers to the MultiMeshes.
+##
+## A SORTING IS OUT OF DATE BY THE TIME IT IS SHOWN: the camera has gone on while
+## the thread worked (and on a phone, with the pool busy laying terrain, it can
+## wait its turn for a good part of a second). A plant handed to exactly the
+## levels its distance called for when the sorting began is then at none of them:
+## past where the one it is in lets go, and not yet in the next. It vanishes, and
+## comes back at the next sorting, which is what a ring of trees blinking out
+## ahead of a running player was. So each plant is given to every level it could
+## be wanted at within `slack` metres either way of where it stood, the slack
+## growing with how fast the camera is going; the shader shows it at the right
+## one (and folds it away at the others), whichever the camera has reached. And
+## a layer with few plants in range (the trees, the boulders) is not sent to a
+## thread at all: it is sorted there and then, and is never out of date.
 func _near_update(li: int, at: Vector3, radius: float) -> void:
 	var layer := _layers[li]
+	# How fast the camera is going, let down slowly so one still frame does not forget a sprint.
+	var now := Time.get_ticks_msec()
+	var since := maxf(float(now - int(layer.get("seen_ms", now))) / 1000.0, 0.001)
+	var was: Vector3 = layer.get("seen_at", at)
+	layer["seen_ms"] = now
+	layer["seen_at"] = at
+	layer["speed"] = maxf(float(layer.get("speed", 0.0)) * 0.97, minf(was.distance_to(at) / since, 80.0))
 	# A sorting that has come back: put it on screen.
 	_near_mutex.lock()
 	var done: Variant = _near_done.get(li)
@@ -1412,6 +1432,9 @@ func _near_update(li: int, at: Vector3, radius: float) -> void:
 	if done != null:
 		_near_show(layer, done)
 		layer["sorting"] = false
+		if _near_tasks.has(li):
+			WorkerThreadPool.wait_for_task_completion(_near_tasks[li])       # (done already: this lets the pool forget it)
+			_near_tasks.erase(li)
 	if layer.get("sorting", false):
 		return
 	var dists: Array = layer["dists"]
@@ -1423,7 +1446,6 @@ func _near_update(li: int, at: Vector3, radius: float) -> void:
 		return
 	layer["rebin"] = false
 	layer["binned_at"] = at
-	layer["sorting"] = true
 	var los := PackedFloat32Array()
 	var his := PackedFloat32Array()
 	for lod in dists.size() + 1:
@@ -1432,16 +1454,37 @@ func _near_update(li: int, at: Vector3, radius: float) -> void:
 	# The tiles in range, as they are now. (A tile's buffers are replaced, never
 	# changed in place, so the thread can read these while the game goes on.)
 	var snapshot: Array = []
+	var plants := 0
 	if radius > 0.0:
 		for key in (layer["tiles"] as Dictionary):
-			snapshot.append((layer["tiles"][key]["bufs"] as Array).duplicate())
+			var bufs: Array = layer["tiles"][key]["bufs"]
+			snapshot.append(bufs.duplicate())
+			for buf in bufs:
+				plants += (buf as PackedFloat32Array).size()
+	plants /= int(layer["stride"])
+	# Half a second's travel of slack, and the step it is sorted at, and a little.
+	var slack := clampf(float(layer["speed"]) * 0.5, 0.0, 16.0) + step + 0.5
+	if plants <= NEAR_AT_ONCE:
+		_near_sort(li, snapshot, at, los, his, int(layer["stride"]), (layer["kinds"] as Array).size(), step + 0.5)
+		_near_mutex.lock()
+		var sorted: Variant = _near_done.get(li)
+		_near_done.erase(li)
+		_near_mutex.unlock()
+		if sorted != null:
+			_near_show(layer, sorted)
+		return
+	layer["sorting"] = true
 	var task := WorkerThreadPool.add_task(
-			_near_sort.bind(li, snapshot, at, los, his, int(layer["stride"]), (layer["kinds"] as Array).size()), false, "flora levels")
+			_near_sort.bind(li, snapshot, at, los, his, int(layer["stride"]), (layer["kinds"] as Array).size(), slack), true, "flora levels")
 	_near_tasks[li] = task
 
 
+## Fewer plants in range than this are sorted where they stand, not on a thread.
+const NEAR_AT_ONCE := 1500
+
+
 func _near_sort(li: int, snapshot: Array, at: Vector3, los: PackedFloat32Array, his: PackedFloat32Array,
-		stride: int, kinds: int) -> void:
+		stride: int, kinds: int, slack: float) -> void:
 	var levels := los.size()
 	var packed: Array = []
 	for k in kinds:
@@ -1458,9 +1501,9 @@ func _near_sort(li: int, snapshot: Array, at: Vector3, los: PackedFloat32Array, 
 			for i in range(0, buf.size(), stride):
 				var d := Vector3(buf[i + 3] - at.x, buf[i + 7] - at.y, buf[i + 11] - at.z).length()
 				for lod in levels:
-					if d > his[lod] * (1.0 + LOD_BAND):
+					if d > his[lod] * (1.0 + LOD_BAND) + slack:
 						continue
-					if lod > 0 and d < los[lod] * (1.0 - LOD_BAND):
+					if lod > 0 and d < los[lod] * (1.0 - LOD_BAND) - slack:
 						break
 					# (Taken out of the list while it grows and put back: a packed array
 					# reached through a list is a copy, and appending to one that is
