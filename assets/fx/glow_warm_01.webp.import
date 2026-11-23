@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwpn7qxun4oqo"
-path.s3tc="res://.godot/imported/glow_warm_01.webp-7670f345714beca75c2680a444b4680c.s3tc.ctex"
-path.etc2="res://.godot/imported/glow_warm_01.webp-7670f345714beca75c2680a444b4680c.etc2.ctex"
+path="res://.godot/imported/glow_warm_01.webp-7670f345714beca75c2680a444b4680c.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/glow_warm_01.webp"
-dest_files=["res://.godot/imported/glow_warm_01.webp-7670f345714beca75c2680a444b4680c.s3tc.ctex", "res://.godot/imported/glow_warm_01.webp-7670f345714beca75c2680a444b4680c.etc2.ctex"]
+dest_files=["res://.godot/imported/glow_warm_01.webp-7670f345714beca75c2680a444b4680c.ctex"]
 
 [params]
 

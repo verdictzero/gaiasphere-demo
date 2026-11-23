@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bcrpg24ji08ci"
-path.s3tc="res://.godot/imported/smoke_burst_06.webp-fe6c8fca6441ba83dce71153428ccf9d.s3tc.ctex"
-path.etc2="res://.godot/imported/smoke_burst_06.webp-fe6c8fca6441ba83dce71153428ccf9d.etc2.ctex"
+path="res://.godot/imported/smoke_burst_06.webp-fe6c8fca6441ba83dce71153428ccf9d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/smoke_burst_06.webp"
-dest_files=["res://.godot/imported/smoke_burst_06.webp-fe6c8fca6441ba83dce71153428ccf9d.s3tc.ctex", "res://.godot/imported/smoke_burst_06.webp-fe6c8fca6441ba83dce71153428ccf9d.etc2.ctex"]
+dest_files=["res://.godot/imported/smoke_burst_06.webp-fe6c8fca6441ba83dce71153428ccf9d.ctex"]
 
 [params]
 

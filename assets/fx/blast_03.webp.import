@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dqu0vt7oawmb8"
-path.s3tc="res://.godot/imported/blast_03.webp-53f70c904d2c81dd47147992974573ff.s3tc.ctex"
-path.etc2="res://.godot/imported/blast_03.webp-53f70c904d2c81dd47147992974573ff.etc2.ctex"
+path="res://.godot/imported/blast_03.webp-53f70c904d2c81dd47147992974573ff.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/blast_03.webp"
-dest_files=["res://.godot/imported/blast_03.webp-53f70c904d2c81dd47147992974573ff.s3tc.ctex", "res://.godot/imported/blast_03.webp-53f70c904d2c81dd47147992974573ff.etc2.ctex"]
+dest_files=["res://.godot/imported/blast_03.webp-53f70c904d2c81dd47147992974573ff.ctex"]
 
 [params]
 

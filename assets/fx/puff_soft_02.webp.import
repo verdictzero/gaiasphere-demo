@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://0txk6qwmscnr"
-path.s3tc="res://.godot/imported/puff_soft_02.webp-6807644aea34a4ab55ab0344f27d414d.s3tc.ctex"
-path.etc2="res://.godot/imported/puff_soft_02.webp-6807644aea34a4ab55ab0344f27d414d.etc2.ctex"
+path="res://.godot/imported/puff_soft_02.webp-6807644aea34a4ab55ab0344f27d414d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/puff_soft_02.webp"
-dest_files=["res://.godot/imported/puff_soft_02.webp-6807644aea34a4ab55ab0344f27d414d.s3tc.ctex", "res://.godot/imported/puff_soft_02.webp-6807644aea34a4ab55ab0344f27d414d.etc2.ctex"]
+dest_files=["res://.godot/imported/puff_soft_02.webp-6807644aea34a4ab55ab0344f27d414d.ctex"]
 
 [params]
 

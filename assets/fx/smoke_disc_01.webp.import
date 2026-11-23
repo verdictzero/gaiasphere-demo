@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dkcy48hy5wayr"
-path.s3tc="res://.godot/imported/smoke_disc_01.webp-e82dab4b3b7bb2313c320f94db4e8303.s3tc.ctex"
-path.etc2="res://.godot/imported/smoke_disc_01.webp-e82dab4b3b7bb2313c320f94db4e8303.etc2.ctex"
+path="res://.godot/imported/smoke_disc_01.webp-e82dab4b3b7bb2313c320f94db4e8303.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/smoke_disc_01.webp"
-dest_files=["res://.godot/imported/smoke_disc_01.webp-e82dab4b3b7bb2313c320f94db4e8303.s3tc.ctex", "res://.godot/imported/smoke_disc_01.webp-e82dab4b3b7bb2313c320f94db4e8303.etc2.ctex"]
+dest_files=["res://.godot/imported/smoke_disc_01.webp-e82dab4b3b7bb2313c320f94db4e8303.ctex"]
 
 [params]
 

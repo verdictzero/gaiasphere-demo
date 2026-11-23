@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c84ohuretejer"
-path.s3tc="res://.godot/imported/smoke_roll_04.webp-d5c9649604e1cf60d5e2957ef466a464.s3tc.ctex"
-path.etc2="res://.godot/imported/smoke_roll_04.webp-d5c9649604e1cf60d5e2957ef466a464.etc2.ctex"
+path="res://.godot/imported/smoke_roll_04.webp-d5c9649604e1cf60d5e2957ef466a464.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/smoke_roll_04.webp"
-dest_files=["res://.godot/imported/smoke_roll_04.webp-d5c9649604e1cf60d5e2957ef466a464.s3tc.ctex", "res://.godot/imported/smoke_roll_04.webp-d5c9649604e1cf60d5e2957ef466a464.etc2.ctex"]
+dest_files=["res://.godot/imported/smoke_roll_04.webp-d5c9649604e1cf60d5e2957ef466a464.ctex"]
 
 [params]
 

@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6jedtwnsxtje"
-path.s3tc="res://.godot/imported/spark_burst_01.webp-d56a417e0900e88c33fde8580548862d.s3tc.ctex"
-path.etc2="res://.godot/imported/spark_burst_01.webp-d56a417e0900e88c33fde8580548862d.etc2.ctex"
+path="res://.godot/imported/spark_burst_01.webp-d56a417e0900e88c33fde8580548862d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/spark_burst_01.webp"
-dest_files=["res://.godot/imported/spark_burst_01.webp-d56a417e0900e88c33fde8580548862d.s3tc.ctex", "res://.godot/imported/spark_burst_01.webp-d56a417e0900e88c33fde8580548862d.etc2.ctex"]
+dest_files=["res://.godot/imported/spark_burst_01.webp-d56a417e0900e88c33fde8580548862d.ctex"]
 
 [params]
 

@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bt2jrmu7buldh"
-path.s3tc="res://.godot/imported/wisp_flame_04.webp-e7a992a824e98cd8f5668ed3ca71884c.s3tc.ctex"
-path.etc2="res://.godot/imported/wisp_flame_04.webp-e7a992a824e98cd8f5668ed3ca71884c.etc2.ctex"
+path="res://.godot/imported/wisp_flame_04.webp-e7a992a824e98cd8f5668ed3ca71884c.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/wisp_flame_04.webp"
-dest_files=["res://.godot/imported/wisp_flame_04.webp-e7a992a824e98cd8f5668ed3ca71884c.s3tc.ctex", "res://.godot/imported/wisp_flame_04.webp-e7a992a824e98cd8f5668ed3ca71884c.etc2.ctex"]
+dest_files=["res://.godot/imported/wisp_flame_04.webp-e7a992a824e98cd8f5668ed3ca71884c.ctex"]
 
 [params]
 

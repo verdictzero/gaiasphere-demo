@@ -29,6 +29,16 @@ func _initialize() -> void:
 		bush.position = Vector3(-1.6 + 3.2 * i, 0, 0)
 		bush.rotation.y = PI * 0.5 * i
 		root.add_child(bush)
+	# A torch held at the eye, as the player's is: what shows the cards up worst.
+	var torch := SpotLight3D.new()
+	torch.light_energy = 12.0
+	torch.spot_range = 20.0
+	torch.spot_angle = 38.0
+	torch.position = Vector3(0.3, 1.5, 6.5)
+	root.add_child(torch)
+	torch.look_at(Vector3(0, 1.0, 0))
+	env.ambient_light_energy = 0.12
+	sun.light_energy = 0.05
 	var cam := Camera3D.new()
 	cam.fov = 40.0
 	root.add_child(cam)

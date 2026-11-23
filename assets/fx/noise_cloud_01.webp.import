@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cixu5cvtypamm"
-path.s3tc="res://.godot/imported/noise_cloud_01.webp-26cd7d378921bde39dbaefbc7be14df8.s3tc.ctex"
-path.etc2="res://.godot/imported/noise_cloud_01.webp-26cd7d378921bde39dbaefbc7be14df8.etc2.ctex"
+path="res://.godot/imported/noise_cloud_01.webp-26cd7d378921bde39dbaefbc7be14df8.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/noise_cloud_01.webp"
-dest_files=["res://.godot/imported/noise_cloud_01.webp-26cd7d378921bde39dbaefbc7be14df8.s3tc.ctex", "res://.godot/imported/noise_cloud_01.webp-26cd7d378921bde39dbaefbc7be14df8.etc2.ctex"]
+dest_files=["res://.godot/imported/noise_cloud_01.webp-26cd7d378921bde39dbaefbc7be14df8.ctex"]
 
 [params]
 

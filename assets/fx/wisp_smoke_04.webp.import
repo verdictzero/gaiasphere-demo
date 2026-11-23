@@ -3,17 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cx4xqq0u748cl"
-path.s3tc="res://.godot/imported/wisp_smoke_04.webp-60c5c99ac61f8ccc89e650ee8dc5c0e4.s3tc.ctex"
-path.etc2="res://.godot/imported/wisp_smoke_04.webp-60c5c99ac61f8ccc89e650ee8dc5c0e4.etc2.ctex"
+path="res://.godot/imported/wisp_smoke_04.webp-60c5c99ac61f8ccc89e650ee8dc5c0e4.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/fx/wisp_smoke_04.webp"
-dest_files=["res://.godot/imported/wisp_smoke_04.webp-60c5c99ac61f8ccc89e650ee8dc5c0e4.s3tc.ctex", "res://.godot/imported/wisp_smoke_04.webp-60c5c99ac61f8ccc89e650ee8dc5c0e4.etc2.ctex"]
+dest_files=["res://.godot/imported/wisp_smoke_04.webp-60c5c99ac61f8ccc89e650ee8dc5c0e4.ctex"]
 
 [params]
 
