@@ -125,6 +125,7 @@ func _place(start: Vector3) -> void:
 			model.scale = Vector3.ONE * size * _rng.randf_range(0.88, 1.12)
 			holder.add_child(model)
 			var body := AnimatableBody3D.new()
+			body.set_meta(&"cow", holder)
 			body.sync_to_physics = false
 			var cs := CollisionShape3D.new()
 			var box := BoxShape3D.new()
@@ -150,6 +151,38 @@ func _place(start: Vector3) -> void:
 			(herd["cows"] as Array).append(cow)
 		_herds.append(herd)
 	print("[cows] %d herds, %d cows" % [_herds.size(), _count()])
+
+
+# ------------------------------------------------------------------ butchery
+
+## The cow whose body a swing landed on (`body` is what the ray struck), or {}.
+func cow_of(body: Object) -> Dictionary:
+	if body == null or not body.has_meta(&"cow"):
+		return {}
+	var node: Node3D = body.get_meta(&"cow")
+	for herd in _herds:
+		for cow in herd["cows"]:
+			if cow["node"] == node:
+				return {"herd": herd, "cow": cow}
+	return {}
+
+
+## Take a cow out of its herd for good (SCRIPT_cow_slicing.gd is about to cut it
+## up): returns its skin as it hangs (the mesh's arrays, its material, and where
+## it is), and frees the cow. The rest of the herd runs from `from`.
+func butcher(found: Dictionary, from: Vector3) -> Dictionary:
+	var herd: Dictionary = found["herd"]
+	var cow: Dictionary = found["cow"]
+	var node: Node3D = cow["node"]
+	var mi: MeshInstance3D = node.find_children("*", "MeshInstance3D", true, false)[0]
+	var out := {"arrays": mi.mesh.surface_get_arrays(0), "material": mi.mesh.surface_get_material(0),
+		"transform": mi.global_transform}
+	(herd["cows"] as Array).erase(cow)
+	herd["lost"] = int(herd.get("lost", 0)) + 1
+	node.queue_free()
+	for other in herd["cows"]:
+		_flee(other, Vector2(from.x, from.z))
+	return out
 
 
 func _count() -> int:

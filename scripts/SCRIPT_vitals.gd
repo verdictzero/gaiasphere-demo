@@ -57,6 +57,8 @@ extends CanvasLayer
 @export var food_per_health := 0.06
 ## What one berry is worth.
 @export var berry_food := 14.0
+## And one cut of beef (raw: there is no fire to cook it on yet).
+@export var beef_food := 32.0
 
 const PANEL := Color(0.06, 0.07, 0.085, 0.62)
 const EDGE := Color(1, 1, 1, 0.14)

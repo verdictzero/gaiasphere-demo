@@ -51,6 +51,11 @@ const PICK_SCALE := 0.023
 const PICK_GRIP := Vector3(0.0, 0.0, 21.0)
 # The pickaxe's one stroke: straight up over the head, straight down.
 const PICK_BLOW := [Vector3(62.0, -4.0, -10.0), Vector3(-92.0, 4.0, 10.0)]
+## What can be eaten out of the hand: the vitals' name for what it is worth, and its picture.
+const FOOD := {
+	"berry": ["berry_food", "res://assets/berry_bush/berry_cluster.png"],
+	"beef": ["beef_food", "res://assets/ui/item_beef.png"],
+}
 const AXE_CHOP := [Vector3(42.0, -14.0, -30.0), Vector3(-96.0, 12.0, 34.0)]
 const CUTS := [
 	[Vector3(38.0, 0.0, -34.0), Vector3(-118.0, 0.0, 38.0), -62.0],     # down, right to left
@@ -173,7 +178,7 @@ func _process(delta: float) -> void:
 	var now := ""
 	if _bag != null and _bag.slots[_bag.selected] != null:
 		now = String(_bag.slots[_bag.selected][0])
-	if now != "axe" and now != "pickaxe" and now != "berry" and not (now == "sword" and held):
+	if now != "axe" and now != "pickaxe" and not FOOD.has(now) and not (now == "sword" and held):
 		now = ""
 	if now != tool:
 		tool = now
@@ -187,10 +192,14 @@ func _process(delta: float) -> void:
 		create_tween().tween_property(_pivot, "position", HAND, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_axe.visible = tool == "axe"
 	_pick.visible = tool == "pickaxe"
-	_berries.visible = tool == "berry"
+	_berries.visible = FOOD.has(tool)
+	if FOOD.has(tool) and _berries.get_meta(&"shows", "") != tool:
+		# What is held up to eat is its own picture: berries, or a cut of beef.
+		_berries.set_meta(&"shows", tool)
+		((_berries.mesh as QuadMesh).material as StandardMaterial3D).albedo_texture = load(FOOD[tool][1])
 	if held:
 		_sword.visible = tool == "sword"
-	if tool == "berry":
+	if FOOD.has(tool):
 		# Berries in the hand are for eating: one to a click.
 		_light.light_energy = 0.0
 		_motes.emitting = false
@@ -200,7 +209,7 @@ func _process(delta: float) -> void:
 			_munch = 0.38
 			var vitals := get_node_or_null(^"../Vitals")
 			if vitals != null:
-				vitals.call(&"eat", float(vitals.get("berry_food")))
+				vitals.call(&"eat", float(vitals.get(FOOD[tool][0])))
 			# Up to the mouth and back.
 			var bite := create_tween()
 			bite.tween_property(_pivot, "position", HAND + Vector3(-0.2, 0.2, 0.3), 0.14).set_trans(Tween.TRANS_SINE)
@@ -527,6 +536,14 @@ func _bite() -> void:
 	var wood := get_node_or_null(^"../Woodcutting")
 	if wood != null and bool(wood.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
 		return
+	# A cow, or a piece of one: cut in two along the line of this swing
+	# (SCRIPT_cow_slicing.gd). The line is the one the blade was drawn across the
+	# view on: the cut's own cant for the sword, the axe's one stroke for the axe.
+	var slicing := get_node_or_null(^"../CowSlicing")
+	if slicing != null:
+		var across := _cam.global_basis * Basis(Vector3.FORWARD, deg_to_rad(_cant if tool == "sword" else -64.0)) * Vector3.RIGHT
+		if bool(slicing.call(&"slice", _cam.global_position, -_cam.global_basis.z, across)):
+			return
 	# No tree in the way: a berry bush, perhaps (SCRIPT_berry_bushes.gd).
 	var bushes := get_node_or_null(^"../BerryBushes")
 	if bushes != null:

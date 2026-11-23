@@ -26,6 +26,7 @@ const ITEMS := {
 	"sword": {"name": "Sword", "icon": "res://assets/ui/item_sword.png"},
 	"stone": {"name": "Stone", "icon": "res://assets/ui/item_stone.png"},
 	"berry": {"name": "Berries", "icon": "res://assets/ui/item_berry.png"},
+	"beef": {"name": "Raw Beef", "icon": "res://assets/ui/item_beef.png"},
 	"wall": {"name": "Plank Wall", "icon": "res://assets/ui/item_wall.png"},
 	"doorway": {"name": "Doorway and Door", "icon": "res://assets/ui/item_doorway.png"},
 	"floor": {"name": "Plank Floor", "icon": "res://assets/ui/item_floor.png"},

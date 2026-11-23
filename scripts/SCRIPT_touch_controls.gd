@@ -178,7 +178,7 @@ func _use_label() -> String:
 			return "MINE"
 		"sword":
 			return "SWING"
-		"berry":
+		"berry", "beef":
 			return "EAT"
 	return "USE"
 
