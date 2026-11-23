@@ -88,8 +88,15 @@ func _process(_dt: float) -> bool:
 			_wait = 14
 		2:
 			root.get_texture().get_image().save_png(_out.path_join("berry_2_bare.png"))
+			# The berries are lying round the bush now, to be walked up to: each is
+			# gone to in turn.
+			var lying := bushes._drops.size()
+			for entry in bushes._drops.duplicate():
+				entry[1] = 5.0
+				bushes._gather(0.0, (entry[0] as Node3D).global_position)
 			var got := bag.count_of("berry")
-			print("berries: %d in the bag; %s" % [got, "ok" if got >= bushes.berries.x else "FAILED"])
+			print("berries: %d clusters burst out of the bush, %d in the bag after walking round; %s" % [lying, got,
+					"ok" if got >= bushes.berries.x and got == lying else "FAILED"])
 			if got < bushes.berries.x:
 				quit(1)
 				return true

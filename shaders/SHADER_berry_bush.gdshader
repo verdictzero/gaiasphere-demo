@@ -12,7 +12,7 @@ uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, r
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap, repeat_disable;
 uniform vec3 tint : source_color = vec3(1.0);
 uniform vec3 backlight : source_color = vec3(0.14, 0.2, 0.05);
-uniform float roughness = 0.75;
+uniform float roughness = 1.0;
 uniform float wind_bend = 0.3;
 uniform float wind_flutter = 0.035;
 // The model's height, metres: the top of the bush swings its full share.
@@ -47,5 +47,7 @@ void fragment() {
 	ALBEDO = c.rgb * tint;
 	NORMAL_MAP = texture(normal_tex, UV).xyz;
 	ROUGHNESS = roughness;
+	METALLIC = 0.0;
+	SPECULAR = 0.0;          // leaves and berries: no shine
 	BACKLIGHT = backlight;
 }

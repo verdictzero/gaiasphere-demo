@@ -98,6 +98,13 @@ func _ready() -> void:
 	# not fall off twice.
 	_torch.light_projector = load("res://assets/ui/flashlight_cookie.png")
 	_torch.light_energy = 90.0
+	# NOT ON WHAT IS IN THE HAND. A torch held beside a blade half a metre from
+	# the eye lights it a hundred times brighter than anything it is pointed at,
+	# and the blade blooms into a white smear. Hand-held things are drawn on a
+	# layer of their own (SCRIPT_world_reflection.gd's MIRROR_LAYER) and the beam
+	# leaves that layer alone; SCRIPT_sword_play.gd gives them a small light of
+	# their own while the torch is on.
+	_torch.light_cull_mask = 0xFFFFF & ~(1 << 9)
 	_torch.spot_range = 60.0
 	_torch.spot_angle = 38.0
 	_torch.spot_angle_attenuation = 0.12

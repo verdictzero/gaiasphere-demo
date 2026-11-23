@@ -3,8 +3,8 @@ extends Node3D
 
 # BERRY BUSHES: a viburnum in leaf and hung with red berries, here and there in
 # the wood. Hit one (axe, sword, anything swung) and it is stripped: the leaves
-# and berries go up in a cloud, the bare bush is left standing, and a handful of
-# berries goes into the bag.
+# go up in a cloud, the bare bush is left standing, and its berries burst out of
+# it in clusters that lie where they fall until they are walked up to.
 #
 # THE BUSH IS TWO MODELS (assets/berry_bush): the viburnum in leaf and berry, and
 # the same bush bare. Each stands as the first until it is hit and as the second
@@ -313,6 +313,8 @@ func _process(delta: float) -> void:
 			_stale = true
 		elif _leafy_slot.has(sq) and not _stale and _leafy_mm != null:
 			_leafy_mms[int(_leafy_slot[sq][0])].set_instance_custom_data(int(_leafy_slot[sq][1]), Color(grown, 0, 0, 0))
+	if not _drops.is_empty():
+		_gather(delta, here + Vector3(0, 0.9, 0))
 	# Walked a few steps: the bushes are dealt out to their levels again.
 	if here.distance_to(_filled_at) > 2.5:
 		_stale = true
@@ -383,10 +385,85 @@ func strike(from: Vector3, dir: Vector3) -> bool:
 			_stripped[sq] = today()
 			_stale = true
 			_puff(bush.origin + Vector3(0, 1.3 * size, 0), size)
-			if _inventory != null:
-				_inventory.call(&"add", "berry", _rng.randi_range(berries.x, berries.y))
+			_scatter(bush.origin + Vector3(0, 1.2 * size, 0), size, _rng.randi_range(berries.x, berries.y), Vector3(dir.x, 0, dir.z))
 		return true
 	return false
+
+
+# ------------------------------------------------------------------ berries to pick up
+
+var _drops: Array = []        # each [body, seconds lain]
+var _drop_mat: StandardMaterial3D
+var _drop_quad: QuadMesh
+var _drop_shape: SphereShape3D
+
+
+## THE BERRIES BURST OUT OF THE BUSH: `count` clusters thrown clear of it, away
+## from whoever struck it and to all sides, to bounce and lie in the grass. Each
+## is one lot of berries for the bag, taken by walking up to it.
+func _scatter(at: Vector3, size: float, count: int, struck_from: Vector3) -> void:
+	if _drop_mat == null:
+		_drop_mat = StandardMaterial3D.new()
+		_drop_mat.albedo_texture = load("res://assets/berry_bush/berry_cluster.png")
+		_drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		_drop_mat.alpha_scissor_threshold = 0.45
+		_drop_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_drop_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		_drop_mat.roughness = 1.0
+		_drop_mat.metallic = 0.0
+		_drop_mat.metallic_specular = 0.0
+		_drop_quad = QuadMesh.new()
+		_drop_quad.size = Vector2(0.26, 0.26)
+		_drop_quad.material = _drop_mat
+		_drop_shape = SphereShape3D.new()
+		_drop_shape.radius = 0.09
+	var away := struck_from.normalized() if struck_from.length() > 0.01 else Vector3.ZERO
+	for i in count:
+		var body := RigidBody3D.new()
+		body.mass = 0.2
+		body.linear_damp = 0.4
+		body.angular_damp = 3.0
+		var soft := PhysicsMaterial.new()
+		soft.friction = 1.0
+		soft.bounce = 0.25
+		body.physics_material_override = soft
+		var cs := CollisionShape3D.new()
+		cs.shape = _drop_shape
+		body.add_child(cs)
+		var card := MeshInstance3D.new()
+		card.mesh = _drop_quad
+		card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		body.add_child(card)
+		add_child(body)
+		var out := Vector3(_rng.randf_range(-1, 1), 0, _rng.randf_range(-1, 1)).normalized()
+		body.global_position = at + out * 0.7 * size + Vector3(0, _rng.randf_range(-0.3, 0.4), 0)
+		body.linear_velocity = (out * 0.6 + away * 0.6).normalized() * _rng.randf_range(2.0, 4.2) + Vector3.UP * _rng.randf_range(2.2, 4.4)
+		_drops.append([body, 0.0])
+	while _drops.size() > 80:
+		(_drops.pop_front()[0] as Node).queue_free()
+
+
+func _gather(delta: float, here: Vector3) -> void:
+	for i in range(_drops.size() - 1, -1, -1):
+		var entry: Array = _drops[i]
+		var body: RigidBody3D = entry[0]
+		entry[1] = float(entry[1]) + delta
+		if body.global_position.y < -400.0 or float(entry[1]) > 240.0:
+			_drops.remove_at(i)
+			body.queue_free()
+			continue
+		if float(entry[1]) < 0.8 or body.global_position.distance_to(here) > 1.5:
+			continue
+		if _inventory == null or int(_inventory.call(&"add", "berry", 1)) > 0:
+			continue          # nowhere to put it
+		_drops.remove_at(i)
+		body.freeze = true
+		body.collision_layer = 0
+		body.collision_mask = 0
+		var pull := create_tween()
+		pull.tween_property(body, "global_position", here, 0.16)
+		pull.parallel().tween_property(body, "scale", Vector3.ONE * 0.2, 0.16)
+		pull.tween_callback(body.queue_free)
 
 
 ## The cloud a stripped bush leaves: its leaves thrown out and fluttering down.

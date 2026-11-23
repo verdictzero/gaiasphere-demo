@@ -86,8 +86,10 @@ func _ready() -> void:
 	_gib_mat.particles_anim_h_frames = 4
 	_gib_mat.particles_anim_v_frames = 4
 	_gib_mat.particles_anim_loop = false
-	_gib_mat.roughness = 0.3
-	_gib_mat.metallic_specular = 0.7
+	# Dull: no shine at all (a photograph of wet meat has its own highlights in it).
+	_gib_mat.roughness = 1.0
+	_gib_mat.metallic = 0.0
+	_gib_mat.metallic_specular = 0.0
 	_gib_quad = QuadMesh.new()
 	_gib_quad.size = Vector2(0.2, 0.2)
 	_gib_flow = ParticleProcessMaterial.new()

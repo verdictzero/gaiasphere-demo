@@ -88,6 +88,7 @@ var _swing: Tween
 var _axe: Node3D
 var _pick: Node3D
 var _katana: Node3D
+var _hand_light: OmniLight3D
 var _berries: MeshInstance3D
 var _munch := 0.0
 var _bob: Node3D
@@ -196,6 +197,8 @@ func _process(delta: float) -> void:
 		# The new one comes up into the hand from below.
 		_pivot.position = HAND + Vector3(0, -0.5, 0.15)
 		create_tween().tween_property(_pivot, "position", HAND, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var torch := _cam.get_node_or_null(^"Flashlight") as Light3D
+	_hand_light.light_energy = 0.55 if (torch != null and torch.visible) else 0.0
 	_axe.visible = tool == "axe"
 	_katana.visible = tool == "katana"
 	_pick.visible = tool == "pickaxe"
@@ -378,6 +381,33 @@ func _ensure_hand() -> void:
 	_pivot.add_child(_katana)
 	if _bag != null and _bag.count_of("katana") == 0:
 		_bag.add("katana", 1)
+	# WHAT IS IN THE HAND DOES NOT BLOOM. Steel this near the eye catches the sun
+	# (and used to catch the torch) hard enough to glow white. Each tool's own
+	# materials are taken down: less mirror, less highlight; and in place of the
+	# torch's beam, which no longer falls on them, a small soft light that only
+	# they see, on while the torch is.
+	for tool_node in [_axe, _pick, _katana]:
+		for mi in tool_node.find_children("*", "MeshInstance3D", true, false):
+			var mesh_node := mi as MeshInstance3D
+			for surface in mesh_node.mesh.get_surface_count():
+				var made := mesh_node.mesh.surface_get_material(surface) as BaseMaterial3D
+				if made == null:
+					continue
+				var dull := made.duplicate() as BaseMaterial3D
+				dull.metallic = minf(dull.metallic, 1.0) * 0.45
+				dull.metallic_specular = 0.25
+				dull.emission_enabled = false
+				mesh_node.set_surface_override_material(surface, dull)
+	_hand_light = OmniLight3D.new()
+	_hand_light.name = "HandLight"
+	_hand_light.light_color = Color(1.0, 0.96, 0.9)
+	_hand_light.light_energy = 0.0
+	_hand_light.omni_range = 2.5
+	_hand_light.shadow_enabled = false
+	_hand_light.light_specular = 0.0
+	_hand_light.light_cull_mask = 1 << (WorldReflection.MIRROR_LAYER - 1)
+	_hand_light.position = Vector3(-0.25, 0.2, 0.35)
+	_cam.add_child(_hand_light)
 	# THE PICKAXE, stood up on its grip the same way, its point leading.
 	_pick = Node3D.new()
 	_pick.name = "Pickaxe"
@@ -404,11 +434,14 @@ func _ensure_hand() -> void:
 	berry_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	berry_mat.alpha_scissor_threshold = 0.45
 	berry_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	berry_mat.roughness = 0.4
+	berry_mat.roughness = 1.0
+	berry_mat.metallic = 0.0
+	berry_mat.metallic_specular = 0.0
 	berry_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	card.material = berry_mat
 	_berries.mesh = card
 	_berries.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_berries.layers = 1 << (WorldReflection.MIRROR_LAYER - 1)          # (hand-held: the torch's beam leaves it alone)
 	# (The hand leans back at rest: the card is stood up square to the eye again.)
 	_berries.position = Vector3(-0.12, 0.18, 0.1)
 	_berries.rotation_degrees = -REST
