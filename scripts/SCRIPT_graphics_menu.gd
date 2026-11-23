@@ -11,14 +11,21 @@ extends CanvasLayer
 const FILE := "user://graphics.cfg"
 
 # key, label, kind ("slide" | "step" | "tick"), low, high, step, how it is shown
-const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3840, 2160)]
+## The sizes a window can be set to.
+const SIZES := [Vector2i(960, 540), Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1600, 900), Vector2i(1920, 1080),
+	Vector2i(2560, 1440), Vector2i(3840, 2160)]
+## The heights the 3D view can be drawn at, whatever the size of the window or
+## the screen it is shown on (0: the window's own).
+const VIEW_HEIGHTS := [0, 360, 540, 720, 900, 1080, 1440, 2160]
 const CAPS := [30, 60, 90, 120, 0]
 ## Rows per column: the display and the camera on the left, the world on the right.
-const PER_COLUMN := 13
+const PER_COLUMN := 14
 const ROWS := [
 	["window_mode", "Window", "step", 0.0, 2.0, 1.0, "WINDOWED,BORDERLESS,FULLSCREEN"],
-	["resolution", "Viewport resolution", "step", 0.0, 4.0, 1.0, "1280 x 720,1600 x 900,1920 x 1080,2560 x 1440,3840 x 2160"],
-	["render_scale", "Rendering resolution", "slide", 0.25, 1.5, 0.05, "%"],
+	["window_size", "Window size (windowed)", "step", 0.0, 6.0, 1.0,
+		"960 x 540,1280 x 720,1366 x 768,1600 x 900,1920 x 1080,2560 x 1440,3840 x 2160"],
+	["view_height", "Viewport resolution", "step", 0.0, 7.0, 1.0, "NATIVE,360p,540p,720p,900p,1080p,1440p,2160p"],
+	["render_scale", "Rendering scale", "slide", 0.25, 1.5, 0.05, "%"],
 	["msaa", "Anti-aliasing (MSAA)", "step", 0.0, 2.0, 1.0, "OFF,2X,4X"],
 	["fxaa", "Anti-aliasing (FXAA)", "tick"],
 	["vsync", "V-sync", "tick"],
@@ -96,7 +103,7 @@ func _ready() -> void:
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 220.0, "render_scale": 1.0,
 		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false,
 		"shadows": true, "shadow_quality": 1.0, "debug": false,
-		"window_mode": 0.0, "resolution": 2.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
+		"window_mode": 0.0, "window_size": 4.0, "view_height": 0.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
 	if _enviro != null:
 		_defaults.merge(_enviro.call(&"graphics_now"), true)
 	# The display and the camera, as this machine started.
@@ -107,7 +114,7 @@ func _ready() -> void:
 	for i in SIZES.size():
 		if absi(SIZES[i].y - win.size.y) < absi(SIZES[nearest].y - win.size.y):
 			nearest = i
-	_defaults["resolution"] = float(nearest)
+	_defaults["window_size"] = float(nearest)
 	_defaults["msaa"] = float(clampi(int(get_viewport().msaa_3d), 0, 2))
 	_defaults["fxaa"] = get_viewport().screen_space_aa == Viewport.SCREEN_SPACE_AA_FXAA
 	_defaults["vsync"] = DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
@@ -156,6 +163,7 @@ func _process(_delta: float) -> void:
 			values["debug"] = Vitals.debug              # the key was pressed
 			_view.queue_redraw()
 	_debug_was = Vitals.debug
+	_apply_view_height()          # (the window may have been dragged to another size)
 	_fps.visible = bool(values["fps"])
 	if _fps.visible:
 		_fps.text = "%d FPS" % Engine.get_frames_per_second()
@@ -169,11 +177,32 @@ func apply() -> void:
 	if _enviro != null:
 		_enviro.call(&"apply_graphics", values)
 	_apply_display()
+	_apply_view_height()
 	if _world != null and not _terrain_lods.is_empty():
 		var scaled := PackedFloat32Array()
 		for d in _terrain_lods:
 			scaled.append(d * float(values["terrain_detail"]))
 		_world.set("lod_distances", scaled)
+
+
+## THE VIEWPORT'S RESOLUTION: the 3D view drawn at a chosen number of lines
+## (720p, 1080p ...) whatever the window or the screen is, and scaled to fit;
+## the panels and the text over it stay at the window's own sharpness. "Rendering
+## scale" multiplies it, for a size in between. Worked out again whenever the
+## window changes size, since it is a share of that.
+var _view_was := Vector3(-1, -1, -1)
+
+
+func _apply_view_height() -> void:
+	var vp := get_viewport()
+	var lines := float(VIEW_HEIGHTS[clampi(int(round(float(values["view_height"]))), 0, VIEW_HEIGHTS.size() - 1)])
+	var tall := float(get_window().size.y)
+	var now := Vector3(lines, tall, float(values["render_scale"]))
+	if now == _view_was:
+		return
+	_view_was = now
+	var share := lines / maxf(tall, 1.0) if lines > 0.0 else 1.0
+	vp.scaling_3d_scale = clampf(share * float(values["render_scale"]), 0.1, 2.0)
 
 
 ## The window, the viewport and the camera. A phone has one window the size of
@@ -196,12 +225,12 @@ func _apply_display() -> void:
 	# Only when one of them has moved: resizing the window on every slider tick
 	# would fight the player's own dragging of it.
 	var mode := clampi(int(round(float(values["window_mode"]))), 0, 2)
-	var size_i := clampi(int(round(float(values["resolution"]))), 0, SIZES.size() - 1)
+	var size_i := clampi(int(round(float(values["window_size"]))), 0, SIZES.size() - 1)
 	if _window_was == [mode, size_i]:
 		return
 	var first: bool = _window_was[0] < 0
 	_window_was = [mode, size_i]
-	if first and values["window_mode"] == _defaults["window_mode"] and values["resolution"] == _defaults["resolution"]:
+	if first and values["window_mode"] == _defaults["window_mode"] and values["window_size"] == _defaults["window_size"]:
 		return            # as the window already is: leave it exactly so
 	var win := get_window()
 	if mode == 2:
