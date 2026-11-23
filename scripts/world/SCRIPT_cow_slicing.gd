@@ -135,7 +135,7 @@ func slice(from: Vector3, dir: Vector3, travel: Vector3) -> bool:
 		var made := _body(half, where, int(piece["cow"]), int(piece["cuts"]) + 1, piece["material"])
 		var push := away * _rng.randf_range(1.1, 2.0) + travel.normalized() * _rng.randf_range(0.3, 1.0) + Vector3.UP * _rng.randf_range(0.5, 1.4)
 		(made["body"] as RigidBody3D).linear_velocity = carried + push
-		(made["body"] as RigidBody3D).angular_velocity = spin + away.cross(dir) * _rng.randf_range(1.5, 4.0)
+		(made["body"] as RigidBody3D).angular_velocity = spin + away.cross(dir) * _rng.randf_range(0.5, 1.6)
 		_pieces.append(made)
 	_spray(hit["position"], travel)
 	_hold_time()
