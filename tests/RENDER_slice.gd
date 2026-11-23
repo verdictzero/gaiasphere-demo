@@ -51,6 +51,10 @@ func _process(_dt: float) -> bool:
 			enviro.advance = false
 			enviro.hour = 10.0
 			enviro.set_weather("clear", 0.0)
+			# The katana in hand.
+			for i in Inventory.HOTBAR:
+				if bag.slots[i] != null and String(bag.slots[i][0]) == "katana":
+					bag.selected = i
 			# The cows are held still for this: they would be off as soon as anyone came near.
 			cows.set_process(false)
 			var cow: Dictionary = cows._herds[0]["cows"][0]
@@ -66,6 +70,9 @@ func _process(_dt: float) -> bool:
 	var dir := -cam.global_basis.z
 	match _step:
 		0:
+			var play: SwordPlay = _scene.get_node("SwordPlay")
+			if play.tool != "katana":
+				_fail("the hand holds '%s', not the katana" % play.tool)
 			_shot("0_the_cow")
 			var before := (cows._herds[0]["cows"] as Array).size()
 			if not slicing.slice(cam.global_position, dir, cam.global_basis * Vector3(1, 0.35, 0)):

@@ -56,6 +56,9 @@ const FOOD := {
 	"berry": ["berry_food", "res://assets/berry_bush/berry_cluster.png"],
 	"beef": ["beef_food", "res://assets/ui/item_beef.png"],
 }
+# The katana model: metres per unit, and how far up from its middle (its own units) the hand closes.
+const KATANA_SCALE := 0.0038
+const KATANA_GRIP := -44.0
 const AXE_CHOP := [Vector3(42.0, -14.0, -30.0), Vector3(-96.0, 12.0, 34.0)]
 const CUTS := [
 	[Vector3(38.0, 0.0, -34.0), Vector3(-118.0, 0.0, 38.0), -62.0],     # down, right to left
@@ -84,6 +87,7 @@ var _rng := RandomNumberGenerator.new()
 var _swing: Tween
 var _axe: Node3D
 var _pick: Node3D
+var _katana: Node3D
 var _berries: MeshInstance3D
 var _munch := 0.0
 var _bob: Node3D
@@ -180,7 +184,7 @@ func _process(delta: float) -> void:
 	var now := ""
 	if _bag != null and _bag.slots[_bag.selected] != null:
 		now = String(_bag.slots[_bag.selected][0])
-	if now != "axe" and now != "pickaxe" and not FOOD.has(now) and not (now == "sword" and held):
+	if now != "axe" and now != "pickaxe" and now != "katana" and not FOOD.has(now) and not (now == "sword" and held):
 		now = ""
 	if now != tool:
 		tool = now
@@ -193,6 +197,7 @@ func _process(delta: float) -> void:
 		_pivot.position = HAND + Vector3(0, -0.5, 0.15)
 		create_tween().tween_property(_pivot, "position", HAND, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_axe.visible = tool == "axe"
+	_katana.visible = tool == "katana"
 	_pick.visible = tool == "pickaxe"
 	_berries.visible = FOOD.has(tool)
 	if FOOD.has(tool) and _berries.get_meta(&"shows", "") != tool:
@@ -221,7 +226,7 @@ func _process(delta: float) -> void:
 		_light.light_energy = 0.0
 		_motes.emitting = false
 		return
-	var hold := Input.is_action_pressed(&"wv_charge") and tool == "sword"
+	var hold := Input.is_action_pressed(&"wv_charge") and _bladed()
 	if not _swinging() and not _charging:
 		if hold and Input.is_action_just_pressed(&"wv_charge"):
 			_charging = true
@@ -293,6 +298,11 @@ func _mouse_ready() -> bool:
 			or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 
 
+## A blade (the sword, the katana): swung a different way each time, and charged.
+func _bladed() -> bool:
+	return tool == "sword" or tool == "katana"
+
+
 func _swinging() -> bool:
 	return _swing != null and _swing.is_running()
 
@@ -349,6 +359,23 @@ func _ensure_hand() -> void:
 	_pivot.add_child(_axe)
 	if _bag != null and _bag.count_of("axe") == 0:
 		_bag.add("axe", 1)
+	# THE KATANA. The model stands along its own length (the grip below, the blade
+	# above, curving back), 275 units of it: brought to a metre and five, held a
+	# third of the way up the grip, its edge leading. It is swung as the sword is:
+	# a different cut every time, and it can be charged.
+	_katana = Node3D.new()
+	_katana.name = "Katana"
+	var blade: Node3D = (load("res://assets/katana/katana.glb") as PackedScene).instantiate()
+	blade.transform = Transform3D(Basis(Vector3.UP, PI).scaled(Vector3.ONE * KATANA_SCALE), Vector3(0, -KATANA_GRIP * KATANA_SCALE, 0))
+	_katana.add_child(blade)
+	for mi in blade.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(mi as MeshInstance3D).layers = 1 << (WorldReflection.MIRROR_LAYER - 1)
+	_katana.visible = false
+	_katana.position = Vector3(-0.03, 0.0, 0.12)
+	_pivot.add_child(_katana)
+	if _bag != null and _bag.count_of("katana") == 0:
+		_bag.add("katana", 1)
 	# THE PICKAXE, stood up on its grip the same way, its point leading.
 	_pick = Node3D.new()
 	_pick.name = "Pickaxe"
@@ -516,7 +543,7 @@ func _cut(charged: bool) -> void:
 	if charged:
 		_swing.tween_callback(_throw)
 	# Carried a little past the end of the cut before it comes home.
-	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * (8.0 if tool == "sword" else 4.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * (8.0 if _bladed() else 4.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, settle), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_swing.parallel().tween_property(_pivot, "position", HAND, back).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
@@ -543,7 +570,7 @@ func _bite() -> void:
 	# view on: the cut's own cant for the sword, the axe's one stroke for the axe.
 	var slicing := get_node_or_null(^"../CowSlicing")
 	if slicing != null:
-		var across := _cam.global_basis * Basis(Vector3.FORWARD, deg_to_rad(_cant if tool == "sword" else -64.0)) * Vector3.RIGHT
+		var across := _cam.global_basis * Basis(Vector3.FORWARD, deg_to_rad(_cant if _bladed() else -64.0)) * Vector3.RIGHT
 		if bool(slicing.call(&"slice", _cam.global_position, -_cam.global_basis.z, across)):
 			return
 	# No tree in the way: a berry bush, perhaps (SCRIPT_berry_bushes.gd).

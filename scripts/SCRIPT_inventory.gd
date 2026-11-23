@@ -24,6 +24,7 @@ const ITEMS := {
 	"axe": {"name": "Axe", "icon": "res://assets/ui/item_axe.png"},
 	"pickaxe": {"name": "Pickaxe", "icon": "res://assets/ui/item_pickaxe.png"},
 	"sword": {"name": "Sword", "icon": "res://assets/ui/item_sword.png"},
+	"katana": {"name": "Katana", "icon": "res://assets/ui/item_katana.png"},
 	"stone": {"name": "Stone", "icon": "res://assets/ui/item_stone.png"},
 	"berry": {"name": "Berries", "icon": "res://assets/ui/item_berry.png"},
 	"beef": {"name": "Raw Beef", "icon": "res://assets/ui/item_beef.png"},
