@@ -373,6 +373,8 @@ func _ensure_hand() -> void:
 		(mi as MeshInstance3D).layers = 1 << (WorldReflection.MIRROR_LAYER - 1)
 	_katana.visible = false
 	_katana.position = Vector3(-0.03, 0.0, 0.12)
+	# Edge-on to the eye a blade is a line: turned so its flat shows, edge still leading.
+	_katana.rotation_degrees = Vector3(0.0, -58.0, 0.0)
 	_pivot.add_child(_katana)
 	if _bag != null and _bag.count_of("katana") == 0:
 		_bag.add("katana", 1)
