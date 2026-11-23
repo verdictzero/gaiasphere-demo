@@ -9,7 +9,6 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_forest_motes.gd" id="motes"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_bridge.gd" id="bridge"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_terrain_occluders.gd" id="occl"]
-[ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_stone.gd" id="sword"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_sword_play.gd" id="swordplay"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_woodcutting.gd" id="woodcutting"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_mining.gd" id="mining"]
@@ -56,9 +55,6 @@ world_path = NodePath("../GaiaSphere")
 
 [node name="FogPatches" type="Node3D" parent="."]
 script = ExtResource("fogp")
-
-[node name="SwordStone" type="Node3D" parent="."]
-script = ExtResource("sword")
 
 [node name="TerrainOccluders" type="Node3D" parent="."]
 script = ExtResource("occl")

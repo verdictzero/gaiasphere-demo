@@ -146,13 +146,15 @@ func _ready() -> void:
 
 
 func _find_parts() -> bool:
-	if _sword != null and _cam != null:
-		return true
-	if _stone == null or _explorer == null:
+	# (The sword is there only where there is a stone with one in it: the hand,
+	# the axe and the rest do not wait on it.)
+	if _explorer == null:
 		return false
-	_sword = _stone.find_child("sword", true, false) as MeshInstance3D
-	_cam = get_viewport().get_camera_3d()
-	return _sword != null and _cam != null
+	if _sword == null and _stone != null:
+		_sword = _stone.find_child("sword", true, false) as MeshInstance3D
+	if _cam == null:
+		_cam = get_viewport().get_camera_3d()
+	return _cam != null
 
 
 func _process(delta: float) -> void:
@@ -168,7 +170,7 @@ func _process(delta: float) -> void:
 		for thing in get_tree().get_nodes_in_group(&"usable"):
 			if bool(thing.call(&"try_use", _cam.global_position, -_cam.global_basis.z)):
 				return
-	if not held:
+	if not held and _sword != null:
 		var near: bool = _explorer.global_position.distance_to(_stone.get_child(0).global_position) < reach
 		_prompt.visible = near
 		if near and Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():
@@ -197,7 +199,7 @@ func _process(delta: float) -> void:
 		# What is held up to eat is its own picture: berries, or a cut of beef.
 		_berries.set_meta(&"shows", tool)
 		((_berries.mesh as QuadMesh).material as StandardMaterial3D).albedo_texture = load(FOOD[tool][1])
-	if held:
+	if held and _sword != null:
 		_sword.visible = tool == "sword"
 	if FOOD.has(tool):
 		# Berries in the hand are for eating: one to a click.
