@@ -17,9 +17,9 @@ dest_files=["res://.godot/imported/blast_17.webp-408f39acd8aba622ffeca87ed9c969a
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

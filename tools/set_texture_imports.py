@@ -30,11 +30,17 @@ for g in GLOBS:
         # Alpha-tested cut-outs stay lossless: block compression of their colour under a
         # hard alpha edge came out black on a software Vulkan driver, and they are few.
         cutout = tex.suffix == ".png" and not normal
-        want = {"compress/mode": "0" if cutout else "2", "mipmaps/generate": "true",
+        # The effects' flipbooks are many, big, and loaded only when one is played:
+        # kept as lossy pictures (a tenth of the size on disk that block compression
+        # for every platform comes to), at the price of more memory while in use.
+        effects = "assets/fx" in tex.as_posix()
+        want = {"compress/mode": "1" if effects else ("0" if cutout else "2"), "mipmaps/generate": "true",
                 "detect_3d/compress_to": "0",
                 "compress/normal_map": "1" if normal else "0",
                 # alpha-tested foliage: keep coverage from thinning out in the mipmaps
                 "process/fix_alpha_border": "true"}
+        if effects:
+            want["compress/lossy_quality"] = "0.85"
         for k, v in want.items():
             s, n = re.subn(r"(?m)^%s=.*$" % re.escape(k), "%s=%s" % (k, v), s)
             if not n:

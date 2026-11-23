@@ -17,9 +17,9 @@ dest_files=["res://.godot/imported/glow_warm_02.webp-4a87b56094cb0fc6594b8c550a8
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
