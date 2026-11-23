@@ -49,6 +49,13 @@ func _process(_dt: float) -> bool:
 				_square = sq
 				_found = true
 		print("berries: %d bushes within %d m" % [count, int(bushes.view_range)])
+		var tally := []
+		var tris := 0
+		for mm in bushes._leafy_mms:
+			tally.append((mm as MultiMesh).instance_count)
+			tris += (mm as MultiMesh).instance_count * ((mm as MultiMesh).mesh.get_faces().size() / 3)
+		print("berries: by level of detail %s, %d triangles drawn (all at the finest would be %d)" % [tally, tris,
+				count * ((bushes._leafy_mms[0] as MultiMesh).mesh.get_faces().size() / 3)])
 		if not _found:
 			push_error("berries: no bush near the start")
 			quit(1)
