@@ -94,10 +94,23 @@ func _ready() -> void:
 ## a piece of one.
 func slice(from: Vector3, dir: Vector3, travel: Vector3) -> bool:
 	dir = dir.normalized()
-	var q := PhysicsRayQueryParameters3D.create(from, from + dir * reach)
+	# A BLADE IS A LINE, NOT A POINT. The swing is tried along the line it is drawn
+	# across the view, from its middle outward, and lands on the first cow or piece
+	# of cow any of it meets. (The middle alone will not do: after one cut the gap
+	# between the two halves is exactly where the middle of the next swing goes.)
+	var space := get_world_3d().direct_space_state
+	var skip: Array[RID] = []
 	if _explorer is CollisionObject3D:
-		q.exclude = [(_explorer as CollisionObject3D).get_rid()]
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+		skip.append((_explorer as CollisionObject3D).get_rid())
+	var across := travel.normalized()
+	var hit := {}
+	for lean in [0.0, -0.07, 0.07, -0.14, 0.14, -0.22, 0.22, -0.3, 0.3]:
+		var q := PhysicsRayQueryParameters3D.create(from, from + (dir + across * float(lean)).normalized() * reach)
+		q.exclude = skip
+		var met := space.intersect_ray(q)
+		if not met.is_empty() and ((met["collider"] as Object).has_meta(&"cow_piece") or (met["collider"] as Object).has_meta(&"cow")):
+			hit = met
+			break
 	if hit.is_empty():
 		return false
 	var struck: Object = hit["collider"]
