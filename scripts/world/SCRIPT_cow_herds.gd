@@ -19,7 +19,8 @@ extends Node3D
 # (SCRIPT_cow_slicing.gd). Then the rest run: away from you, wherever that is,
 # out of the meadow and into the wood if need be, and again whenever you come
 # near, for a minute and a half. Let alone, they always come back to the herd
-# in the meadow, and only there do they graze.
+# in the meadow, and only there do they graze. A herd that has lost cows is made
+# up to its number again overnight.
 # They are solid: you can lean on one. Herds far from the player are hidden and stand still.
 
 signal mooed(cow: Node3D)
@@ -43,6 +44,8 @@ signal mooed(cow: Node3D)
 @export var speed := 1.7
 ## Seconds a herd stays afraid of you after one of it has been cut down.
 @export var wary_for := 90.0
+## The hour of the night by which a herd that has lost cows is whole again.
+@export var back_by := 5.0
 ## Herds further off than this are not drawn or moved.
 @export var view_range := 260.0
 ## Played at the cow when it moos, once there is one to play.
@@ -57,6 +60,7 @@ var _field: IslandField
 var _herds: Array = []        # each {"home", "centre", "wait", "cows": [...]}
 var _rng := RandomNumberGenerator.new()
 var _placed := false
+var _hour_was := -1.0
 var _islet := Vector2.ZERO
 var _islet_reach := 0.0
 
@@ -122,37 +126,10 @@ func _place(start: Vector3) -> void:
 	for home in homes:
 		var herd := {"home": home, "centre": home, "wait": _rng.randf_range(stay.x, stay.y) * 0.5, "cows": [], "shown": true}
 		var count := _rng.randi_range(herd_size.x, herd_size.y)
+		herd["size"] = count
 		for i in count:
-			var holder := Node3D.new()
-			holder.name = "Cow"
-			var model: Node3D = scene.instantiate()
-			model.scale = Vector3.ONE * size * _rng.randf_range(0.88, 1.12)
-			holder.add_child(model)
-			var body := AnimatableBody3D.new()
-			body.set_meta(&"cow", holder)
-			body.sync_to_physics = false
-			var cs := CollisionShape3D.new()
-			var box := BoxShape3D.new()
-			box.size = Vector3.ONE * 2.0 * model.scale.x
-			cs.shape = box
-			body.add_child(cs)
-			holder.add_child(body)
-			add_child(holder)
-			var player := model.find_child("AnimationPlayer", true, false) as AnimationPlayer
-			for n in LOOPED:
-				if player.has_animation(n):
-					player.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 			var ang := TAU * float(i) / float(count) + _rng.randf_range(-0.4, 0.4)
-			var at: Vector2 = (home as Vector2) + Vector2(cos(ang), sin(ang)) * _rng.randf_range(2.5, 8.0)
-			var ground := _ground(Vector3(at.x, start.y, at.y), start.y)
-			var cow := {"node": holder, "player": player, "half": model.scale.x, "state": "", "t": 0.0,
-				"target": Vector2.ZERO, "yaw": _rng.randf() * TAU, "ground": ground, "ground_t": _rng.randf() * 0.2,
-				"air": hover, "want_air": hover, "bites": 0, "now": ""}
-			holder.position = Vector3(at.x, ground + hover + float(cow["half"]), at.y)
-			holder.rotation.y = float(cow["yaw"])
-			_rest(cow)
-			(cow["player"] as AnimationPlayer).seek(_rng.randf() * 3.0, true)       # not all in step
-			(herd["cows"] as Array).append(cow)
+			_add_cow(herd, (home as Vector2) + Vector2(cos(ang), sin(ang)) * _rng.randf_range(2.5, 8.0), start.y)
 		_herds.append(herd)
 	print("[cows] %d herds, %d cows" % [_herds.size(), _count()])
 
@@ -188,6 +165,74 @@ func butcher(found: Dictionary, from: Vector3) -> Dictionary:
 	for other in herd["cows"]:
 		_flee(other, Vector2(from.x, from.z))
 	return out
+
+
+## A HERD THAT HAS LOST COWS IS WHOLE AGAIN BY MORNING: when the clock comes round
+## to `back_by` (five, before it is light), every herd is made up to the number
+## it began with, the new ones hanging among the old, and none of them afraid.
+func _overnight() -> void:
+	var enviro := get_node_or_null(^"../Enviro")
+	if enviro == null:
+		return
+	var hour := float(enviro.get("hour"))
+	var was := _hour_was
+	_hour_was = hour
+	if was < 0.0:
+		return
+	# Has the clock passed `back_by` since it was last looked at (going forward, and not by a jump of half a day)?
+	var gone := fposmod(hour - was, 24.0)
+	var to_go := fposmod(back_by - was, 24.0)
+	if gone <= 0.0 or gone > 6.0 or to_go > gone or to_go <= 0.0:
+		return
+	var made := 0
+	for herd in _herds:
+		herd["wary"] = 0.0
+		herd["lost"] = 0
+		var centre: Vector2 = herd["centre"]
+		while (herd["cows"] as Array).size() < int(herd["size"]):
+			var ang := _rng.randf() * TAU
+			var at := centre + Vector2(cos(ang), sin(ang)) * _rng.randf_range(2.5, 8.0)
+			_add_cow(herd, at, _ground(Vector3(at.x, 0.0, at.y), 0.0))
+			made += 1
+		if not bool(herd["shown"]):
+			for cow in herd["cows"]:
+				(cow["node"] as Node3D).visible = false
+				(cow["player"] as AnimationPlayer).active = false
+	if made > 0:
+		print("[cows] %d cows back in their herds overnight" % made)
+
+
+## One more cow in a herd, hanging over `at` (`about` is roughly how high the ground is there).
+func _add_cow(herd: Dictionary, at: Vector2, about: float) -> void:
+	var scene := load(MODEL) as PackedScene
+	var holder := Node3D.new()
+	holder.name = "Cow"
+	var model: Node3D = scene.instantiate()
+	model.scale = Vector3.ONE * size * _rng.randf_range(0.88, 1.12)
+	holder.add_child(model)
+	var body := AnimatableBody3D.new()
+	body.set_meta(&"cow", holder)
+	body.sync_to_physics = false
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3.ONE * 2.0 * model.scale.x
+	cs.shape = box
+	body.add_child(cs)
+	holder.add_child(body)
+	add_child(holder)
+	var player := model.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	for n in LOOPED:
+		if player.has_animation(n):
+			player.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+	var ground := _ground(Vector3(at.x, about, at.y), about)
+	var cow := {"node": holder, "player": player, "half": model.scale.x, "state": "", "t": 0.0,
+		"target": Vector2.ZERO, "yaw": _rng.randf() * TAU, "ground": ground, "ground_t": _rng.randf() * 0.2,
+		"air": hover, "want_air": hover, "bites": 0, "now": ""}
+	holder.position = Vector3(at.x, ground + hover + float(cow["half"]), at.y)
+	holder.rotation.y = float(cow["yaw"])
+	_rest(cow)
+	(cow["player"] as AnimationPlayer).seek(_rng.randf() * 3.0, true)       # not all in step
+	(herd["cows"] as Array).append(cow)
 
 
 func _count() -> int:
@@ -293,6 +338,7 @@ func _process(delta: float) -> void:
 		_place(_explorer.global_position)
 		return
 	delta = minf(delta, 0.1)
+	_overnight()
 	var me := _explorer.global_position
 	for herd in _herds:
 		var centre: Vector2 = herd["centre"]
