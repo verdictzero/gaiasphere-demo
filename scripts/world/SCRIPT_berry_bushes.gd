@@ -42,6 +42,9 @@ extends Node3D
 @export var regrow_fade := 3.5
 ## Berries a bush gives: fewest and most.
 @export var berries := Vector2i(3, 7)
+## Metres at which a bush in leaf steps down to its next coarser model (a phone
+## steps down sooner).
+@export var lod_distances: Array[float] = [8.0, 16.0, 28.0, 48.0, 80.0]
 
 var _world: Node
 var _field: IslandField
@@ -51,7 +54,9 @@ var _bare: Mesh
 var _bare_mat: ShaderMaterial
 var _leafy_mm: MultiMesh
 var _bare_mm: MultiMesh
-var _leafy_slot := {}            # square -> its instance in the leafy MultiMesh
+var _leafy_slot := {}            # square -> [level of detail, its instance in that level's MultiMesh]
+var _leafy_mms: Array[MultiMesh] = []      # one to a level of detail
+var _filled_at := Vector3(1e9, 0, 0)       # where the player was when the levels were last dealt out
 var _stale := true               # the MultiMeshes need filling again
 var _leafy: Mesh
 var _leafy_mat: ShaderMaterial
@@ -88,7 +93,20 @@ func _ready() -> void:
 	_bare_mat.set_shader_parameter("tint", Color(0.62, 0.5, 0.4))
 	_bare_mat.set_shader_parameter("backlight", Color(0, 0, 0))
 	_bare_mat.set_shader_parameter("wind_flutter", 0.015)
+	# THE BUSH IN LEAF COMES AT SIX FINENESSES (tools/build_berry_bush_domes.py):
+	# five thousand triangles of small domes close to, under a hundred of flat
+	# cards far off. Each bush is drawn at the one its distance calls for, all the
+	# bushes at a level in one MultiMesh, and all in the first one's material.
 	_leafy_mm = _multimesh(_leafy, _leafy_mat, "Leafy")
+	_leafy_mms = [_leafy_mm]
+	for level in range(1, lod_distances.size() + 1):
+		var path := "res://assets/berry_bush/viburnum_bush_lod%d.glb" % level
+		if not ResourceLoader.exists(path):
+			break
+		_leafy_mms.append(_multimesh(_model(path), _leafy_mat, "Leafy%d" % level))
+	if OS.has_feature("mobile"):
+		for i in lod_distances.size():
+			lod_distances[i] *= 0.65
 	_bare_mm = _multimesh(_bare, _bare_mat, "Bare")
 	_leaf_mat = _cutout(load("res://assets/leaves/berry_leaves_atlas.png"), Color(0.78, 0.9, 0.7))
 	_leaf_mat.backlight_enabled = true
@@ -140,7 +158,11 @@ func _multimesh(mesh: Mesh, mat: Material, called: String) -> MultiMesh:
 ## Both MultiMeshes filled from what stands and what state each is in.
 func _fill() -> void:
 	_stale = false
-	var leafy: Array = []
+	var here := _explorer.global_position if _explorer != null else Vector3.ZERO
+	_filled_at = here
+	var levels: Array = []
+	for i in _leafy_mms.size():
+		levels.append([])
 	var bare: Array = []
 	_leafy_slot.clear()
 	for sq in _live:
@@ -148,11 +170,19 @@ func _fill() -> void:
 			continue
 		var growing := _growing.has(sq)
 		if not _stripped.has(sq) or growing:
-			_leafy_slot[sq] = leafy.size()
-			leafy.append([_live[sq], float(_growing[sq]) if growing else 1.0])
+			# Which fineness: by how far off it stands.
+			var away := ((_live[sq] as Transform3D).origin - here).length()
+			var level := 0
+			while level < _leafy_mms.size() - 1 and level < lod_distances.size() and away > lod_distances[level]:
+				level += 1
+			_leafy_slot[sq] = [level, (levels[level] as Array).size()]
+			(levels[level] as Array).append([_live[sq], float(_growing[sq]) if growing else 1.0])
 		if _stripped.has(sq) or growing:
 			bare.append([_live[sq], 1.0])
-	for pair in [[_leafy_mm, leafy], [_bare_mm, bare]]:
+	var pairs: Array = [[_bare_mm, bare]]
+	for i in _leafy_mms.size():
+		pairs.append([_leafy_mms[i], levels[i]])
+	for pair in pairs:
 		var mm: MultiMesh = pair[0]
 		var list: Array = pair[1]
 		mm.instance_count = list.size()
@@ -282,7 +312,10 @@ func _process(delta: float) -> void:
 			_stripped.erase(sq)
 			_stale = true
 		elif _leafy_slot.has(sq) and not _stale and _leafy_mm != null:
-			_leafy_mm.set_instance_custom_data(int(_leafy_slot[sq]), Color(grown, 0, 0, 0))
+			_leafy_mms[int(_leafy_slot[sq][0])].set_instance_custom_data(int(_leafy_slot[sq][1]), Color(grown, 0, 0, 0))
+	# Walked a few steps: the bushes are dealt out to their levels again.
+	if here.distance_to(_filled_at) > 2.5:
+		_stale = true
 	if _stale and _leafy_mm != null:
 		_fill()
 	if _field == null:
