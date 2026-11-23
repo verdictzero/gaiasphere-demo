@@ -15,9 +15,11 @@ extends Node3D
 #   Chew, Chomp    working on the mouthful, back upright
 #   Moo            mooing (`mooed` is sent, and `moo_sound` played if there is one)
 #
-# A cow you walk right up to runs: away from you, wherever that is, out of the
-# meadow and into the wood if need be, and again if you follow. Let alone, it
-# always comes back to its herd in the meadow, and only there does it graze.
+# COWS TAKE NO NOTICE OF YOU until one of their herd is cut down
+# (SCRIPT_cow_slicing.gd). Then the rest run: away from you, wherever that is,
+# out of the meadow and into the wood if need be, and again whenever you come
+# near, for a minute and a half. Let alone, they always come back to the herd
+# in the meadow, and only there do they graze.
 # They are solid: you can lean on one. Herds far from the player are hidden and stand still.
 
 signal mooed(cow: Node3D)
@@ -39,6 +41,8 @@ signal mooed(cow: Node3D)
 ## A cow's size against the model's two metres.
 @export var size := 0.75
 @export var speed := 1.7
+## Seconds a herd stays afraid of you after one of it has been cut down.
+@export var wary_for := 90.0
 ## Herds further off than this are not drawn or moved.
 @export var view_range := 260.0
 ## Played at the cow when it moos, once there is one to play.
@@ -180,6 +184,7 @@ func butcher(found: Dictionary, from: Vector3) -> Dictionary:
 	(herd["cows"] as Array).erase(cow)
 	herd["lost"] = int(herd.get("lost", 0)) + 1
 	node.queue_free()
+	herd["wary"] = wary_for
 	for other in herd["cows"]:
 		_flee(other, Vector2(from.x, from.z))
 	return out
@@ -299,6 +304,7 @@ func _process(delta: float) -> void:
 				(cow["player"] as AnimationPlayer).active = shown
 		if not shown:
 			continue
+		herd["wary"] = maxf(float(herd.get("wary", 0.0)) - delta, 0.0)
 		# The herd drifts on, all of it, to somewhere else in its pasture.
 		herd["wait"] = float(herd["wait"]) - delta
 		if float(herd["wait"]) <= 0.0:
@@ -319,7 +325,11 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 	var node: Node3D = cow["node"]
 	var at := Vector2(node.position.x, node.position.z)
 	var state := String(cow["state"])
-	var near_me := (at - Vector2(me.x, me.z)).length() < 2.6 + float(cow["half"]) and absf(me.y - node.position.y) < 3.5
+	# COWS ARE NOT AFRAID OF YOU until one of them has been cut down: you can walk
+	# among a herd that has never been attacked. After that, for a while, any of
+	# that herd you come near runs (and further off than before: they are watching).
+	var wary := float(herd.get("wary", 0.0)) > 0.0
+	var near_me := wary and (at - Vector2(me.x, me.z)).length() < 5.5 + float(cow["half"]) and absf(me.y - node.position.y) < 3.5
 	if state == "move" or state == "flee":
 		var to: Vector2 = cow["target"]
 		var gap := to - at

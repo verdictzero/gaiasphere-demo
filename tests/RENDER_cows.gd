@@ -91,6 +91,12 @@ func _process(_dt: float) -> bool:
 			cows.set_process(false)
 			var cow: Dictionary = _herd["cows"][0]
 			var node: Node3D = cow["node"]
+			# Not afraid of anyone yet: someone at its shoulder is nothing to it.
+			for i in 20:
+				cows._cow_step(cow, _herd, 0.1, node.position + Vector3(1.2, 0, 0))
+			print("cows: never attacked, with someone at its shoulder it is %s" % cow["state"])
+			ok = ok and String(cow["state"]) != "flee"
+			_herd["wary"] = cows.wary_for          # as if one of the herd had just been cut down
 			var chaser := node.position + Vector3(1.2, 0, 0)
 			var farthest := 0.0
 			for i in 80:
