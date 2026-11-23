@@ -271,7 +271,7 @@ func _bubbles() -> void:
 		p.name = "Leak%d" % i
 		# A steady string from most, a fat gout now and then from a few.
 		var gout := i % 4 == 3
-		p.amount = 26 if gout else 16
+		p.amount = 70 if gout else 44
 		var pace := 1.5 if gout else 1.15
 		p.lifetime = climb / pace
 		p.explosiveness = 0.75 if gout else 0.0
@@ -281,7 +281,7 @@ func _bubbles() -> void:
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var m := ParticleProcessMaterial.new()
 		m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-		m.emission_sphere_radius = 0.12 if gout else 0.04
+		m.emission_sphere_radius = 0.16 if gout else 0.06
 		m.direction = Vector3.UP
 		m.spread = 6.0
 		m.initial_velocity_min = pace * 0.9
@@ -293,8 +293,8 @@ func _bubbles() -> void:
 		m.turbulence_noise_scale = 2.2
 		m.turbulence_influence_min = 0.03
 		m.turbulence_influence_max = 0.09
-		m.scale_min = 0.22 if not gout else 0.35
-		m.scale_max = 0.7 if not gout else 1.5
+		m.scale_min = 0.3 if not gout else 0.45
+		m.scale_max = 0.95 if not gout else 1.8
 		var swell := Curve.new()
 		swell.add_point(Vector2(0.0, 0.55))
 		swell.add_point(Vector2(1.0, 1.0))
