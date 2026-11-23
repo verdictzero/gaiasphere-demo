@@ -52,6 +52,11 @@ var run_allowed := true
 var running := false
 ## False until the loading cover puts the body down (`arrive`).
 var arrived := false
+## How hard the water lifts a swimmer to the surface: 1 as it is in open water,
+## 0 to hang where they are (inside the flooded shuttle, SCRIPT_crashed_shuttle.gd,
+## so they are not carried up its sloping roof and out of the door before they
+## have looked about).
+var buoyancy := 1.0
 
 var _cam: Camera3D
 var _pitch := 0.0
@@ -230,7 +235,7 @@ func _walk(move: Vector2, rise: float, fast: bool, delta: float) -> void:
 	if swimming:
 		# Buoyed to where the eyes stand a quarter of a metre clear; up and down
 		# swim against it.
-		var settle := clampf((deep - (eye_height - 0.25)) * 3.0, -1.5, 2.0)
+		var settle := clampf((deep - (eye_height - 0.25)) * 3.0, -1.5, 2.0) * buoyancy
 		var aim := rise * 2.5 if absf(rise) > 0.1 else settle
 		velocity.y = move_toward(velocity.y, aim, 14.0 * delta)
 	else:

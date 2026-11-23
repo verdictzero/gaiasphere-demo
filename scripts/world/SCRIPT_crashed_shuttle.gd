@@ -148,10 +148,18 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _cleared or not settled:
+	if not settled:
 		return
-	var explorer := get_node_or_null(explorer_path)
+	var explorer := get_node_or_null(explorer_path) as Node3D
 	if explorer == null or not bool(explorer.get("arrived")):
+		return
+	# IN THE CABIN THE WATER DOES NOT LIFT YOU. Left to float, a swimmer goes up
+	# to the roof, along it (it slopes up to the door) and out, all in a few
+	# seconds and without touching anything. Inside, they hang where they are.
+	var inside: Vector3 = global_transform.affine_inverse() * explorer.global_position
+	var in_cabin := absf(inside.x) < 1.25 and inside.y > -1.2 and inside.y < 0.9 and inside.z > -4.9 and inside.z < 3.3
+	explorer.set(&"buoyancy", 0.0 if in_cabin else 1.0)
+	if _cleared:
 		return
 	_cleared = true
 	var flora := get_node_or_null(^"../Flora")
