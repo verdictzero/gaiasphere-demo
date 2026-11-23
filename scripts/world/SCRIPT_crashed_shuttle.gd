@@ -129,6 +129,11 @@ func _ready() -> void:
 		lamp.light_energy = 1.6
 		lamp.omni_range = 5.0
 		lamp.position = Vector3(0, 0.55, z)
+		# They throw shadows: the seats and the door frame cut the red light up.
+		lamp.shadow_enabled = true
+		lamp.shadow_bias = 0.06
+		lamp.shadow_normal_bias = 1.2
+		lamp.omni_shadow_mode = OmniLight3D.SHADOW_DUAL_PARABOLOID
 		add_child(lamp)
 		var flicker := FxFlicker.new()
 		flicker.base = 1.6
