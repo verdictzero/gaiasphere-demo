@@ -9,8 +9,10 @@ each doubled back to back. Flat cards crossing each other take a light from one
 side very badly: each is lit as one flat thing, edge-on ones go dark, and where
 two cross the join is plain. A torch shone at the bush shows every card.
 
-Each leafy card becomes a shallow dome instead: the same picture over the same
-place, bulged outward from the bush, with normals that turn across it the way a
+Each leafy card becomes four small domes instead (many small mounds read as
+foliage; a few big ones read as balls): the same picture over the same place,
+each quarter of it bulged outward from the bush and set a little in or out of
+line with the next, with normals that turn across it the way a
 mound of leaves does and lean toward the bush's own roundness. One layer, not
 two back to back (the bush's shader draws both sides). The twig cards through
 the middle are left as they are.
@@ -24,8 +26,11 @@ import sys
 
 import numpy as np
 
-GRID = 4                 # squares across a dome
-BULGE = 0.3              # how far its middle stands out, as a share of its width
+SPLIT = 2                # each card is cut into this many domes each way: many small mounds, not a few big ones
+GRID = 3                 # squares across a dome
+BULGE = 0.34             # how far its middle stands out, as a share of its own width
+LAP = 0.07               # how far each dome runs on into its neighbours' share of the card
+SHUFFLE = 0.05           # metres each dome is set in or out of line, so they do not read as a quilt
 ROUND = 0.4              # how much of each normal is the bush's roundness, not the dome's own
 LEAF_CELLS = {(0, 0), (1, 0), (2, 0), (3, 0), (0, 1)}       # of the 4 x 2 sheet: the sprays (the rest are twigs)
 
@@ -97,35 +102,45 @@ def main(path):
         if np.dot(normal, centre - heart) < 0:
             normal = -normal
         width = (np.linalg.norm(du) + np.linalg.norm(dv)) * 0.5
-        base = len(out_p)
-        grid = np.zeros((GRID + 1, GRID + 1, 3))
-        for j in range(GRID + 1):
-            for i in range(GRID + 1):
-                s, t = i / GRID, j / GRID
-                flat = (P[c00] * (1 - s) * (1 - t) + P[c10] * s * (1 - t) + P[c01] * (1 - s) * t + P[c11] * s * t)
-                r2 = ((2 * s - 1) ** 2 + (2 * t - 1) ** 2) * 0.5
-                # Out in the middle, back at the corners: the dome sits astride where the card was.
-                grid[j, i] = flat + normal * width * BULGE * (0.5 - r2)
-        for j in range(GRID + 1):
-            for i in range(GRID + 1):
-                s, t = i / GRID, j / GRID
-                ds = grid[j, min(i + 1, GRID)] - grid[j, max(i - 1, 0)]
-                dt_ = grid[min(j + 1, GRID), i] - grid[max(j - 1, 0), i]
-                own = np.cross(ds, dt_); own /= np.linalg.norm(own)
-                if np.dot(own, normal) < 0:
-                    own = -own
-                outward = grid[j, i] - heart; outward /= np.linalg.norm(outward)
-                nrm = own * (1 - ROUND) + outward * ROUND; nrm /= np.linalg.norm(nrm)
-                tan = ds - nrm * np.dot(ds, nrm); tan /= np.linalg.norm(tan)
-                hand = 1.0 if np.dot(np.cross(nrm, tan), -dt_) >= 0 else -1.0
-                uv = (UV[c00] * (1 - s) * (1 - t) + UV[c10] * s * (1 - t) + UV[c01] * (1 - s) * t + UV[c11] * s * t)
-                out_p.append(grid[j, i]); out_n.append(nrm); out_t.append([*tan, hand]); out_uv.append(uv)
-        facing = np.dot(np.cross(grid[0, 1] - grid[0, 0], grid[1, 0] - grid[0, 0]), normal) > 0
-        for j in range(GRID):
-            for i in range(GRID):
-                a = base + j * (GRID + 1) + i; b = a + 1; c = a + GRID + 1; d = c + 1
-                out_i += [[a, b, d], [a, d, c]] if facing else [[a, d, b], [a, c, d]]
-        domes += 1
+        rng = np.random.default_rng(abs(hash(key)) % (2 ** 32))
+        for part_j in range(SPLIT):
+            for part_i in range(SPLIT):
+                s0, s1 = max(part_i / SPLIT - LAP, 0.0), min((part_i + 1) / SPLIT + LAP, 1.0)
+                t0, t1 = max(part_j / SPLIT - LAP, 0.0), min((part_j + 1) / SPLIT + LAP, 1.0)
+                own_width = width / SPLIT
+                shift = normal * rng.uniform(-SHUFFLE, SHUFFLE)
+                base = len(out_p)
+                grid = np.zeros((GRID + 1, GRID + 1, 3))
+                where = np.zeros((GRID + 1, GRID + 1, 2))
+                for j in range(GRID + 1):
+                    for i in range(GRID + 1):
+                        a_, b_ = i / GRID, j / GRID
+                        s_, t_ = s0 + (s1 - s0) * a_, t0 + (t1 - t0) * b_
+                        flat = (P[c00] * (1 - s_) * (1 - t_) + P[c10] * s_ * (1 - t_) + P[c01] * (1 - s_) * t_ + P[c11] * s_ * t_)
+                        r2 = ((2 * a_ - 1) ** 2 + (2 * b_ - 1) ** 2) * 0.5
+                        # Out in the middle, back at the corners: the dome sits astride where the card was.
+                        grid[j, i] = flat + shift + normal * own_width * BULGE * (0.5 - r2) * 2.0
+                        where[j, i] = (s_, t_)
+                for j in range(GRID + 1):
+                    for i in range(GRID + 1):
+                        s_, t_ = where[j, i]
+                        ds = grid[j, min(i + 1, GRID)] - grid[j, max(i - 1, 0)]
+                        dt_ = grid[min(j + 1, GRID), i] - grid[max(j - 1, 0), i]
+                        own = np.cross(ds, dt_); own /= np.linalg.norm(own)
+                        if np.dot(own, normal) < 0:
+                            own = -own
+                        outward = grid[j, i] - heart; outward /= np.linalg.norm(outward)
+                        nrm = own * (1 - ROUND) + outward * ROUND; nrm /= np.linalg.norm(nrm)
+                        tan = ds - nrm * np.dot(ds, nrm); tan /= np.linalg.norm(tan)
+                        hand = 1.0 if np.dot(np.cross(nrm, tan), -dt_) >= 0 else -1.0
+                        uv = (UV[c00] * (1 - s_) * (1 - t_) + UV[c10] * s_ * (1 - t_) + UV[c01] * (1 - s_) * t_ + UV[c11] * s_ * t_)
+                        out_p.append(grid[j, i]); out_n.append(nrm); out_t.append([*tan, hand]); out_uv.append(uv)
+                facing = np.dot(np.cross(grid[0, 1] - grid[0, 0], grid[1, 0] - grid[0, 0]), normal) > 0
+                for j in range(GRID):
+                    for i in range(GRID):
+                        a = base + j * (GRID + 1) + i; b = a + 1; c = a + GRID + 1; d = c + 1
+                        out_i += [[a, b, d], [a, d, c]] if facing else [[a, d, b], [a, c, d]]
+                domes += 1
 
     def push(data, target, ctype, atype, minmax=False):
         while len(blob) % 4:
@@ -142,7 +157,8 @@ def main(path):
                               NORMAL=push(np.asarray(out_n, np.float32), 34962, 5126, "VEC3"),
                               TANGENT=push(np.asarray(out_t, np.float32), 34962, 5126, "VEC4"),
                               TEXCOORD_0=push(np.asarray(out_uv, np.float32), 34962, 5126, "VEC2"))
-    prim["indices"] = push(np.asarray(out_i, np.uint16).reshape(-1), 34963, 5123, "SCALAR")
+    wide = len(out_p) > 65535
+    prim["indices"] = push(np.asarray(out_i, np.uint32 if wide else np.uint16).reshape(-1), 34963, 5125 if wide else 5123, "SCALAR")
     while len(blob) % 4:
         blob.append(0)
     gltf["buffers"][0]["byteLength"] = len(blob)
