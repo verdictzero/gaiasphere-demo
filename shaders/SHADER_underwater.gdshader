@@ -14,8 +14,9 @@ render_mode unshaded, blend_mix, depth_test_disabled, depth_draw_never, cull_dis
 // lies across the screen as the surface does, tilting as the eye rolls, rising
 // as it looks down, and riding the waves (`wave_*`). With the eye at the surface
 // the screen is half in and half out. Along the line, the water clinging to the
-// lens: a bright meniscus with a dark lip under it, and over it the colours split
-// apart (`line_split`) where the film bends the light.
+// lens: a thin, solid, ragged line of foam with froth beading just under it, and
+// over it a hair of the colours split apart (`line_split`) where the film bends
+// the light.
 //
 // UNDER IT, what the water does to light:
 //   * REFRACTION: the picture is magnified (`magnify`, water's 1.33 and less),
@@ -75,9 +76,12 @@ uniform float rim_gain = 0.6;
 
 group_uniforms waterline;
 // The meniscus, in pixels thick, its colour, and how far the colours split over it.
-uniform float line_px = 3.0;
+uniform float line_px = 1.6;
 uniform vec3 line_color : source_color = vec3(0.86, 0.97, 0.96);
-uniform float line_split = 7.0;
+uniform float line_split = 2.5;
+// How much froth hangs just under the line, and how far down (pixels).
+uniform float foam_amount = 0.75;
+uniform float foam_depth = 9.0;
 // How far the surface rides up and down across the lens, metres, its waves across
 // the screen, and how fast they run.
 uniform float wave_height = 0.03;
@@ -222,11 +226,21 @@ void fragment() {
 				* (1.0 - exp(-path / max(clarity, 0.01)));
 		col += sun * shafts * shaft * water_c * 2.0;
 		// ---- the dark lip under the film on the lens -------------------------
-		col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, line_px * 3.0, -hp));
+		col *= 1.0 - 0.18 * (1.0 - smoothstep(0.0, line_px * 3.0, -hp));
+		// ---- froth clinging under the line: small bright beads, thick at the
+		// line and gone a few pixels down, never still.
+		vec2 bead = floor(vec2(uv.x * px.x, -hp) / 2.0);
+		float beads = uw_noise(bead * vec2(0.9, 1.3) + vec2(t * 1.7, -t * 2.3));
+		float under_line = 1.0 - smoothstep(0.0, foam_depth, -hp);
+		float froth = smoothstep(1.0 - foam_amount * under_line, 1.0, beads) * under_line;
+		col = mix(col, line_color * mix(vec3(0.75), sun + vec3(0.45), 0.5), froth);
 	}
 	// ---- the meniscus ----------------------------------------------------------
-	float line = 1.0 - smoothstep(line_px * 0.5, line_px, abs(hp));
-	col = mix(col, line_color * mix(vec3(0.6), sun + vec3(0.35), 0.5), line * 0.75);
+	// A thin line of foam, solid (nothing shows through it), ragged: thicker and
+	// thinner along its length, and that moving.
+	float ragged = line_px * (0.55 + 1.3 * uw_noise(vec2(floor(uv.x * px.x / 3.0) * 0.6 + t * 1.3, t * 0.7)));
+	float line = 1.0 - smoothstep(ragged * 0.6, ragged, abs(hp));
+	col = mix(col, line_color * mix(vec3(0.8), sun + vec3(0.5), 0.5), line);
 
 	ALBEDO = col;
 	ALPHA = 1.0;
