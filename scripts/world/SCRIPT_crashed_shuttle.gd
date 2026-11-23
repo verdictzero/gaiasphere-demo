@@ -121,21 +121,7 @@ func _ready() -> void:
 	global_transform = Transform3D(basis.scaled(Vector3.ONE * size), Vector3(at.x, ground, at.y) + up * 1.3 * size)
 	var model: Node3D = (load(MODEL) as PackedScene).instantiate()
 	add_child(model)
-	# Solid: every mesh of it, as it is, both faces (you are inside as well as out).
-	var body := StaticBody3D.new()
-	add_child(body)
-	for mi in model.find_children("*", "MeshInstance3D", true, false):
-		var mesh_node := mi as MeshInstance3D
-		if mesh_node.name.contains("Windshield") or mesh_node.get_parent().name.contains("Windshield"):
-			pass          # (glass is solid too)
-		var shape := mesh_node.mesh.create_trimesh_shape() as ConcavePolygonShape3D
-		if shape == null:
-			continue
-		shape.backface_collision = true
-		var cs := CollisionShape3D.new()
-		cs.shape = shape
-		body.add_child(cs)
-		cs.global_transform = mesh_node.global_transform
+	make_solid(self, model)
 	# Its lights are still on: red, and not steady.
 	for z in [-2.6, 0.4]:
 		var lamp := OmniLight3D.new()
@@ -172,6 +158,35 @@ func _process(_delta: float) -> void:
 	if flora != null and flora.has_method(&"clear_ground"):
 		var flat := Basis(Vector3.UP, atan2(global_basis.z.x, global_basis.z.z))
 		flora.call(&"clear_ground", Transform3D(flat, global_position), Vector2(5.4, 6.4) * size)
+
+
+## SOLID: every mesh of the model, as it is, both faces of it (you are inside as
+## well as out). The triangles are put into `ship`'s own frame first, so the
+## shapes themselves carry no scale: a scaled shape is not one every physics
+## engine will stand for.
+static func make_solid(ship: Node3D, model: Node3D) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = "Hull"
+	ship.add_child(body)
+	var size := ship.global_basis.get_scale().x
+	# (The body is set against the ship's scale, so it is plain metres inside.)
+	body.scale = Vector3.ONE / size
+	var into := body.global_transform.affine_inverse()
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node := mi as MeshInstance3D
+		var faces := mesh_node.mesh.get_faces()
+		if faces.is_empty():
+			continue
+		var to_body := into * mesh_node.global_transform
+		for i in faces.size():
+			faces[i] = to_body * faces[i]
+		var shape := ConcavePolygonShape3D.new()
+		shape.backface_collision = true
+		shape.set_faces(faces)
+		var cs := CollisionShape3D.new()
+		cs.shape = shape
+		body.add_child(cs)
+	return body
 
 
 # ------------------------------------------------------------------ the landing spot's answers
