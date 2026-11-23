@@ -16,7 +16,8 @@ extends Node3D
 # the swing landed, holding the line of sight and the line the blade travelled).
 # Every triangle goes to the side of the plane it is on, and those the plane
 # passes through are split along it; the points where it passed through the skin
-# ring the cut, and a fan of triangles across that ring is the meat. Each side
+# ring the cut, and a fan of triangles across that ring is the meat, with the
+# hide's own edge showing round it: skin, then fat (SHADER_cut_meat). Each side
 # becomes a body of its own, shaped by its own corners.
 
 @export var herds_path: NodePath = ^"../CowHerds"
@@ -38,7 +39,7 @@ var _herds: CowHerds
 var _explorer: Node3D
 var _bag: Node
 var _pieces: Array = []       # each {"body", "skin": [verts, normals, uvs], "meat": [verts, normals, uvs], "age", "cow"}
-var _meat: StandardMaterial3D
+var _meat: ShaderMaterial
 var _given := {}              # cow number -> beef taken from it so far
 var _cows := 0
 var _slow_until := 0
@@ -67,11 +68,10 @@ func _ready() -> void:
 	marbled.width = 256
 	marbled.height = 256
 	marbled.seamless = true
-	_meat = StandardMaterial3D.new()
-	_meat.albedo_texture = marbled
-	_meat.roughness = 0.35
-	_meat.metallic_specular = 0.6
-	_meat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	marbled.generate_mipmaps = true
+	_meat = ShaderMaterial.new()
+	_meat.shader = load("res://shaders/SHADER_cut_meat.gdshader")
+	_meat.set_shader_parameter("marbling", marbled)
 	_drop_mesh = BoxMesh.new()
 	_drop_mesh.size = Vector3(0.035, 0.035, 0.035)
 	_drop_mat = StandardMaterial3D.new()
@@ -307,10 +307,14 @@ func _cut(piece: Dictionary, plane: Plane) -> Array:
 			var b: Vector3 = around[(i + 1) % around.size()][1]
 			if a.distance_squared_to(b) < 1e-8:
 				continue
+			# How far the middle is in from this stretch of the edge: every point of
+			# the triangle then knows its own distance in (SHADER_cut_meat's rind).
+			var along := (b - a).normalized()
+			var deep := ((centre - a) - along * (centre - a).dot(along)).length()
 			for p in ([centre, a, b] if side == 0 else [centre, b, a]):
 				mv.append(p)
 				mn.append(face)
-				mu.append(Vector2((p - centre).dot(u), (p - centre).dot(w)) * 1.3 + Vector2(0.5, 0.5))
+				mu.append(Vector2(deep if p == centre else 0.0, 0.0))
 		meats[side] = [mv, mn, mu]
 	return [{"skin": sides[0], "meat": meats[0]}, {"skin": sides[1], "meat": meats[1]}]
 
