@@ -161,7 +161,7 @@ func _process(_delta: float) -> void:
 	for thing in get_tree().get_nodes_in_group(&"usable"):
 		if bool(thing.call(&"can_use", cam.global_position, -cam.global_basis.z)):
 			return
-	if _bag.take_selected():
+	if Vitals.debug or _bag.take_selected():          # (in debug mode a piece is not used up)
 		build(_plan)
 
 

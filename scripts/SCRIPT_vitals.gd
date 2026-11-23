@@ -55,6 +55,11 @@ extends CanvasLayer
 @export var mend_above := 50.0
 @export var mend := 0.9
 @export var food_per_health := 0.06
+## Seconds of air in a breath, seconds to get it all back at the surface, and
+## the health lost a second once it is gone.
+@export var breath := 45.0
+@export var breath_back := 3.5
+@export var drown_harm := 14.0
 ## What one berry is worth.
 @export var berry_food := 14.0
 ## And one cut of beef (raw: there is no fire to cook it on yet).
@@ -64,12 +69,22 @@ const PANEL := Color(0.06, 0.07, 0.085, 0.62)
 const EDGE := Color(1, 1, 1, 0.14)
 const FOOD := Color(0.96, 0.66, 0.26)
 const WIND := Color(0.56, 0.86, 1.0)
+const AIR := Color(0.75, 0.95, 1.0)
 const INK := Color(0.93, 0.95, 0.97)
 
 var health := 100.0
 var hunger := 100.0
 var stamina := 100.0
+## Air, 0 to 100: goes down with the head under water, comes back fast above it.
+var oxygen := 100.0
 ## True from running stamina out until `second_wind` of it is back.
+## GOD MODE, for trying things out (F3, or the tick in the graphics menu):
+## nothing hurts, no breath runs out, nothing tires or starves, and building is
+## free: every piece can be crafted for nothing and set down without being used
+## up (SCRIPT_inventory.gd, SCRIPT_building.gd).
+static var debug := false
+## True while the head is under water.
+var under := false
 var spent := false
 var _explorer: CharacterBody3D
 var _rest := 0.0
@@ -87,6 +102,12 @@ const BLOOD := Color(0.86, 0.2, 0.22)
 
 func _ready() -> void:
 	layer = 29
+	debug = false
+	if not InputMap.has_action(&"wv_debug"):
+		InputMap.add_action(&"wv_debug")
+		var key := InputEventKey.new()
+		key.physical_keycode = KEY_F3
+		InputMap.action_add_event(&"wv_debug", key)
 	_explorer = get_node_or_null(explorer_path) as CharacterBody3D
 	_font = load("res://branding/fonts/RobotoCondensed-Regular.ttf")
 	_view = Control.new()
@@ -139,6 +160,8 @@ func spend(amount: float, needed := false) -> bool:
 ## Harm done: health down, the screen's edge red for a moment, and the end if
 ## that was the last of it (`how` is what the screen then says).
 func hurt(amount: float, how := "YOU DIED") -> void:
+	if debug:
+		return
 	if _dead or amount <= 0.0:
 		return
 	health = maxf(health - amount, 0.0)
@@ -171,6 +194,7 @@ func _revive(put_back: bool) -> void:
 	if put_back and _explorer != null and _explorer.has_method(&"arrive"):
 		_explorer.call(&"arrive")
 	health = 100.0
+	oxygen = 100.0
 	hunger = maxf(hunger, 45.0)
 	stamina = ceiling()
 	spent = false
@@ -195,6 +219,20 @@ func eat(food: float) -> void:
 func _process(delta: float) -> void:
 	if _explorer == null or not bool(_explorer.get("arrived")) or _dead:
 		return
+	if Input.is_action_just_pressed(&"wv_debug"):
+		debug = not debug
+	if debug:
+		health = 100.0
+		oxygen = 100.0
+		hunger = 100.0
+		stamina = 100.0
+		spent = false
+		under = false
+		_dropping = 0.0
+		_airborne = false
+		_explorer.set("run_allowed", true)
+		_view.queue_redraw()
+		return
 	var flying := bool(_explorer.get("flying"))
 	# FALLS. The fastest the drop got is what the landing is judged by; water
 	# deep enough to swim in breaks it, and flying is not falling.
@@ -211,6 +249,18 @@ func _process(delta: float) -> void:
 		if _dropping > safe_fall:
 			hurt((_dropping - safe_fall) * fall_harm, "YOU FELL")
 		_dropping = 0.0
+	# AIR. The head is under when the water stands over the eyes; a breath lasts
+	# `breath` seconds, and when it is gone the water takes health instead.
+	var eyes := float(_explorer.get("eye_height")) if _explorer.get("eye_height") != null else 1.6
+	under = not flying and _explorer.get("deep") != null and float(_explorer.get("deep")) > eyes + 0.05
+	if under:
+		oxygen = maxf(oxygen - 100.0 / maxf(breath, 1.0) * delta, 0.0)
+		if oxygen <= 0.0:
+			hurt(drown_harm * delta, "YOU DROWNED")
+			if _dead:
+				return
+	else:
+		oxygen = minf(oxygen + 100.0 / maxf(breath_back, 0.1) * delta, 100.0)
 	# An empty stomach wears health down; a fed one mends it, for food.
 	if hunger <= 0.0:
 		hurt(starve_harm * delta, "YOU STARVED")
@@ -281,6 +331,23 @@ func _draw_view() -> void:
 	var gap := 18.0 * k
 	var wide := (cell * 9.0 - 10.0 * k - gap * 2.0) / 3.0
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
+	if debug:
+		var note := "GOD MODE   nothing hurts, building is free   (F3)"
+		var nfs := int(17.0 * k)
+		var nw := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x
+		_view.draw_string(_font, Vector2((_view.size.x - nw) * 0.5, 34.0 * k), note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs, Color(1.0, 0.85, 0.3, 0.95))
+	# AIR: a bar of its own over the other three, there only while it matters
+	# (under water, or still getting a breath back).
+	if under or oxygen < 99.5:
+		var air := Rect2(Vector2(left + wide + gap, top - 40.0 * k), Vector2(wide, 16.0 * k))
+		_box(air, PANEL, 8.0 * k, EDGE, 1.5 * k)
+		var air_in := air.grow(-3.0 * k)
+		var air_colour := AIR.lerp(Color(1.0, 0.25, 0.2), pulse * 0.8) if oxygen < 25.0 else AIR
+		if oxygen > 0.5:
+			_box(Rect2(air_in.position, Vector2(air_in.size.x * oxygen / 100.0, air_in.size.y)), air_colour, 5.0 * k)
+		var air_at := Vector2(air.position.x + 2.0 * k, air.position.y - 7.0 * k)
+		_view.draw_string(_font, air_at + Vector2(1, 1) * k, "OXYGEN", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(0, 0, 0, 0.6))
+		_view.draw_string(_font, air_at, "OXYGEN", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(INK.r, INK.g, INK.b, 0.85))
 	for side in 3:
 		var value: float = [health, hunger, stamina][side]
 		var colour: Color = [BLOOD, FOOD, WIND][side]

@@ -177,6 +177,8 @@ func take(id: String, count: int) -> bool:
 # ------------------------------------------------------------------ making things
 
 func can_craft(recipe: int) -> bool:
+	if Vitals.debug:
+		return true
 	var needs: Dictionary = RECIPES[recipe]["needs"]
 	for id in needs:
 		if count_of(id) < int(needs[id]):
@@ -189,7 +191,7 @@ func can_craft(recipe: int) -> bool:
 func craft(recipe: int) -> bool:
 	if recipe < 0 or recipe >= RECIPES.size() or not can_craft(recipe):
 		return false
-	var needs: Dictionary = RECIPES[recipe]["needs"]
+	var needs: Dictionary = RECIPES[recipe]["needs"] if not Vitals.debug else {}
 	for id in needs:
 		take(id, int(needs[id]))
 	if add(String(RECIPES[recipe]["makes"]), 1) > 0:

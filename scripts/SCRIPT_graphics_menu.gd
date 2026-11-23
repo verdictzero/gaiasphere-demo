@@ -14,7 +14,7 @@ const FILE := "user://graphics.cfg"
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3840, 2160)]
 const CAPS := [30, 60, 90, 120, 0]
 ## Rows per column: the display and the camera on the left, the world on the right.
-const PER_COLUMN := 12
+const PER_COLUMN := 13
 const ROWS := [
 	["window_mode", "Window", "step", 0.0, 2.0, 1.0, "WINDOWED,BORDERLESS,FULLSCREEN"],
 	["resolution", "Viewport resolution", "step", 0.0, 4.0, 1.0, "1280 x 720,1600 x 900,1920 x 1080,2560 x 1440,3840 x 2160"],
@@ -28,6 +28,7 @@ const ROWS := [
 	["bloom", "Bloom", "tick"],
 	["god_rays", "God rays", "tick"],
 	["fps", "Show frame rate", "tick"],
+	["debug", "God mode (nothing hurts, free building)", "tick"],
 	["veg_distance", "Vegetation draw distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["lod_distance", "Vegetation LOD distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["impostor_distance", "Tree impostor distance", "slide", 0.5, 2.0, 0.05, "x"],
@@ -94,7 +95,7 @@ func _ready() -> void:
 	_defaults = {"veg_distance": 1.0, "lod_distance": 1.0, "impostor_distance": 1.0, "grass_distance": 1.0,
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 220.0, "render_scale": 1.0,
 		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false,
-		"shadows": true, "shadow_quality": 1.0,
+		"shadows": true, "shadow_quality": 1.0, "debug": false,
 		"window_mode": 0.0, "resolution": 2.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
 	if _enviro != null:
 		_defaults.merge(_enviro.call(&"graphics_now"), true)
@@ -147,6 +148,14 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	# (Debug mode is also turned on and off by its own key: the tick follows it.)
+	if bool(values["debug"]) != Vitals.debug:
+		if _debug_was == Vitals.debug:
+			Vitals.debug = bool(values["debug"])        # the tick was changed
+		else:
+			values["debug"] = Vitals.debug              # the key was pressed
+			_view.queue_redraw()
+	_debug_was = Vitals.debug
 	_fps.visible = bool(values["fps"])
 	if _fps.visible:
 		_fps.text = "%d FPS" % Engine.get_frames_per_second()
@@ -170,6 +179,7 @@ func apply() -> void:
 ## The window, the viewport and the camera. A phone has one window the size of
 ## its screen, so there only what is drawn inside it is touched.
 var _window_was: Array[int] = [-1, -1]
+var _debug_was := false
 
 
 func _apply_display() -> void:
@@ -208,7 +218,8 @@ func _apply_display() -> void:
 func _save() -> void:
 	var cfg := ConfigFile.new()
 	for key in values:
-		cfg.set_value("graphics", key, values[key])
+		if key != "debug":          # (god mode is for the run it was turned on in, never kept)
+			cfg.set_value("graphics", key, values[key])
 	cfg.save(FILE)
 
 

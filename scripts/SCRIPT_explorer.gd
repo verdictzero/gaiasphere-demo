@@ -57,6 +57,9 @@ var arrived := false
 ## so they are not carried up its sloping roof and out of the door before they
 ## have looked about).
 var buoyancy := 1.0
+## How far the water stands over the feet, metres (0 on dry ground, and while
+## flying). The head is under when it is over the eyes (SCRIPT_vitals.gd's air).
+var deep := 0.0
 
 var _cam: Camera3D
 var _pitch := 0.0
@@ -202,6 +205,7 @@ func _physics_process(delta: float) -> void:
 	if not flying:
 		fast = fast and run_allowed
 	if flying:
+		deep = 0.0
 		_fly(move, rise, fast, delta)
 	else:
 		_walk(move, rise, fast, delta)
@@ -219,7 +223,7 @@ func _walk(move: Vector2, rise: float, fast: bool, delta: float) -> void:
 	var b := global_basis
 	var want := b.x * move.x + b.z * move.y
 	# How far the water stands over the feet, 0 on dry ground.
-	var deep := 0.0
+	deep = 0.0
 	if _water != null and _water.has_method(&"world_level_at"):
 		var level := float(_water.call(&"world_level_at", global_position))
 		if not is_nan(level):
