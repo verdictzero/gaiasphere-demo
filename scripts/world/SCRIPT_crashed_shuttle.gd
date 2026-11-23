@@ -11,11 +11,13 @@ extends Node3D
 # behind the seats, looking out of the door and up the slope to the light. You
 # come to in the water: swim out and up.
 #
-# WHERE: on the shore side of the mere (the islet is the other way), at the foot
-# of the shelf that falls from the shore to the bed, at a bearing looked for
-# round it well away from the causeway. The hull lies along the fall of the
-# ground, its tail up the shelf and its nose out on the bed, rolled a little to
-# one side.
+# WHERE: on the shore side of the mere, straight across from the causeway, at
+# the foot of the shelf that falls from the shore to the bed, in the divot it
+# dug there, with the gouge it ploughed down the beach and the shelf behind it
+# (both are terrain: FlowTerrain's crash). The hull lies along the gouge, tail
+# up it and nose out on the bed, a little sunk in the sand, rolled a little to
+# one side, with heaps of the rock it turned up round the divot's rim and
+# either side of the gouge.
 #
 # The hull is solid (its own mesh, both faces), so its floor can be stood on and
 # its walls stop you; what grew or lay on the bed under it is cleared.
@@ -25,8 +27,8 @@ extends Node3D
 @export var explorer_path: NodePath = ^"../Explorer"
 ## The model's size against how it was made (its aisle is 1.8 m high as made).
 @export var size := 1.25
-## Metres of water wanted over the bed where it lies.
-@export var depth := Vector2(9.8, 10.9)
+## Metres its belly is sunk into the sand of its divot.
+@export var sunk := 0.4
 ## Degrees it lies over to one side.
 @export var roll := 7.0
 ## How many places on the hull leak air.
@@ -66,44 +68,15 @@ func _ready() -> void:
 		return
 	_level = float(isl.base_y) + float(flows.lagoon_level())
 	var middle: Vector2 = flows.lagoon_center()
-	var ends: PackedVector2Array = flows.causeway_ends()
-	var causeway := (ends[1] - ends[0]).angle()
-	# Round the mere, and in from its outer shore, for the best place to lie.
-	var best := 1e9
-	var at := Vector2.ZERO
-	var fall := Vector2.ZERO
-	var steep := 0.0
-	for i in 180:
-		var th := TAU * float(i) / 180.0
-		if absf(angle_difference(th, causeway)) < 0.5:
-			continue
-		var out := Vector2(cos(th), sin(th))
-		var shores: Vector2 = flows.lagoon_shores(th)
-		for step in 30:
-			var r := shores.y - 3.0 - float(step) * 1.5
-			if r < (shores.x + shores.y) * 0.5:
-				break
-			var p := middle + out * r
-			var h := field.height_at(p.x, p.y, 1e9)
-			var under := _level - h
-			if under < depth.x or under > depth.y:
-				continue
-			var gx := field.height_at(p.x + 2.0, p.y, h) - field.height_at(p.x - 2.0, p.y, h)
-			var gz := field.height_at(p.x, p.y + 2.0, h) - field.height_at(p.x, p.y - 2.0, h)
-			var grade := Vector2(gx, gz) / 4.0
-			var angle := rad_to_deg(atan(grade.length()))
-			if angle < 8.0 or angle > 30.0:
-				continue
-			# Liked best: about 16 degrees, and opposite the causeway.
-			var score := absf(angle - 16.0) + absf(absf(angle_difference(th, causeway)) - PI) * 6.0
-			if score < best:
-				best = score
-				at = p
-				fall = -grade.normalized()
-				steep = atan(grade.length())
-	if best >= 1e9:
-		push_warning("crashed_shuttle: nowhere on the bed suits")
+	# The ground has the place dug into it already (FlowTerrain's crash: a divot at
+	# the foot of the shelf, and the gouge it ploughed coming down the shore).
+	var site: PackedVector2Array = flows.crash_site()
+	if site[1] == Vector2.ZERO:
+		push_warning("crashed_shuttle: the mere has no crash dug in it")
 		return
+	var at: Vector2 = site[0]
+	var fall: Vector2 = -site[1]
+	var steep := 0.0
 	var ground := field.height_at(at.x, at.y, 0.0)
 	# THE HULL IS LONGER THAN THE SLOPE IS EVEN: the shelf steepens above it and
 	# flattens into the bed below. It lies on the two ends of itself, tail up the
@@ -118,7 +91,8 @@ func _ready() -> void:
 	var along := Vector3(fall.x * cos(steep), -sin(steep), fall.y * cos(steep)).normalized()
 	var up := Vector3(fall.x * sin(steep), cos(steep), fall.y * sin(steep)).normalized()
 	var basis := Basis(up.cross(along).normalized(), up, along).rotated(along, deg_to_rad(roll))
-	global_transform = Transform3D(basis.scaled(Vector3.ONE * size), Vector3(at.x, ground, at.y) + up * 1.3 * size)
+	# A little sunk into the sand of its divot.
+	global_transform = Transform3D(basis.scaled(Vector3.ONE * size), Vector3(at.x, ground, at.y) + up * (1.3 * size - sunk))
 	var model: Node3D = (load(MODEL) as PackedScene).instantiate()
 	add_child(model)
 	make_solid(self, model)
@@ -140,6 +114,7 @@ func _ready() -> void:
 		flicker.amount = 0.45
 		lamp.add_child(flicker)
 	_bubbles()
+	_rock_piles(field, at, site[1])
 	var stand := global_transform * STAND
 	_facing = -global_basis.z.normalized()               # out of the door, up the slope
 	_facing.y = 0.0
@@ -222,6 +197,65 @@ func landing_centre() -> Vector2:
 
 func landing_heading() -> Vector2:
 	return _heading
+
+
+# ------------------------------------------------------------------ what it threw up
+
+## ROCK PILES round the divot and along the gouge: what the hull turned up out of
+## the bed and shouldered aside. The island's own boulders, in heaps of a few
+## each, the bigger ones solid.
+func _rock_piles(field: IslandField, at: Vector2, back: Vector2) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 60317
+	var material: Material = load("res://materials/MAT_boulder.tres")
+	var meshes: Array = []
+	var shapes: Array = []
+	for b in Flora.BOULDERS:
+		var scene: Node = (load("res://assets/boulder/%s/%s_lod1.gltf" % [b, b]) as PackedScene).instantiate()
+		var mesh: Mesh = (scene.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+		scene.free()
+		meshes.append(mesh)
+		shapes.append((mesh as ArrayMesh).create_convex_shape(true, true))
+	var holder := Node3D.new()
+	holder.name = "RockPiles"
+	holder.top_level = true                    # (plain metres, not the hull's tilt and size)
+	add_child(holder)
+	holder.global_transform = Transform3D()
+	var body := StaticBody3D.new()
+	holder.add_child(body)
+	var side := Vector2(-back.y, back.x)
+	var spots: Array = []
+	# Round the rim of the divot, leaving the mouth of the gouge open.
+	for i in 9:
+		var ang := TAU * (float(i) + rng.randf_range(-0.25, 0.25)) / 9.0
+		var dir := back.rotated(ang)
+		if dir.dot(back) > 0.8:
+			continue
+		spots.append(at + dir * (FlowTerrain.CRASH_BOWL * rng.randf_range(0.95, 1.2)))
+	# And shouldered out either side of the gouge.
+	for along in [15.0, 25.0, 36.0]:
+		for hand in [-1.0, 1.0]:
+			spots.append(at + back * (along + rng.randf_range(-2.5, 2.5)) + side * hand * (FlowTerrain.CRASH_WIDE * rng.randf_range(0.9, 1.25)))
+	for spot: Vector2 in spots:
+		var count := rng.randi_range(3, 7)
+		for n in count:
+			var big := n == 0
+			var width := rng.randf_range(0.9, 1.5) if big else rng.randf_range(0.3, 0.8)
+			var p: Vector2 = spot if big else spot + Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.6, 1.9)
+			var ground := field.height_at(p.x, p.y, 0.0)
+			var kind := rng.randi_range(0, meshes.size() - 1)
+			var turn := Basis.from_euler(Vector3(rng.randf_range(-0.5, 0.5), rng.randf() * TAU, rng.randf_range(-0.5, 0.5)))
+			var where := Transform3D(turn.scaled(Vector3.ONE * width), Vector3(p.x, ground - 0.12 * width, p.y))
+			var rock := MeshInstance3D.new()
+			rock.mesh = meshes[kind]
+			rock.material_override = material
+			holder.add_child(rock)
+			rock.global_transform = where
+			if width > 0.55:
+				var cs := CollisionShape3D.new()
+				cs.shape = shapes[kind]
+				body.add_child(cs)
+				cs.global_transform = where
 
 
 # ------------------------------------------------------------------ air getting out

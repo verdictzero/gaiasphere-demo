@@ -423,6 +423,7 @@ static func build(field: IslandField, isl: IslandField.Island, base_x: float,
 					cr.y, dv.y, rw)
 			if flows != null:
 				gcolor[k] = flows.splat(gcolor[k], slope, glcone[k], glband[k], glalong[k])
+				gcolor[k] = flows.crash_splat(wx, wz, gcolor[k])
 			# The golf channel is the REMAPPED flatten weight, not the weight: the
 			# ground eases out over a 75 m apron and the mowing does not. See
 			# `IslandField.golf_groom_lo`. The build channel is unremapped — a pad

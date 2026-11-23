@@ -379,8 +379,101 @@ func lagoon(x: float, z: float, g: float) -> float:
 		return lerpf(_flat_h, carved, smoothstep(FLAT_RADIUS, FLAT_RADIUS + FLAT_EASE, from_middle))
 	var cw := causeway_weight(x, z)
 	if cw <= 0.0:
-		return carved
+		return crash(x, z, carved)
 	return lerpf(carved, maxf(carved, _lag_level + CAUSEWAY_RISE), cw)
+
+
+# ------------------------------------------------------------- the crash
+# WHERE THE SHUTTLE CAME DOWN (SCRIPT_crashed_shuttle.gd stands the wreck in it).
+# It came in over the shore, ploughed a GOUGE down the beach and the shelf, and
+# stopped at the foot of the shelf in a DIVOT of its own making: a bowl of sand
+# a couple of dozen metres across with a thrown-up rim. All of it is terrain,
+# from here, so the mesh, the collision and the bake have it; `crash_splat`
+# turns the ground it broke to bare sand.
+#
+# The place is fixed by the mere's own shape: straight across from the causeway,
+# CRASH_IN metres in from the outer shore, facing the middle.
+
+const CRASH_IN := 19.0            ## metres in from the outer shore the wreck lies
+const CRASH_BOWL := 11.0          ## the divot's radius
+const CRASH_DEPTH := 1.5          ## and how deep its middle is dug
+const CRASH_RIM := 0.45           ## the lip thrown up round it
+const CRASH_GOUGE := 48.0         ## how far back up the shore the gouge runs
+const CRASH_WIDE := 5.0           ## its half-width at the wreck (it narrows going back)
+const CRASH_CUT := 1.7            ## and its depth there (it shallows going back)
+
+var _crash_at := Vector2.ZERO
+var _crash_out := Vector2.ZERO    # from the wreck back up the shore: the way it came from, reversed
+
+
+func _place_crash() -> void:
+	if _cw_dir == Vector2.ZERO:
+		return
+	_crash_out = -_cw_dir
+	var shores := lagoon_shores(_crash_out.angle())
+	_crash_at = _lag_c + _crash_out * (shores.y - CRASH_IN)
+
+
+## Where the wreck lies and the way back up its gouge, world metres; (0, 0) twice if there is none.
+func crash_site() -> PackedVector2Array:
+	return PackedVector2Array([_crash_at, _crash_out])
+
+
+## (how much of the divot, how much of the gouge) is at a point, each 0 to 1.
+func crash_weight(x: float, z: float) -> Vector2:
+	if _crash_out == Vector2.ZERO:
+		return Vector2.ZERO
+	var d := Vector2(x, z) - _crash_at
+	var far := d.length()
+	if far > CRASH_GOUGE + CRASH_BOWL:
+		return Vector2.ZERO
+	var bowl := 1.0 - smoothstep(CRASH_BOWL * 0.25, CRASH_BOWL, far)
+	var along := d.dot(_crash_out)
+	var gouge := 0.0
+	if along > -2.0 and along < CRASH_GOUGE:
+		var t := clampf(along / CRASH_GOUGE, 0.0, 1.0)
+		var wide := lerpf(CRASH_WIDE, CRASH_WIDE * 0.45, t)
+		# It wanders a little: nothing that weighs what a shuttle does slides straight.
+		var off := absf(d.dot(Vector2(-_crash_out.y, _crash_out.x)) - 1.2 * sin(along * 0.16))
+		gouge = (1.0 - smoothstep(wide * 0.45, wide, off)) * (1.0 - t * t) * smoothstep(-2.0, 2.0, along)
+	return Vector2(bowl, gouge)
+
+
+## The ground `h` at a point with the crash dug into it.
+func crash(x: float, z: float, h: float) -> float:
+	if _crash_out == Vector2.ZERO:
+		return h
+	var w := crash_weight(x, z)
+	if w.x <= 0.0 and w.y <= 0.0:
+		# The rim stands a little way outside the bowl.
+		var far := Vector2(x, z).distance_to(_crash_at)
+		if far < CRASH_BOWL * 1.5:
+			var lip := far / CRASH_BOWL
+			return h + CRASH_RIM * smoothstep(1.0, 1.12, lip) * (1.0 - smoothstep(1.12, 1.5, lip))
+		return h
+	var d := Vector2(x, z) - _crash_at
+	var along := d.dot(_crash_out)
+	var t := clampf(along / CRASH_GOUGE, 0.0, 1.0)
+	var dug := h - CRASH_DEPTH * w.x
+	var cut := h - CRASH_CUT * lerpf(1.0, 0.25, t) * w.y
+	# Above the water the gouge is never cut below it: there is no water to fill
+	# a trench in the beach, and one dug under the mere's level would stand dry.
+	if h > _lag_level + 0.15:
+		cut = maxf(cut, _lag_level + 0.15)
+	var out := minf(dug, cut)
+	# Thrown up either side of the gouge, and round the bowl where the gouge does not leave it.
+	var far2 := d.length() / CRASH_BOWL
+	out += CRASH_RIM * smoothstep(0.85, 1.0, far2) * (1.0 - smoothstep(1.0, 1.4, far2)) * (1.0 - w.y)
+	return out
+
+
+## The ground's surface where the crash broke it: bare sand.
+func crash_splat(x: float, z: float, w: Color) -> Color:
+	if _crash_out == Vector2.ZERO:
+		return w
+	var c := crash_weight(x, z)
+	var bare := maxf(smoothstep(0.0, 0.5, c.x), smoothstep(0.05, 0.5, c.y))
+	return w.lerp(Color(0.0, 0.0, 0.0, 1.0), bare) if bare > 0.0 else w
 
 
 func _lagoon_carve(x: float, z: float, g: float) -> float:
@@ -839,6 +932,7 @@ func _place_lagoon(field: IslandField, isl, zones: Array) -> void:
 	field.zone_at(_lag_c.x, _lag_c.y, zones, zi)
 	_flat_h = field.base_height(_lag_c.x, _lag_c.y, mc, isl, zi[4], zi[1], false) - isl.base_y
 	_place_causeway()
+	_place_crash()
 
 
 # Clear of every hole and pad by `gap` past its reach, and of every ruin line?

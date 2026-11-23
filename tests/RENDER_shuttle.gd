@@ -85,6 +85,20 @@ func _process(_dt: float) -> bool:
 			_wait = 40
 		4:
 			_shot("4_from_over_the_water")
+			# From the shore, down the gouge it ploughed, to where it lies.
+			var water2: float = _scene.get_node("RiverWater").call(&"world_level_at", t.origin)
+			var back: Vector3 = -t.basis.z.normalized()
+			back.y = 0.0
+			back = back.normalized()
+			_look(explorer, Vector3(t.origin.x, water2 + 9.0, t.origin.z) + back * 50.0, Vector3(t.origin.x, water2 - 4.0, t.origin.z) + back * 8.0)
+			_wait = 40
+		5:
+			_shot("5_down_the_gouge")
+			# And the divot and its rock piles, from in the water above them.
+			_look(explorer, t.origin + Vector3(13.0, 9.0, 10.0), t.origin + Vector3(0, -1.0, 0))
+			_wait = 40
+		6:
+			_shot("6_divot_and_rocks")
 			print("shuttle: ok" if not _failed else "shuttle: FAILED")
 			quit(1 if _failed else 0)
 			return true

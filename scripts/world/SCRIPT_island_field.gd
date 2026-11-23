@@ -7006,6 +7006,7 @@ func sample(x: float, z: float) -> Dictionary:
 	if flows != null:
 		flows.info(x, z, mask, lv)
 		w = flows.splat(w, base_slope, lv[3], lv[0], lv[1])
+		w = flows.crash_splat(x, z, w)
 
 	# The SURFACE normal, off the dished-out ground the ball actually rolls on.
 	# Only worth deriving where a trap or a crater can exist; everywhere else the
