@@ -260,35 +260,54 @@ func _rock_piles(field: IslandField, at: Vector2, back: Vector2) -> void:
 
 # ------------------------------------------------------------------ air getting out
 
-## A bubble: a thin bright rim, a faint body, and a glint high on one side.
-static func bubble_texture() -> Texture2D:
-	var side := 64
-	var img := Image.create(side, side, true, Image.FORMAT_RGBA8)
+## A bubble, as three layers a light can work on: [0] its colour with only a thin
+## wall of it there at all, [1] the lie of that wall as a normal map (a ball's,
+## leaning out to the edge), [2] roughness in red and metalness in green. No
+## shine is painted on: what glints is what the sun and the torch put there.
+static func bubble_layers() -> Array:
+	var side := 128
+	var colour := Image.create(side, side, true, Image.FORMAT_RGBA8)
+	var lie := Image.create(side, side, true, Image.FORMAT_RGBA8)
+	var feel := Image.create(side, side, true, Image.FORMAT_RGBA8)
 	for y in side:
 		for x in side:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / float(side) * 2.0 - Vector2.ONE
 			var r := p.length()
-			var rim := smoothstep(0.5, 0.8, r) * (1.0 - smoothstep(0.92, 1.0, r))
-			var body := (1.0 - smoothstep(0.85, 0.97, r)) * 0.1
-			var glint := 1.0 - smoothstep(0.0, 0.3, (p - Vector2(-0.3, -0.34)).length())
-			var a := clampf(rim * 0.85 + body + glint * 0.9, 0.0, 1.0)
-			img.set_pixel(x, y, Color(0.86, 0.95, 1.0, a))
-	img.generate_mipmaps()
-	return ImageTexture.create_from_image(img)
+			# The wall: a hair of a ring, thinner than the bubble is wide by far.
+			var wall := smoothstep(0.84, 0.89, r) * (1.0 - smoothstep(0.93, 0.98, r))
+			colour.set_pixel(x, y, Color(0.8, 0.9, 0.95, wall))
+			var flat := p.limit_length(0.96)
+			var n := Vector3(flat.x, -flat.y, sqrt(maxf(1.0 - flat.length_squared(), 0.0))).normalized()
+			lie.set_pixel(x, y, Color(n.x * 0.5 + 0.5, n.y * 0.5 + 0.5, n.z * 0.5 + 0.5, 1.0))
+			# Glassy and mirror-like (air under water is), a touch duller at the very edge.
+			var rough := lerpf(0.08, 0.3, smoothstep(0.9, 0.98, r))
+			feel.set_pixel(x, y, Color(rough, 0.85, 0.0, 1.0))
+	var out: Array = []
+	for img: Image in [colour, lie, feel]:
+		img.generate_mipmaps()
+		out.append(ImageTexture.create_from_image(img))
+	return out
 
 
 func _bubbles() -> void:
+	var layers := bubble_layers()
 	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = bubble_texture()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_texture = layers[0]
+	mat.normal_enabled = true
+	mat.normal_texture = layers[1]
+	mat.roughness = 1.0
+	mat.roughness_texture = layers[2]
+	mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	mat.metallic = 1.0
+	mat.metallic_texture = layers[2]
+	mat.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
 	# CUT OUT, NOT BLENDED. Under water the whole view is redrawn from a copy of
 	# the screen taken before anything see-through is drawn (SHADER_underwater, and
 	# the water's own surface from above), so a blended bubble is painted over
 	# and never seen. A cut-out one is solid where it is there at all, is in that
-	# copy, and is seen: its rim and its glint, with the water showing through
-	# its middle.
+	# copy, and is seen: its thin wall, with the water showing through its middle.
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	mat.alpha_scissor_threshold = 0.38
+	mat.alpha_scissor_threshold = 0.3
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.billboard_keep_scale = true
 	mat.vertex_color_use_as_albedo = true
