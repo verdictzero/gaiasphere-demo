@@ -242,13 +242,20 @@ func _bubbles() -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = bubble_texture()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	# CUT OUT, NOT BLENDED. Under water the whole view is redrawn from a copy of
+	# the screen taken before anything see-through is drawn (SHADER_underwater, and
+	# the water's own surface from above), so a blended bubble is painted over
+	# and never seen. A cut-out one is solid where it is there at all, is in that
+	# copy, and is seen: its rim and its glint, with the water showing through
+	# its middle.
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	mat.alpha_scissor_threshold = 0.38
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.billboard_keep_scale = true
 	mat.vertex_color_use_as_albedo = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.16, 0.16)
+	quad.size = Vector2(0.2, 0.2)
 	quad.material = mat
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 8841
@@ -290,8 +297,8 @@ func _bubbles() -> void:
 		swell_tex.curve = swell
 		m.scale_curve = swell_tex
 		var g := Gradient.new()
-		g.offsets = PackedFloat32Array([0.0, 0.06, 0.94, 1.0])
-		g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.9), Color(1, 1, 1, 0.8), Color(1, 1, 1, 0)])
+		g.offsets = PackedFloat32Array([0.0, 0.03, 0.97, 1.0])
+		g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
 		var ramp := GradientTexture1D.new()
 		ramp.gradient = g
 		m.color_ramp = ramp
