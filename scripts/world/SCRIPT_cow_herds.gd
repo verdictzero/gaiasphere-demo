@@ -53,6 +53,8 @@ var _field: IslandField
 var _herds: Array = []        # each {"home", "centre", "wait", "cows": [...]}
 var _rng := RandomNumberGenerator.new()
 var _placed := false
+var _islet := Vector2.ZERO
+var _islet_reach := 0.0
 
 
 func _ready() -> void:
@@ -73,6 +75,9 @@ func _ground(at: Vector3, fallback: float) -> float:
 func _pasture(x: float, z: float, open := 0.9) -> bool:
 	if Flora.meadow(x, z) < open:
 		return false
+	# (The islet in the mere is deep wood whatever the meadows' map says of it.)
+	if Vector2(x, z).distance_to(_islet) < _islet_reach:
+		return false
 	var s := _field.sample(x, z)
 	if not bool(s.get("on_land", false)):
 		return false
@@ -82,6 +87,9 @@ func _pasture(x: float, z: float, open := 0.9) -> bool:
 
 func _place(start: Vector3) -> void:
 	_field = _world.call(&"get_field")
+	_islet = SwordStone.site(_field)
+	var islet: Variant = _field.get("flow_lagoon_islet")
+	_islet_reach = float(islet) * 1.05 if islet != null else 0.0
 	var scene := load(MODEL) as PackedScene
 	var homes: Array = []
 	for attempt in 2500:
@@ -194,7 +202,7 @@ func _rest(cow: Dictionary) -> void:
 func _go(cow: Dictionary, to: Vector2) -> void:
 	# Never into the trees of its own accord: a spot outside the meadow is given
 	# up for where it is.
-	if Flora.meadow(to.x, to.y) < 0.6:
+	if Flora.meadow(to.x, to.y) < 0.6 or to.distance_to(_islet) < _islet_reach:
 		var node: Node3D = cow["node"]
 		to = Vector2(node.position.x, node.position.z)
 	cow["state"] = "move"
