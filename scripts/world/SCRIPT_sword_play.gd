@@ -55,6 +55,7 @@ const PICK_BLOW := [Vector3(62.0, -4.0, -10.0), Vector3(-92.0, 4.0, 10.0)]
 const FOOD := {
 	"berry": ["berry_food", "res://assets/berry_bush/berry_cluster.png"],
 	"beef": ["beef_food", "res://assets/ui/item_beef.png"],
+	"steak": ["steak_food", "res://assets/ui/item_steak.png"],
 }
 # The katana model: metres per unit, and how far up from its middle (its own units) the hand closes.
 const KATANA_SCALE := 0.0046

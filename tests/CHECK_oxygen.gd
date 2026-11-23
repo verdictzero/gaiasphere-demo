@@ -55,13 +55,13 @@ func _process(_dt: float) -> bool:
 	ok = ok and v.oxygen >= 100.0 and v.health >= 100.0
 	var bag := Inventory.new()
 	bag.slots.resize(Inventory.BAG)
-	var able := bag.can_craft(5)
-	var made := bag.craft(5)
+	var able := bag.can_craft(6)
+	var made := bag.craft(6)
 	print("oxygen:   can %s, made %s, holds %d" % [able, made, bag.count_of("foundation")])
 	ok = ok and able and made and bag.count_of("foundation") == 1
 	print("oxygen: god mode, a foundation crafted out of nothing: %s" % (bag.count_of("foundation") == 1))
 	Vitals.debug = false
-	ok = ok and not bag.can_craft(5)
+	ok = ok and not bag.can_craft(6)
 	bag.free()
 	print("oxygen: ok" if ok else "oxygen: FAILED")
 	quit(0 if ok else 1)

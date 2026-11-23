@@ -28,6 +28,7 @@ const ITEMS := {
 	"stone": {"name": "Stone", "icon": "res://assets/ui/item_stone.png"},
 	"berry": {"name": "Berries", "icon": "res://assets/ui/item_berry.png"},
 	"beef": {"name": "Raw Beef", "icon": "res://assets/ui/item_beef.png"},
+	"steak": {"name": "Cooked Beef", "icon": "res://assets/ui/item_steak.png"},
 	"wall": {"name": "Plank Wall", "icon": "res://assets/ui/item_wall.png"},
 	"doorway": {"name": "Doorway and Door", "icon": "res://assets/ui/item_doorway.png"},
 	"floor": {"name": "Plank Floor", "icon": "res://assets/ui/item_floor.png"},
@@ -39,6 +40,8 @@ const ITEMS := {
 
 ## What can be made, in the order the list shows it, and what each takes.
 const RECIPES := [
+	# (Until there is a fire to cook on: a log burnt under a cut of beef.)
+	{"makes": "steak", "needs": {"beef": 1, "log": 1}},
 	{"makes": "wall", "needs": {"log": 4}},
 	{"makes": "doorway", "needs": {"log": 6}},
 	{"makes": "floor", "needs": {"log": 3}},
@@ -268,7 +271,7 @@ func _panel_rect() -> Rect2:
 
 const CRAFT_W := 430.0
 const CRAFT_GAP := 22.0
-const CRAFT_ROW := 55.0
+const CRAFT_ROW := 50.0
 
 
 func _craft_rect() -> Rect2:
