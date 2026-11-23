@@ -9,7 +9,7 @@
 //   lod_in   where this level starts taking over from the nearer one (0: it is the nearest)
 //   lod_out  where it hands over to the next, or fades out for good (0: never)
 //
-//   vertex():    lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
+//   vertex():    lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, MAIN_CAM_INV_VIEW_MATRIX[3].xyz);
 //   fragment():  if (lod_fade_discard(FRAGCOORD.xy)) { discard; }
 instance uniform float lod_in = 0.0;
 instance uniform float lod_out = 0.0;

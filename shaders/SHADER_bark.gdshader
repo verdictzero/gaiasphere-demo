@@ -15,7 +15,7 @@ uniform float normal_strength : hint_range(0.0, 6.0) = 3.0;
 global uniform float enviro_wetness;
 
 void vertex() {
-	lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD);
+	lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, MAIN_CAM_INV_VIEW_MATRIX[3].xyz);
 	VERTEX += wind_offset(VERTEX, UV2, wind_bend, 0.0);
 	if (lod_fade_gone(lod_keep)) {
 		VERTEX = MODEL_MATRIX[3].xyz;

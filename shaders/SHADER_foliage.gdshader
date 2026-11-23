@@ -50,11 +50,11 @@ varying float near_keep;
 
 void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
-	lod_keep = lod_fade_window(root, CAMERA_POSITION_WORLD);
+	lod_keep = lod_fade_window(root, MAIN_CAM_INV_VIEW_MATRIX[3].xyz);
 	dissolve = 0.0;
-	near_keep = near_solid > 0.0 ? smoothstep(near_gone, near_solid, distance(root.xz, CAMERA_POSITION_WORLD.xz)) : 1.0;
+	near_keep = near_solid > 0.0 ? smoothstep(near_gone, near_solid, distance(root.xz, MAIN_CAM_INV_VIEW_MATRIX[3].xyz.xz)) : 1.0;
 	if (fade_end > 0.0) {
-		float d = distance(root, CAMERA_POSITION_WORLD);
+		float d = distance(root, MAIN_CAM_INV_VIEW_MATRIX[3].xyz);
 		dissolve = smoothstep(fade_start, fade_end, d);
 		// INSTANCE_CUSTOM.z is the clump's lot: low numbers go first.
 		float gone = smoothstep(thin_start, thin_end, d) * (1.0 - thin_keep);
