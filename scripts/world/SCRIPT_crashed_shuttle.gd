@@ -268,9 +268,9 @@ static func bubble_texture() -> Texture2D:
 		for x in side:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / float(side) * 2.0 - Vector2.ONE
 			var r := p.length()
-			var rim := smoothstep(0.62, 0.9, r) * (1.0 - smoothstep(0.9, 1.0, r))
+			var rim := smoothstep(0.5, 0.8, r) * (1.0 - smoothstep(0.92, 1.0, r))
 			var body := (1.0 - smoothstep(0.85, 0.97, r)) * 0.1
-			var glint := 1.0 - smoothstep(0.0, 0.22, (p - Vector2(-0.34, -0.38)).length())
+			var glint := 1.0 - smoothstep(0.0, 0.3, (p - Vector2(-0.3, -0.34)).length())
 			var a := clampf(rim * 0.85 + body + glint * 0.9, 0.0, 1.0)
 			img.set_pixel(x, y, Color(0.86, 0.95, 1.0, a))
 	img.generate_mipmaps()
@@ -294,7 +294,7 @@ func _bubbles() -> void:
 	mat.vertex_color_use_as_albedo = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.2, 0.2)
+	quad.size = Vector2(0.36, 0.36)
 	quad.material = mat
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 8841
