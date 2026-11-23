@@ -438,8 +438,11 @@ func _no_bloom() -> void:
 				if made == null:
 					continue
 				var dull := made.duplicate() as BaseMaterial3D
-				dull.metallic = minf(dull.metallic, 1.0) * 0.45
-				dull.metallic_specular = 0.25
+				# (Its metal is left as it is: taking that down turned the wood of the
+				# handle grey, the whole of the model being marked as metal.) Only the
+				# sharpest of the highlight is taken off, by a floor under its roughness.
+				dull.roughness = maxf(dull.roughness, 1.0)
+				dull.metallic_specular = 0.35
 				dull.emission_enabled = false
 				mesh_node.set_surface_override_material(surface, dull)
 	_hand_light = OmniLight3D.new()
