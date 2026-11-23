@@ -100,6 +100,10 @@ func _place(start: Vector3) -> void:
 	_islet_reach = float(islet) * 1.05 if islet != null else 0.0
 	var scene := load(MODEL) as PackedScene
 	var homes: Array = []
+	# The meadow by the wreck always has a herd in it.
+	var glade := Flora.glade()
+	if glade.z > 0.0 and _pasture(glade.x, glade.y):
+		homes.append(Vector2(glade.x, glade.y))
 	for attempt in 2500:
 		if homes.size() >= herds:
 			break

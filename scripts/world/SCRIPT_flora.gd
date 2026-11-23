@@ -86,6 +86,12 @@ func _ready() -> void:
 		_path_b = ends[1]
 		_path_half = 2.9
 		_mere_reach = float(_field.get("flow_lagoon_radius")) * 1.25
+	_glade = Vector3.ZERO
+	if flows != null and flows.has_lagoon():
+		var site: PackedVector2Array = flows.crash_site()
+		if site[1] != Vector2.ZERO:
+			var mid := site[0] + site[1] * GLADE_UP_SHORE
+			_glade = Vector3(mid.x, mid.y, GLADE_REACH)
 	_islet_radius = float(_field.get("flow_lagoon_islet")) * 0.86 if _field.get("flow_lagoon_islet") != null else 0.0
 	_build_layers()
 
@@ -489,7 +495,24 @@ static func _smooth_noise(x: float, z: float, salt: int) -> float:
 ## forest stops and the grass grows thick. 0 in the wood, 1 well inside a meadow.
 static func meadow(x: float, z: float) -> float:
 	var n := _smooth_noise(x / 210.0, z / 210.0, 71) * 0.7 + _smooth_noise(x / 70.0, z / 70.0, 72) * 0.3
-	return smoothstep(0.56, 0.66, n)
+	var open := smoothstep(0.56, 0.66, n)
+	if _glade.z > 0.0:
+		# The one meadow that is put there: its edge ragged like the others'.
+		var far := Vector2(x - _glade.x, z - _glade.y).length() + (_smooth_noise(x / 16.0, z / 16.0, 73) - 0.5) * 16.0
+		open = maxf(open, 1.0 - smoothstep(_glade.z * 0.72, _glade.z, far))
+	return open
+
+
+## THE MEADOW BY THE WRECK: the first open ground you come to up the shore from
+## where the shuttle went in, so there are cows to be found at once. (x, z, its
+## reach in metres); a reach of 0 when there is none.
+const GLADE_UP_SHORE := 92.0
+const GLADE_REACH := 60.0
+static var _glade := Vector3.ZERO
+
+
+static func glade() -> Vector3:
+	return _glade
 
 
 static func _push(buf: PackedFloat32Array, basis: Basis, at: Vector3) -> void:
