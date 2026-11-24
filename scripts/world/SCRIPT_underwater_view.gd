@@ -69,11 +69,15 @@ func _wanted() -> bool:
 		var middle: Vector2 = flows.lagoon_center()
 		var shores: Vector2 = flows.lagoon_shores((Vector2(p.x, p.z) - middle).angle())
 		if Vector2(p.x, p.z).distance_to(middle) < shores.y + 6.0:
-			height = float(surface.get_shader_parameter(&"wave_height"))
-			_mat.set_shader_parameter(&"swell_centre", surface.get_shader_parameter(&"mere_centre"))
+			# (A value the material leaves alone reads as null: the shader's own then.)
+			var read := func(what: StringName, otherwise: float) -> float:
+				var v: Variant = surface.get_shader_parameter(what)
+				return float(v) if v != null else otherwise
+			height = read.call(&"wave_height", 0.42)
+			_mat.set_shader_parameter(&"swell_centre", middle)
 			_mat.set_shader_parameter(&"swell_noise", surface.get_shader_parameter(&"swell_noise"))
-			_mat.set_shader_parameter(&"swell_length", surface.get_shader_parameter(&"wave_length"))
-			_mat.set_shader_parameter(&"swell_pace", surface.get_shader_parameter(&"wave_pace"))
+			_mat.set_shader_parameter(&"swell_length", read.call(&"wave_length", 13.0))
+			_mat.set_shader_parameter(&"swell_pace", read.call(&"wave_pace", 2.6))
 			rise = height * 0.65 * 3.0
 	_mat.set_shader_parameter(&"swell_height", height)
 	return p.y + lens_low(cam) < y + rise + 0.02

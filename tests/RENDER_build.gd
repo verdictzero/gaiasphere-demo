@@ -188,17 +188,18 @@ func _process(_dt: float) -> bool:
 			_wait = 15
 		8:
 			_shot("4_wall_down")
-			# A flight of plank stairs outside the open end, climbing in to the eaves.
-			if built.put(0, "stairs", Vector3(5, 0.0, 1), Vector3(-1, 0, 0)) == null:
+			# A flight of plank stairs standing clear of the open end (under the eaves
+			# there is no headroom at the top of one).
+			if built.put(0, "stairs", Vector3(7, 0.0, 1), Vector3(-1, 0, 0)) == null:
 				_fail("the stairs would not go where they were put")
 			explorer.flying = true
-			_look(explorer, _frame * Vector3(8.5, 2.6, 4.6), _frame * Vector3(5.0, 1.0, 1.0))
+			_look(explorer, _frame * Vector3(10.5, 2.6, 4.6), _frame * Vector3(7.0, 1.0, 1.0))
 			_wait = 25
 		9:
 			_shot("5_stairs")
 			# Set on the bottom tread, and walked up.
 			explorer.flying = false
-			_look(explorer, _frame * Vector3(5.75, 2.2, 1.0), _frame * Vector3(3.0, 2.2, 1.0))
+			_look(explorer, _frame * Vector3(7.75, 2.2, 1.0), _frame * Vector3(5.0, 2.2, 1.0))
 			_walked = 0
 			_wait = 12
 		10:
