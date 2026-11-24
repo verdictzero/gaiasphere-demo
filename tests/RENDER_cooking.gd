@@ -83,6 +83,9 @@ func _process(_dt: float) -> bool:
 			print("cooking: %d cuts on the fire, %d raw left in the bag" % [on, bag.count_of("beef")])
 			if on != 3 or bag.count_of("beef") != 1:
 				_fail("three cuts should be on and one left")
+			# Stepped back and looking up at the rings over it.
+			explorer.global_position += explorer.global_basis.z * 1.6
+			cam.rotation.x = 0.3
 			_wait = 6
 		3:
 			_shot("2_cooking")
