@@ -121,7 +121,7 @@ func _no_phantom_clicks() -> void:
 
 
 func _k() -> float:
-	return size.y / 1080.0
+	return UiFit.scale(size)
 
 
 func _menu_open() -> bool:
@@ -140,13 +140,15 @@ func _shown(i: int) -> bool:
 
 
 func _thumb_centre(i: int) -> Vector2:
-	return size + (THUMB[i]["at"] as Vector2) * _k()
+	var edge := UiFit.insets(size)
+	return size - Vector2(edge.z, edge.w) + (THUMB[i]["at"] as Vector2) * _k()
 
 
 func _row_rect(i: int) -> Rect2:
 	var k := _k()
 	var w := 128.0 * k
-	return Rect2(Vector2(size.x - 24.0 * k - (w + 12.0 * k) * float(i) - w, 22.0 * k), Vector2(w, 60.0 * k))
+	var edge := UiFit.insets(size)
+	return Rect2(Vector2(size.x - edge.z - 24.0 * k - (w + 12.0 * k) * float(i) - w, 22.0 * k + edge.y), Vector2(w, 60.0 * k))
 
 
 ## The strip along the bottom the hotbar and the bars live in: touches there are
@@ -322,7 +324,8 @@ func _draw() -> void:
 		draw_arc(_stick_origin, STICK_RADIUS * k, 0.0, TAU, 56, ring, 3.0 * k, true)
 		draw_circle(_stick_origin + _stick * STICK_RADIUS * k, 48.0 * k, Color(1, 1, 1, 0.4))
 	else:
-		var hint := Vector2(250.0 * k, size.y - 250.0 * k)
+		var edge := UiFit.insets(size)
+		var hint := Vector2(250.0 * k + edge.x, size.y - 250.0 * k - edge.w)
 		draw_arc(hint, STICK_RADIUS * k, 0.0, TAU, 56, Color(1, 1, 1, 0.13), 3.0 * k, true)
 		draw_circle(hint, 30.0 * k, Color(1, 1, 1, 0.08))
 	# The right thumb's buttons.

@@ -283,7 +283,7 @@ func _input(event: InputEvent) -> void:
 # ------------------------------------------------------------------ layout
 
 func _k() -> float:
-	return _view.size.y / 1080.0
+	return UiFit.scale(_view.size)
 
 
 func _panel_rect() -> Rect2:

@@ -259,7 +259,7 @@ func _input(event: InputEvent) -> void:
 # ------------------------------------------------------------------ layout
 
 func _k() -> float:
-	return _view.size.y / 1080.0
+	return UiFit.scale(_view.size)
 
 
 func _panel_rect() -> Rect2:
@@ -279,7 +279,10 @@ const CRAFT_ROW := 50.0
 
 func _craft_rect() -> Rect2:
 	var p := _panel_rect()
-	return Rect2(Vector2(p.end.x + CRAFT_GAP * _k(), p.position.y), Vector2(CRAFT_W * _k(), p.size.y))
+	# As tall as the bag, or as its list needs if that is more, the two centred
+	# on each other.
+	var tall := maxf(p.size.y, (70.0 + CRAFT_ROW * float(RECIPES.size()) + 12.0) * _k())
+	return Rect2(Vector2(p.end.x + CRAFT_GAP * _k(), p.get_center().y - tall * 0.5), Vector2(CRAFT_W * _k(), tall))
 
 
 func _craft_row(i: int) -> Rect2:

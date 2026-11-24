@@ -335,7 +335,7 @@ func _box(r: Rect2, fill: Color, radius: float, edge := Color(0, 0, 0, 0), width
 func _draw_view() -> void:
 	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
 		return
-	var k := _view.size.y / 1080.0
+	var k := UiFit.scale(_view.size)
 	# Harm: red in at the edges of the screen, gone in a moment.
 	if _hurt > 0.01:
 		var deep := 150.0 * k

@@ -29,13 +29,14 @@ func _ready() -> void:
 
 func _place() -> void:
 	var view := get_viewport().get_visible_rect().size
-	var w := view.y * size
+	var w := UiFit.scale(view) * UiFit.TALL * size
 	var h := w * float(_rect.texture.get_height()) / float(_rect.texture.get_width())
 	var gap := view.y * 0.022
+	var edge := UiFit.insets(view)
 	_rect.size = Vector2(w, h)
 	# On a touchscreen the bottom left is the walking thumb's: the logo goes up
 	# to the top left instead.
 	if DisplayServer.is_touchscreen_available() or at_top:
-		_rect.position = Vector2(gap, gap * 2.6)
+		_rect.position = Vector2(gap + edge.x, gap * 2.6 + edge.y)
 	else:
 		_rect.position = Vector2(gap, view.y - h - gap)
