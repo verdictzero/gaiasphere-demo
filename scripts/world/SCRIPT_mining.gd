@@ -33,6 +33,8 @@ var _grit_flow: ParticleProcessMaterial
 var _dust_flow: ParticleProcessMaterial
 var _grit_mesh: Mesh
 var _dust_mesh: QuadMesh
+var _spark_flow: ParticleProcessMaterial
+var _spark_mesh: QuadMesh
 var _shapes := {}            # kind of boulder -> convex shape of its low mesh
 var _rng := RandomNumberGenerator.new()
 
@@ -121,6 +123,37 @@ func _ready() -> void:
 	var thin_tex := GradientTexture1D.new()
 	thin_tex.gradient = thin
 	_dust_flow.color_ramp = thin_tex
+	# SPARKS: steel on stone. Short hot streaks laid along the way they fly,
+	# thrown out off the face, falling, and out in a third of a second.
+	var spark := StandardMaterial3D.new()
+	spark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	spark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	spark.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	spark.vertex_color_use_as_albedo = true
+	spark.albedo_color = Color(2.6, 1.7, 0.7)
+	spark.albedo_texture = _puff_texture()
+	spark.cull_mode = BaseMaterial3D.CULL_DISABLED
+	spark.disable_fog = true
+	_spark_mesh = QuadMesh.new()
+	_spark_mesh.size = Vector2(0.014, 0.15)
+	_spark_mesh.material = spark
+	_spark_flow = ParticleProcessMaterial.new()
+	_spark_flow.particle_flag_align_y = true
+	_spark_flow.direction = Vector3(0, 0, -1)
+	_spark_flow.spread = 62.0
+	_spark_flow.initial_velocity_min = 2.5
+	_spark_flow.initial_velocity_max = 9.0
+	_spark_flow.gravity = Vector3(0, -9.0, 0)
+	_spark_flow.damping_min = 1.0
+	_spark_flow.damping_max = 3.0
+	_spark_flow.scale_min = 0.45
+	_spark_flow.scale_max = 1.3
+	var cool := Gradient.new()
+	cool.offsets = PackedFloat32Array([0.0, 0.25, 1.0])
+	cool.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 0.75, 0.4, 1), Color(0.9, 0.25, 0.05, 0)])
+	var cool_tex := GradientTexture1D.new()
+	cool_tex.gradient = cool
+	_spark_flow.color_ramp = cool_tex
 	_warm_up.call_deferred()
 
 
@@ -166,6 +199,42 @@ func aimed(from: Vector3, dir: Vector3) -> bool:
 	return _flora != null and not _flora.rock_on(from, dir, reach, _skip()).is_empty()
 
 
+## How far along `dir` the boulder a swing would meet is, metres; -1 if none.
+func rock_at(from: Vector3, dir: Vector3) -> float:
+	if _flora == null:
+		return -1.0
+	var rock := _flora.rock_on(from, dir, reach, _skip())
+	return from.distance_to(rock["at"]) if not rock.is_empty() else -1.0
+
+
+## The point strikes fire: a spray of sparks off the face and a blink of light.
+func _sparks(at: Vector3, out: Vector3) -> void:
+	var p := GPUParticles3D.new()
+	p.amount = _rng.randi_range(18, 30)
+	p.lifetime = 0.34
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.randomness = 0.6
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.process_material = _spark_flow
+	p.draw_pass_1 = _spark_mesh
+	p.visibility_aabb = AABB(Vector3.ONE * -6.0, Vector3.ONE * 12.0)
+	add_child(p)
+	p.global_transform = Transform3D(Basis.looking_at(out, Vector3.UP if absf(out.y) < 0.95 else Vector3.RIGHT), at + out * 0.03)
+	p.emitting = true
+	get_tree().create_timer(1.0).timeout.connect(p.queue_free)
+	var flash := OmniLight3D.new()
+	flash.light_color = Color(1.0, 0.72, 0.38)
+	flash.light_energy = 2.4
+	flash.omni_range = 3.5
+	flash.shadow_enabled = false
+	add_child(flash)
+	flash.global_position = at + out * 0.2
+	var fade := create_tween()
+	fade.tween_property(flash, "light_energy", 0.0, 0.14)
+	fade.tween_callback(flash.queue_free)
+
+
 ## A swing of the pickaxe from `from` along `dir`. True if it met a boulder.
 func strike(from: Vector3, dir: Vector3) -> bool:
 	if _flora == null:
@@ -180,6 +249,7 @@ func strike(from: Vector3, dir: Vector3) -> bool:
 	var landed := int(_blows.get(origin, 0)) + 1
 	var needed := blows_for(span)
 	_burst(at, out, 22, 7)
+	_sparks(at, out)
 	if landed < needed:
 		_blows[origin] = landed
 		# Every other blow a stone comes away where the point went in.

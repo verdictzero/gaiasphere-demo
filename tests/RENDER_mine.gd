@@ -8,6 +8,7 @@ extends SceneTree
 var _scene: Node
 var _out := "user://"
 var _step := -1
+var _tries := 0
 var _wait := 0
 var _failed := false
 var _rock := Vector3.ZERO
@@ -97,6 +98,11 @@ func _process(_dt: float) -> bool:
 			_look(explorer, _rock + Vector3(0, 0.25, 0))
 			_wait = 30
 		1:
+			# (Under --fixed-fps frames outrun the clock: wait on the boulders'
+			# collision itself, which is made in its own time.)
+			if not mine.aimed(cam.global_position, -cam.global_basis.z) and _tries < 400:
+				_tries += 1
+				return false
 			if play.tool != "pickaxe":
 				_fail("the hand holds '%s', not the pickaxe" % play.tool)
 			_shot("0_pickaxe_in_hand")
@@ -109,8 +115,11 @@ func _process(_dt: float) -> bool:
 			print("mine: %.2f m across, %d blows, %d stones" % [rock.get("span", 0.0), Mining.blows_for(float(rock.get("span", 0.0))),
 					Mining.yield_of(float(rock.get("span", 0.0)))])
 			mine.strike(cam.global_position, -cam.global_basis.z)
-			mine.strike(cam.global_position, -cam.global_basis.z)
-			_wait = 2
+			# And one swung by the hand: stopped on the rock, sparks, thrown back.
+			# (Run with --fixed-fps 30: the blow lands 0.29 s in, the picture is
+			# taken two frames after.)
+			play._cut(false)
+			_wait = 11
 		2:
 			_shot("1_blow")
 			var n := 0

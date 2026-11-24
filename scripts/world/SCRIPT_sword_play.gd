@@ -577,6 +577,19 @@ func _cut(charged: bool) -> void:
 		settle = 2.0
 		# The arm goes with the blade: reaching along the cut, then settling back.
 		reach_to = HAND + Vector3(_rng.randf_range(-0.12, 0.06), _rng.randf_range(-0.06, 0.08), _rng.randf_range(-0.26, -0.12))
+	# THE PICKAXE STOPS WHERE THE ROCK IS. If there is a boulder under the swing
+	# the stroke is cut short on it (the nearer the rock, the sooner in the arc)
+	# and the tool is thrown back off the stone, instead of carrying on through.
+	var meets := -1.0
+	if tool == "pickaxe":
+		var mine := get_node_or_null(^"../Mining")
+		if mine != null:
+			meets = float(mine.call(&"rock_at", _cam.global_position, -_cam.global_basis.z))
+	if meets >= 0.0:
+		var share := lerpf(0.66, 1.0, clampf(meets / float(get_node(^"../Mining").get("reach")), 0.0, 1.0))
+		to = from.lerp(to, share)
+		reach_to = HAND.lerp(reach_to, share)
+		fall *= lerpf(0.8, 1.0, share)
 	_swing = create_tween()
 	_swing.tween_property(_pivot, "rotation_degrees", from, wind).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_swing.parallel().tween_property(_pivot, "position", HAND + Vector3(0.04, 0.05, 0.08), wind)
@@ -585,6 +598,15 @@ func _cut(charged: bool) -> void:
 	_swing.tween_callback(_bite)
 	if charged:
 		_swing.tween_callback(_throw)
+	if meets >= 0.0:
+		# Thrown back the way it came, a second smaller knock, then home.
+		var up := (from - to).normalized()
+		_swing.tween_property(_pivot, "rotation_degrees", to + up * 38.0 + Vector3(0.0, _rng.randf_range(-5.0, 5.0), _rng.randf_range(-7.0, 7.0)), 0.075).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_swing.parallel().tween_property(_pivot, "position", HAND + Vector3(0.02, 0.07, 0.07), 0.075).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_swing.tween_property(_pivot, "rotation_degrees", to + up * 20.0, 0.09).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_swing.tween_property(_pivot, "rotation_degrees", REST, back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_swing.parallel().tween_property(_pivot, "position", HAND, back).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		return
 	# Carried a little past the end of the cut before it comes home.
 	_swing.tween_property(_pivot, "rotation_degrees", to + (to - from).normalized() * (8.0 if _bladed() else 4.0), 0.07).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_swing.tween_property(_pivot, "rotation_degrees", REST + nudge.call(Vector3.ZERO, settle), back).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -602,8 +624,10 @@ func _bite() -> void:
 	# The pickaxe is for rock and nothing else (SCRIPT_mining.gd).
 	if tool == "pickaxe":
 		var mine := get_node_or_null(^"../Mining")
-		if mine != null:
-			mine.call(&"strike", _cam.global_position, -_cam.global_basis.z)
+		if mine != null and bool(mine.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
+			# Felt in the hand, where there is a hand to feel it.
+			for pad in Input.get_connected_joypads():
+				Input.start_joy_vibration(pad, 0.35, 0.7, 0.12)
 		return
 	var wood := get_node_or_null(^"../Woodcutting")
 	if wood != null and bool(wood.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
