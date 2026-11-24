@@ -60,10 +60,16 @@ func _process(_dt: float) -> bool:
 			for i in Inventory.HOTBAR:
 				if bag.slots[i] != null and String(bag.slots[i][0]) == "foundation":
 					bag.selected = i
+			# (You come to in the wreck under the mere: the building is done on dry
+			# ground, in the meadow up the shore, clear of the herd in its middle.)
+			var glade := Flora.glade()
+			var spot := Vector3(glade.x + 30.0, 0.0, glade.y)
+			spot.y = float(_scene.get_node("GaiaSphere").call(&"height_at", spot, 0.0)) + 0.4
 			explorer.flying = false
+			explorer.global_position = spot
 			cam.rotation.x = -0.42
 			_step = 0
-			_wait = 40
+			_wait = 60
 		return false
 	_wait -= 1
 	if _wait > 0:

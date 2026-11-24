@@ -84,7 +84,7 @@ uniform float foam_amount = 0.75;
 uniform float foam_depth = 9.0;
 // How far the foam stands over the line (pixels at 900 tall): enough to cover the
 // film, where the bed shows through under the near edge of the water's surface.
-uniform float foam_rise = 9.0;
+uniform float foam_rise = 7.0;
 // How far the surface rides up and down across the lens, metres, its waves across
 // the screen, and how fast they run.
 uniform float wave_height = 0.03;
@@ -154,6 +154,10 @@ void fragment() {
 	float wx = floor(uv.x * px.x / 4.0) * 4.0 / px.x;
 	float wave = wave_height * (0.6 * sin((wx * wave_cells + t * wave_speed * 0.31) * 6.2832)
 			+ 0.4 * sin((wx * wave_cells * 2.3 - t * wave_speed * 0.53) * 6.2832));
+	// The line only ever rides up from the water's own level, never dips under it:
+	// in a dip the lens would be under the real surface with nothing drawn over it,
+	// and the bed would show, unfogged, in a gap between the line and the water.
+	wave += wave_height + 0.004;
 	float h = at_lens.y - (water_y + wave);
 	// The same in pixels, by how fast it changes across the screen.
 	float hp = h / max(fwidth(h), 1e-6);
