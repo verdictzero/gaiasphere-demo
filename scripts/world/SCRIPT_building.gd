@@ -366,7 +366,9 @@ func _solid(item: String, body: StaticBody3D, other_hand: bool) -> void:
 		"stairs":
 			# Climbed as a slope through the middle of the treads, the top one flat.
 			_box(body, Vector3(0, 0.965, -0.895), Vector3(2.0, 0.1, 2.83), Vector3(PI * 0.25, 0, 0))
-			_box(body, Vector3(0, 1.95, -1.88), Vector3(2.0, 0.1, 0.24))
+			# (The flat begins where the slope reaches its height: a lip there, even
+			# of a hand's breadth, stops a foot coming up the slope dead.)
+			_box(body, Vector3(0, 1.95, -1.93), Vector3(2.0, 0.1, 0.14))
 		"wall":
 			_box(body, Vector3(0, 1.0, 0.03), Vector3(2.0, 2.0, 0.12))
 		"gable":
