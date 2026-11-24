@@ -82,6 +82,9 @@ uniform float line_split = 2.5;
 // How much froth hangs just under the line, and how far down (pixels).
 uniform float foam_amount = 0.75;
 uniform float foam_depth = 9.0;
+// How far the foam stands over the line (pixels at 900 tall): enough to cover the
+// film, where the bed shows through under the near edge of the water's surface.
+uniform float foam_rise = 9.0;
 // How far the surface rides up and down across the lens, metres, its waves across
 // the screen, and how fast they run.
 uniform float wave_height = 0.03;
@@ -156,7 +159,8 @@ void fragment() {
 	float hp = h / max(fwidth(h), 1e-6);
 
 	// Over it, and clear of the film on the lens: the picture as it was.
-	if (hp > line_px + line_split * 2.0) {
+	float rise = max(foam_rise * px.y / 900.0, line_px + line_split * 2.0 + 1.0);
+	if (hp > rise * 1.5) {
 		discard;
 	}
 	float day = clamp(tod_sun_dir.y * 2.0 + 0.3, 0.12, 1.0);
@@ -240,7 +244,18 @@ void fragment() {
 	// thinner along its length, and that moving.
 	float ragged = line_px * (0.55 + 1.3 * uw_noise(vec2(floor(uv.x * px.x / 3.0) * 0.6 + t * 1.3, t * 0.7)));
 	float line = 1.0 - smoothstep(ragged * 0.6, ragged, abs(hp));
-	col = mix(col, line_color * mix(vec3(0.8), sun + vec3(0.5), 0.5), line);
+	// Over the line it stands thick: a band of foam that covers the film whole
+	// (never thinner than `rise`), its top lumpy, bubbles shading it a little.
+	float lump = uw_noise(vec2(floor(uv.x * px.x / 4.0) * 0.45 - t * 0.9, t * 0.5));
+	float top = rise * (1.0 + 0.45 * lump);
+	float band = hp > 0.0 ? 1.0 - step(top, hp) : 0.0;
+	line = max(line, band);
+	float bubbly = uw_noise(floor(vec2(uv.x * px.x, hp) / 2.0) * vec2(0.8, 1.1) + vec2(t * 1.1, -t * 0.6));
+	vec3 foam = line_color * mix(vec3(0.8), sun + vec3(0.5), 0.5) * mix(0.86, 1.0, bubbly);
+	if (hp > rise * 1.5 - 0.01 || (hp > 0.0 && band < 0.5 && hp > line_px + line_split * 2.0)) {
+		discard;
+	}
+	col = mix(col, foam, line);
 
 	ALBEDO = col;
 	ALPHA = 1.0;

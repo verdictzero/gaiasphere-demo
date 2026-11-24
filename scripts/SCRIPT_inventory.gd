@@ -34,6 +34,7 @@ const ITEMS := {
 	"floor": {"name": "Plank Floor", "icon": "res://assets/ui/item_floor.png"},
 	"roof": {"name": "Plank Roof", "icon": "res://assets/ui/item_roof.png"},
 	"gable": {"name": "Gable", "icon": "res://assets/ui/item_gable.png"},
+	"stairs": {"name": "Plank Stairs", "icon": "res://assets/ui/item_stairs.png"},
 	"foundation": {"name": "Stone Foundation", "icon": "res://assets/ui/item_foundation.png"},
 	"steps": {"name": "Stone Steps", "icon": "res://assets/ui/item_steps.png"},
 }
@@ -47,6 +48,7 @@ const RECIPES := [
 	{"makes": "floor", "needs": {"log": 3}},
 	{"makes": "roof", "needs": {"log": 4}},
 	{"makes": "gable", "needs": {"log": 2}},
+	{"makes": "stairs", "needs": {"log": 5}},
 	{"makes": "foundation", "needs": {"log": 2, "stone": 8}},
 	{"makes": "steps", "needs": {"log": 2, "stone": 5}},
 ]

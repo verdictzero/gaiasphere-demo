@@ -8,7 +8,7 @@ extends SceneTree
 var _frames := 0
 var _cam: Camera3D
 var _subject: Node3D
-var _queue: Array = ["katana"]
+var _queue: Array = ["stairs"]
 var _wood: Woodcutting
 
 
@@ -93,11 +93,11 @@ func _stage(what: String) -> void:
 			turn.rotation_degrees = Vector3(0.0, 35.0, 0.0)
 			_subject.add_child(turn)
 			span = box.get_longest_axis_size() * 1.15
-		"wall", "doorway", "floor", "roof", "gable", "foundation", "steps":
+		"wall", "doorway", "floor", "roof", "gable", "foundation", "steps", "stairs":
 			# A piece of the building kit, turned three-quarters on.
 			var files := {"wall": ["plank_kit/wall_a"], "doorway": ["plank_kit/doorway_a", "plank_kit/door_a"],
 				"floor": ["plank_kit/floor_a"], "roof": ["plank_kit/roof_a"], "gable": ["plank_kit/gable_right_a"],
-				"foundation": ["foundation/foundation_a"], "steps": ["foundation/steps_a"]}
+				"stairs": ["plank_kit/stairs_a"], "foundation": ["foundation/foundation_a"], "steps": ["foundation/steps_a"]}
 			var turn := Node3D.new()
 			var box := AABB()
 			var first := true
@@ -116,7 +116,7 @@ func _stage(what: String) -> void:
 				box.size.y = 1.0
 			for piece in turn.get_children():
 				(piece as Node3D).position -= box.get_center()
-			turn.rotation_degrees = Vector3(0.0, {"floor": 28.0, "steps": 40.0, "foundation": 36.0, "roof": 150.0}.get(what, 30.0), 0.0)
+			turn.rotation_degrees = Vector3(0.0, {"floor": 28.0, "steps": 40.0, "foundation": 36.0, "roof": 150.0, "stairs": 38.0}.get(what, 30.0), 0.0)
 			_subject.add_child(turn)
 			if what == "steps":
 				# Standing on nothing, the sunk metre would show: a card hides it.

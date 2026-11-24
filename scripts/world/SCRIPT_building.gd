@@ -16,6 +16,8 @@ extends Node3D
 # squares round itself; every piece put down near it after that belongs to the
 # same grid. On that grid:
 #
+#   stairs               fill a square as a roof does: a flight from a floor to the
+#                        storey above, climbing the way you face
 #   foundation, steps    fill a square, sunk into the ground; a foundation's top
 #                        is the building's ground floor, steps climb to it
 #   floor, roof          fill a square at the foot of a storey (every 2 m up); a
@@ -46,6 +48,7 @@ const PIECES := {
 	"steps": {"sits": "square", "files": ["foundation/steps_a", "foundation/steps_b"]},
 	"floor": {"sits": "square", "files": ["plank_kit/floor_a", "plank_kit/floor_b", "plank_kit/floor_c"]},
 	"roof": {"sits": "square", "files": ["plank_kit/roof_a", "plank_kit/roof_b", "plank_kit/roof_c", "plank_kit/roof_d"]},
+	"stairs": {"sits": "square", "files": ["plank_kit/stairs_a", "plank_kit/stairs_b"]},
 	"wall": {"sits": "edge", "files": ["plank_kit/wall_a", "plank_kit/wall_b", "plank_kit/wall_c", "plank_kit/wall_d",
 		"plank_kit/wall_e", "plank_kit/wall_f", "plank_kit/wall_g", "plank_kit/wall_h"]},
 	"doorway": {"sits": "edge", "files": ["plank_kit/doorway_a", "plank_kit/doorway_b"]},
@@ -262,7 +265,7 @@ func place(item: String, p: Vector3, look: Vector3, turns: int) -> Dictionary:
 					"stands": Transform3D(Basis(Vector3.UP, facing), mid + Vector3(0, top - 1, 0))}
 			return {"item": item, "key": "S:%d:%d:%d" % [cell.x, cell.y, top],
 				"stands": Transform3D(Basis(Vector3.UP, facing), mid + Vector3(0, top - 1, 0))}
-		"floor", "roof":
+		"floor", "roof", "stairs":
 			# The square beyond what you point at, at the foot of the nearest storey.
 			var q := p + look * 0.12
 			var cell := Vector2i(int(floor(q.x / CELL)), int(floor(q.z / CELL)))
@@ -272,6 +275,10 @@ func place(item: String, p: Vector3, look: Vector3, turns: int) -> Dictionary:
 				# (The model's foot is one edge of it, and it lies back from there.)
 				return {"item": item, "key": "L:%d:%d:%d" % [cell.x, cell.y, level],
 					"stands": Transform3D(Basis(Vector3.UP, facing), mid + Vector3(0, 0.02, 0) - way * (CELL * 0.5))}
+			if item == "stairs":
+				# (Its foot on the near edge, climbing the way you face to the next storey.)
+				return {"item": item, "key": "T:%d:%d:%d" % [cell.x, cell.y, level],
+					"stands": Transform3D(Basis(Vector3.UP, facing), mid - way * (CELL * 0.5))}
 			return {"item": item, "key": "R:%d:%d:%d" % [cell.x, cell.y, level],
 				"stands": Transform3D(Basis(Vector3.UP, facing), mid - way * (CELL * 0.5))}
 	# A WALL, A DOORWAY, A GABLE: on the nearest edge of the square pointed into,
@@ -356,6 +363,10 @@ func _solid(item: String, body: StaticBody3D, other_hand: bool) -> void:
 			_box(body, Vector3(0, 0.0, -1.0), Vector3(2.0, 0.1, 2.0))
 		"roof":
 			_box(body, Vector3(0, 1.0, -1.0), Vector3(2.0, 0.1, 2.83), Vector3(PI * 0.25, 0, 0))
+		"stairs":
+			# Climbed as a slope through the middle of the treads, the top one flat.
+			_box(body, Vector3(0, 0.965, -0.895), Vector3(2.0, 0.1, 2.83), Vector3(PI * 0.25, 0, 0))
+			_box(body, Vector3(0, 1.95, -1.88), Vector3(2.0, 0.1, 0.24))
 		"wall":
 			_box(body, Vector3(0, 1.0, 0.03), Vector3(2.0, 2.0, 0.12))
 		"gable":

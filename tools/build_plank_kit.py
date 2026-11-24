@@ -12,7 +12,7 @@ Reads the sheets in <out>/source (pieces on magenta, none touching) and writes:
     plank_kit.json            what is where: each piece's name, kind, place in the
                               atlas, size in metres and outline
     pieces/<name>.glb         each piece on its own, a slab cut to its outline
-    wall_*, roof_*, floor_*, gable_left_*, gable_right_*  (each _lod0, _lod1, _lod2)
+    wall_*, roof_*, floor_*, gable_left_*, gable_right_*, stairs_*  (each _lod0, _lod1, _lod2)
                               panels assembled from the pieces: see THE SET in main()
 
 WHICH PIECES. Sheet 2 is a photograph's worth of wood, flat lit, and is the kit:
@@ -426,6 +426,72 @@ def deck(planks, beams, seed, eps, length, width=2.0, overhang=0.0):
     return mesh, used
 
 
+def moved(mesh, turn, by=(0.0, 0.0, 0.0)):
+    """Every point of a mesh put through `turn` (a rotation, given as a function of
+    a vector) and then shifted `by`."""
+    mesh.p = [tuple(a + b for a, b in zip(turn(v), by)) for v in mesh.p]
+    mesh.n = [turn(v) for v in mesh.n]
+    mesh.t = [(*turn(v[:3]), v[3]) for v in mesh.t]
+    return mesh
+
+
+def joined(into, mesh):
+    base = len(into.p)
+    into.p += mesh.p; into.n += mesh.n; into.t += mesh.t; into.uv += mesh.uv
+    into.idx += [i + base for i in mesh.idx]
+    return into
+
+
+STAIR_STEPS = 8
+
+
+def stairs(planks, beams, seed, eps, width=2.0, rise=2.0, run=2.0):
+    """A FLIGHT FROM ONE FLOOR TO THE NEXT: `STAIR_STEPS` plank treads between two
+    heavy boards on edge (the strings), open underneath. It stands as a roof panel
+    does: its foot on the x axis, climbing back (toward -z) to `rise` at `run`."""
+    rng = random.Random(seed)
+    mesh = Mesh()
+    going, riser = run / STAIR_STEPS, rise / STAIR_STEPS
+    string_t = RAIL_T * 1.3
+    inner = width / 2 - string_t - 0.01                  # the treads run between the strings
+    nose = 0.035
+    pool = planks[:]
+    rng.shuffle(pool)
+    used = []
+    for i in range(STAIR_STEPS):
+        pl = pool[i % len(pool)]
+        used.append(pl["name"])
+        depth = going + nose
+        tread = Mesh()
+        # A plank on its side, cut to the tread: x across, y its depth, face +z.
+        place(tread, pl, eps, (rng.uniform(-0.03, 0.03), depth / 2 + rng.uniform(-0.01, 0.01)), math.pi / 2 * (1 if rng.random() < 0.5 else -1),
+              rng.random() < 0.5, False, 0.0, PLANK_T,
+              cuts=(lambda v: v[0] + inner, lambda v: inner - v[0], lambda v: v[1], lambda v, depth=depth: depth - v[1]))
+        # Laid flat (face up, depth running back), its top at this step's height.
+        moved(tread, lambda v: (v[0], v[2], -v[1]), (0.0, (i + 1) * riser - PLANK_T, -i * going + nose))
+        joined(mesh, tread)
+    # The strings: a beam each side, on edge, along the pitch, the treads let into
+    # them. Built in its own plane (a: the run, b: up), then stood along the side.
+    order = beams[:]
+    rng.shuffle(order)
+    pitch = math.atan2(rise, run)
+    for k, side in enumerate((-1.0, 1.0)):
+        bm = order[k % len(order)]
+        deep = bm["mask"].shape[0] / PX_PER_M
+        # Its top edge a little over the line of the treads' noses' feet.
+        lift = riser * math.cos(pitch) * 0.82 - deep / 2
+        centre = (run / 2 - math.sin(pitch) * lift, rise / 2 + math.cos(pitch) * lift)
+        length_px = min((math.hypot(rise, run) + 0.5) * PX_PER_M, bm["mask"].shape[1] - 4)
+        start = rng.uniform(0, max(bm["mask"].shape[1] - length_px, 0))
+        string = Mesh()
+        place(string, bm, eps, centre, pitch, rng.random() < 0.5, rng.random() < 0.5, 0.0, string_t,
+              crop=(start, start + length_px), cuts=(lambda v: v[1], lambda v: rise - v[1], lambda v: v[0] + nose, lambda v: run - v[0]))
+        x0 = side * (width / 2) - (string_t if side > 0 else 0.0)
+        moved(string, lambda v: (v[2], v[1], -v[0]), (x0, 0.0, 0.0))
+        joined(mesh, string)
+    return mesh, used
+
+
 def gable(planks, beams, seed, eps, rise_right, width=2.0):
     """THE TRIANGLE BETWEEN A SQUARE WALL AND A 45 DEGREE ROOF: a wall's planks,
     cut off along the slope, a rail along the foot and a rail up the rake. As tall
@@ -638,6 +704,10 @@ def main(out_dir):
         stock = photo_planks if i == 0 else everything
         builds.append((f"doorway_{chr(97 + i)}", lambda eps, seed=seed, stock=stock: doorway(stock, photo_beams, seed, eps)))
         builds.append((f"door_{chr(97 + i)}", lambda eps, seed=seed, stock=stock: leaf(stock, photo_beams, seed + 1, eps)))
+    #   stairs_*      a flight 2 m wide climbing 2 m in 2 m: placed as a roof panel is
+    for i, seed in enumerate((73, 89)):
+        stock = photo_planks if i == 0 else everything
+        builds.append((f"stairs_{chr(97 + i)}", lambda eps, seed=seed, stock=stock: stairs(stock, photo_beams, seed, eps)))
     summary = {}
     for name, build in builds:
         counts = []

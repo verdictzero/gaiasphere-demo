@@ -167,6 +167,34 @@ func _process(_dt: float) -> bool:
 			_wait = 15
 		8:
 			_shot("4_wall_down")
+			# A flight of plank stairs outside the open end, climbing in to the eaves.
+			if built.put(0, "stairs", Vector3(5, 0.0, 1), Vector3(-1, 0, 0)) == null:
+				_fail("the stairs would not go where they were put")
+			explorer.flying = true
+			_look(explorer, _frame * Vector3(8.5, 2.6, 4.6), _frame * Vector3(5.0, 1.0, 1.0))
+			_wait = 25
+		9:
+			_shot("5_stairs")
+			# Set on the bottom tread, and walked up.
+			explorer.flying = false
+			_look(explorer, _frame * Vector3(5.75, 2.2, 1.0), _frame * Vector3(3.0, 2.2, 1.0))
+			_walked = 0
+			_wait = 12
+		10:
+			Input.action_press(&"wv_forward")
+			_walked += 1
+			var up: Vector3 = _frame.affine_inverse() * (explorer.global_position as Vector3)
+			if up.y > 1.75 or _walked > 160:
+				Input.action_release(&"wv_forward")
+				if up.y > 1.75:
+					print("build: walked up the stairs (%d frames) to %.2f m over the floor" % [_walked, up.y])
+				else:
+					_fail("did not climb the stairs, stopped at %s" % up)
+			else:
+				return false
+			_wait = 3
+		11:
+			_shot("6_up_the_stairs")
 			print("build: ok" if not _failed else "build: FAILED")
 			quit(1 if _failed else 0)
 			return true
