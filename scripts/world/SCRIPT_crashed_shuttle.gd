@@ -318,7 +318,7 @@ func _bubbles() -> void:
 	mat.vertex_color_use_as_albedo = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.36, 0.36)
+	quad.size = Vector2(0.28, 0.28)
 	quad.material = mat
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 8841
@@ -351,8 +351,10 @@ func _bubbles() -> void:
 		m.turbulence_noise_scale = 2.2
 		m.turbulence_influence_min = 0.03
 		m.turbulence_influence_max = 0.09
-		m.scale_min = 0.3 if not gout else 0.45
-		m.scale_max = 0.95 if not gout else 1.8
+		# All sizes, from beads to a fist: a string of small ones with the odd big
+		# one among them, a gout the other way about.
+		m.scale_min = 0.1 if not gout else 0.18
+		m.scale_max = 1.25 if not gout else 2.3
 		var swell := Curve.new()
 		swell.add_point(Vector2(0.0, 0.55))
 		swell.add_point(Vector2(1.0, 1.0))

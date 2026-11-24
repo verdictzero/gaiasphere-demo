@@ -442,7 +442,8 @@ static func _seaweed_mesh(mat: Material, bands: int) -> ArrayMesh:
 
 
 ## UNDER THE MERE: where the seaweed and the sunken rocks gather. Clumps sit on a
-## loose lattice (some cells empty), each with its own middle, reach and vigour.
+## lattice (nearly every cell has one, and they run into each other: the bed is
+## more weed than not), each with its own middle, reach and vigour.
 ## Returns (metres from the nearest clump's middle, that clump's reach, its vigour
 ## 0..1), or a reach of 0 where there is none near.
 static func clump_at(x: float, z: float) -> Vector3:
@@ -454,12 +455,12 @@ static func clump_at(x: float, z: float) -> Vector3:
 		for dx in range(-1, 2):
 			var ix := cx + dx
 			var iz := cz + dz
-			if _hash(ix, iz, 101) > 0.62:
+			if _hash(ix, iz, 101) > 0.9:
 				continue
 			var mid := Vector2((float(ix) + 0.15 + 0.7 * _hash(ix, iz, 102)) * cell, (float(iz) + 0.15 + 0.7 * _hash(ix, iz, 103)) * cell)
 			var d := mid.distance_to(Vector2(x, z))
 			if d < best.x:
-				best = Vector3(d, 3.0 + 6.5 * _hash(ix, iz, 104), 0.35 + 0.65 * _hash(ix, iz, 105))
+				best = Vector3(d, 5.0 + 8.5 * _hash(ix, iz, 104), 0.4 + 0.6 * _hash(ix, iz, 105))
 	return best
 
 
@@ -678,12 +679,11 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var x := x0 + (float(ix) + _hash(cx, cz, 111)) * grid
 			var z := z0 + (float(iz) + _hash(cx, cz, 112)) * grid
 			var c := clump_at(x, z)
-			if c.y <= 0.0 or c.x > c.y:
-				continue
-			# Thick in the middle of a clump, thinning to nothing at its edge; and the
-			# fronds themselves shorten the same way, tall at the heart, small outside.
-			var inward := 1.0 - c.x / c.y
-			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * c.z * density + 0.015:
+			# Thick in the middle of a clump, thinning toward its edge; and the fronds
+			# themselves shorten the same way, tall at the heart, small outside. Between
+			# the clumps the bed is not bare: short weed, thinly, everywhere.
+			var inward := maxf(1.0 - c.x / c.y, 0.0) if c.y > 0.0 else 0.0
+			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * c.z * density + 0.07 * density:
 				continue
 			var ground := f.height_at(x, z, 1e9)
 			var depth := _mere_level - ground
@@ -712,6 +712,30 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var z := (float(cz) + _hash(cx, cz, 42)) * grid
 			if _on_path(x, z, 1.3):
 				continue
+			# THE BED OF THE MERE IS STREWN WITH ROCK: one chance in every four metres
+			# of it rather than every sixteen, thickest among the weed, mostly small
+			# stones with a big one now and then.
+			if _mere_reach > 0.0 and Vector2((float(cx) + 0.5) * grid, (float(cz) + 0.5) * grid).distance_to(_islet) < _mere_reach + grid:
+				for sz in 4:
+					for sx in 4:
+						var ux := cx * 4 + sx
+						var uz := cz * 4 + sz
+						var bx := (float(ux) + _hash(ux, uz, 141)) * grid * 0.25
+						var bz := (float(uz) + _hash(ux, uz, 142)) * grid * 0.25
+						if Vector2(bx, bz).distance_to(_islet) >= _mere_reach or _on_path(bx, bz, 1.3):
+							continue
+						var clump := clump_at(bx, bz)
+						var amid := 1.0 - clampf(clump.x / maxf(clump.y * 1.4, 0.01), 0.0, 1.0) if clump.y > 0.0 else 0.0
+						if _hash(ux, uz, 143) > (0.3 + 0.55 * amid) * density:
+							continue
+						var bed := f.sample(bx, bz)
+						if not bool(bed.get("on_land", false)) or float(bed["height"]) >= _mere_level - 1.0:
+							continue
+						var kind_b := int(_hash(ux, uz, 144) * 5.0) % 5
+						var roll := _hash(ux, uz, 145)
+						var size_b := 0.22 + roll * roll * 1.1 + (2.2 * _hash(ux, uz, 146) if _hash(ux, uz, 147) > 0.93 else 0.0)
+						var lie := Basis(Vector3.UP, _hash(ux, uz, 148) * TAU) * Basis(Vector3(1, 0, 0), (_hash(ux, uz, 149) - 0.5) * 0.9)
+						_push(bufs[kind_b], lie.scaled(Vector3.ONE * size_b), Vector3(bx, float(bed["height"]) - 0.12 * size_b, bz))
 			var s := f.sample(x, z)
 			if not bool(s.get("on_land", false)) or float(s.get("flatten", 0.0)) > 0.2:
 				continue
@@ -719,18 +743,8 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				continue
 			var w: Color = s.get("weights", Color(1, 0, 0, 0))
 			var flow := float(s.get("flow_weight", 0.0))
-			# On the bed of the mere: rocks among the weed, more where a clump is.
-			var sunk := _mere_reach > 0.0 and float(s["height"]) < _mere_level - 1.0 \
-					and Vector2(x, z).distance_to(_islet) < _mere_reach
-			if sunk:
-				var c := clump_at(x, z)
-				var among := 1.0 - clampf(c.x / maxf(c.y * 1.4, 0.01), 0.0, 1.0) if c.y > 0.0 else 0.0
-				if _hash(cx, cz, 49) > (0.1 + 0.75 * among) * density:
-					continue
-				var kind_u := int(_hash(cx, cz, 44) * 5.0) % 5
-				var size_u := 0.4 + _hash(cx, cz, 45) * _hash(cx, cz, 50) * 2.6
-				var turn := Basis(Vector3.UP, _hash(cx, cz, 46) * TAU) * Basis(Vector3(1, 0, 0), (_hash(cx, cz, 47) - 0.5) * 0.9)
-				_push(bufs[kind_u], turn.scaled(Vector3.ONE * size_u), Vector3(x, float(s["height"]) - 0.12 * size_u, z))
+			# (The bed of the mere has had its rocks already, above.)
+			if _mere_reach > 0.0 and float(s["height"]) < _mere_level - 1.0 and Vector2(x, z).distance_to(_islet) < _mere_reach:
 				continue
 			if flow > 0.55:
 				continue
