@@ -67,7 +67,7 @@ func _process(_dt: float) -> bool:
 					for i in range(0, buf.size(), Flora.STRIDE):
 						var size := Vector3(buf[i + 1], buf[i + 5], buf[i + 9]).length()
 						var p := Vector3(buf[i + 3], buf[i + 7], buf[i + 11])
-						if size < 0.7 or size > 1.3 or p.y < here.y - 6.0 or p.distance_to(here) > best:
+						if size < 0.7 or size > 1.3 or p.y < 1.0 or p.distance_to(here) > best:
 							continue
 						best = p.distance_to(here)
 						_rock = p
