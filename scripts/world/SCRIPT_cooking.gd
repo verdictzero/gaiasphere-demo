@@ -83,7 +83,7 @@ func _ready() -> void:
 	_ring = ShaderMaterial.new()
 	_ring.shader = load("res://shaders/SHADER_progress_ring.gdshader")
 	_ring_quad = QuadMesh.new()
-	_ring_quad.size = Vector2(0.2, 0.2)
+	_ring_quad.size = Vector2(0.26, 0.26)
 	_ring_quad.material = _ring
 	add_to_group(&"usable")
 	print("[cooking] a fire is %.2f m across and %.2f m tall" % [fire_width, box.size.y * _scale])
@@ -95,8 +95,9 @@ func _meat(path: String) -> StandardMaterial3D:
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	m.alpha_scissor_threshold = 0.5
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	m.roughness = 1.0
-	m.metallic_specular = 0.0
+	# (Lit by nothing but itself: by a fire at night a lit card goes black.)
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(0.9, 0.86, 0.82)
 	return m
 
 
@@ -206,7 +207,7 @@ func try_use(from: Vector3, dir: Vector3) -> bool:
 	ring.mesh = _ring_quad
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	(fire["node"] as Node3D).add_child(ring)
-	ring.position = Vector3(cut.position.x, _top + 0.22, 0.0)
+	ring.position = Vector3(cut.position.x * 1.15, _top + 0.24, 0.0)
 	ring.set_instance_shader_parameter(&"progress", 0.0)
 	cooking.append([cook_seconds, cut, ring])
 	return true
