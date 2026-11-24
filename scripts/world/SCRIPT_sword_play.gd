@@ -105,6 +105,7 @@ var _blasts: Array = []        # [node, velocity, seconds left]
 
 
 func _ready() -> void:
+	add_to_group(Prewarm.GROUP)
 	_stone = get_node_or_null(stone_path)
 	_explorer = get_node_or_null(explorer_path)
 	if not InputMap.has_action(&"wv_attack"):
@@ -678,7 +679,48 @@ func _crescent_mesh() -> ArrayMesh:
 	return st.commit()
 
 
-func _throw() -> void:
+## FIRST TIMES (SCRIPT_prewarm.gd): the crescent and its light, the flash where
+## it lands, the charge's motes and glow, and every tool there is to hold (each
+## first drawn the first time it is taken in hand), and the pictures of food.
+func warm(stage: Node3D) -> void:
+	if not _find_parts():
+		return
+	_ensure_hand()
+	var at := stage.global_position
+	var blast := _crescent()
+	stage.add_child(blast)
+	blast.global_transform = Transform3D(stage.global_basis.scaled(Vector3.ONE * 0.4), at + stage.global_basis.y * 0.4)
+	var flash := OmniLight3D.new()
+	flash.light_color = blast_color
+	flash.light_energy = 2.0
+	flash.omni_range = 6.0
+	stage.add_child(flash)
+	flash.global_position = at
+	var i := 0
+	for held_thing in [_axe, _katana, _pick, _berries, _motes]:
+		var copy := (held_thing as Node3D).duplicate(0) as Node3D          # (as made, overrides and all)
+		copy.visible = true
+		stage.add_child(copy)
+		copy.global_position = at + stage.global_basis.x * (float(i) - 2.0) * 0.35
+		if copy is GPUParticles3D:
+			(copy as GPUParticles3D).emitting = true
+		i += 1
+	if _sword != null:
+		var glowing := MeshInstance3D.new()
+		glowing.mesh = _sword.mesh
+		glowing.material_overlay = _glow
+		stage.add_child(glowing)
+		glowing.global_position = at - stage.global_basis.y * 0.3
+	for food in FOOD:
+		_food_pictures.append(load(FOOD[food][1]))
+
+
+## The pictures of what can be eaten, kept loaded (they are put in the hand by name).
+var _food_pictures: Array = []
+
+
+## The crescent the charged blade throws, not yet anywhere.
+func _crescent() -> MeshInstance3D:
 	var blast := MeshInstance3D.new()
 	blast.mesh = _crescent_mesh()
 	var mat := StandardMaterial3D.new()
@@ -696,6 +738,11 @@ func _throw() -> void:
 	lamp.light_energy = 2.5
 	lamp.omni_range = 16.0
 	blast.add_child(lamp)
+	return blast
+
+
+func _throw() -> void:
+	var blast := _crescent()
 	add_child(blast)
 	# Along the look, canted with the cut (down and across).
 	var forward := -_cam.global_basis.z

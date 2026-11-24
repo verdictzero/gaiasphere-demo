@@ -89,6 +89,7 @@ func _ready() -> void:
 		InputMap.action_add_event(&"wv_turn", pad)
 	_ghost_ok = _ghost_material(Color(0.5, 0.85, 1.0, 0.42))
 	_ghost_no = _ghost_material(Color(1.0, 0.25, 0.2, 0.42))
+	add_to_group(Prewarm.GROUP)
 	var layer := CanvasLayer.new()
 	layer.layer = 29
 	add_child(layer)
@@ -106,6 +107,32 @@ func _ready() -> void:
 	_hint.offset_right = 400.0
 	_hint.visible = false
 	layer.add_child(_hint)
+
+
+## The first model of every piece, and the door, kept loaded from the start.
+var _kept: Array = []
+
+
+## FIRST TIMES (SCRIPT_prewarm.gd): one of every piece there is to build, read
+## in from disk and drawn, small, and one of them as a ghost.
+func warm(stage: Node3D) -> void:
+	var files: Array = []
+	for item in PIECES:
+		files.append(KIT + String(PIECES[item]["files"][0]) + "_lod0.glb")
+	files.append(KIT + "plank_kit/door_a_lod0.glb")
+	var i := 0
+	for path in files:
+		var scene := load(path) as PackedScene
+		if scene == null:
+			continue
+		_kept.append(scene)
+		var piece: Node3D = scene.instantiate()
+		stage.add_child(piece)
+		piece.global_transform = Transform3D(stage.global_basis.scaled(Vector3.ONE * 0.1),
+				stage.global_position + stage.global_basis.x * (float(i % 5) - 2.0) * 0.3 + stage.global_basis.y * (float(i / 5) * 0.3 - 0.6))
+		if i == 0:
+			_tint(piece, _ghost_ok)
+		i += 1
 
 
 static func _ghost_material(color: Color) -> StandardMaterial3D:

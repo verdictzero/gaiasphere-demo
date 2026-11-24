@@ -116,7 +116,7 @@ func _ready() -> void:
 	_leaf_puff.particles_anim_h_frames = 4
 	_leaf_puff.particles_anim_v_frames = 4
 	_leaf_puff.particles_anim_loop = false
-	call_deferred(&"_warm_up")
+	add_to_group(Prewarm.GROUP)
 
 
 static func _model(path: String) -> Mesh:
@@ -203,10 +203,16 @@ func _cutout(tex: Texture2D, tint: Color) -> StandardMaterial3D:
 	return m
 
 
-## A cloud of each kind once, out of sight, so the first bush stripped does not
-## stall on setting them up.
-func _warm_up() -> void:
-	_puff(Vector3(0, -900, 0), 1.0)
+## FIRST TIMES (SCRIPT_prewarm.gd): the cloud of leaves a stripped bush throws,
+## and a cluster of berries such as it drops.
+func warm(stage: Node3D) -> void:
+	var before := get_child_count()
+	_puff(stage.global_position, 0.3)
+	var card := MeshInstance3D.new()
+	card.mesh = _drop_card()
+	add_child(card)
+	card.global_position = stage.global_position + stage.global_basis.x * 0.5
+	Prewarm.gather(self, before, stage)
 
 
 static func _rand(seed_value: int, i: int, salt: int) -> float:
@@ -402,21 +408,7 @@ var _drop_shape: SphereShape3D
 ## from whoever struck it and to all sides, to bounce and lie in the grass. Each
 ## is one lot of berries for the bag, taken by walking up to it.
 func _scatter(at: Vector3, size: float, count: int, struck_from: Vector3) -> void:
-	if _drop_mat == null:
-		_drop_mat = StandardMaterial3D.new()
-		_drop_mat.albedo_texture = load("res://assets/berry_bush/berry_cluster.png")
-		_drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		_drop_mat.alpha_scissor_threshold = 0.45
-		_drop_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		_drop_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		_drop_mat.roughness = 1.0
-		_drop_mat.metallic = 0.0
-		_drop_mat.metallic_specular = 0.0
-		_drop_quad = QuadMesh.new()
-		_drop_quad.size = Vector2(0.26, 0.26)
-		_drop_quad.material = _drop_mat
-		_drop_shape = SphereShape3D.new()
-		_drop_shape.radius = 0.09
+	_drop_card()
 	var away := struck_from.normalized() if struck_from.length() > 0.01 else Vector3.ZERO
 	for i in count:
 		var body := RigidBody3D.new()
@@ -441,6 +433,26 @@ func _scatter(at: Vector3, size: float, count: int, struck_from: Vector3) -> voi
 		_drops.append([body, 0.0])
 	while _drops.size() > 80:
 		(_drops.pop_front()[0] as Node).queue_free()
+
+
+## The card a cluster of berries is drawn on (made the first time it is wanted).
+func _drop_card() -> QuadMesh:
+	if _drop_mat == null:
+		_drop_mat = StandardMaterial3D.new()
+		_drop_mat.albedo_texture = load("res://assets/berry_bush/berry_cluster.png")
+		_drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		_drop_mat.alpha_scissor_threshold = 0.45
+		_drop_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_drop_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		_drop_mat.roughness = 1.0
+		_drop_mat.metallic = 0.0
+		_drop_mat.metallic_specular = 0.0
+		_drop_quad = QuadMesh.new()
+		_drop_quad.size = Vector2(0.26, 0.26)
+		_drop_quad.material = _drop_mat
+		_drop_shape = SphereShape3D.new()
+		_drop_shape.radius = 0.09
+	return _drop_quad
 
 
 func _gather(delta: float, here: Vector3) -> void:

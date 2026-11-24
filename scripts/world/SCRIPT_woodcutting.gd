@@ -92,23 +92,43 @@ func _ready() -> void:
 	_chip_quad.size = Vector2(0.07, 0.035)
 	_photo_quad = QuadMesh.new()
 	_photo_quad.size = Vector2(0.15, 0.15)
-	call_deferred(&"_warm_up")
+	add_to_group(Prewarm.GROUP)
+	call_deferred(&"_saw_all")
 
 
-## A log and a burst of each colour, once, out of sight under the island while
-## the loading screen is up: the first tree felled then has nothing to compile.
-func _warm_up() -> void:
-	var body := _log_body(0.2)
-	body.freeze = true
-	add_child(body)
-	body.global_position = Vector3(0, -900, 0)
-	get_tree().create_timer(2.0).timeout.connect(body.queue_free)
-	_chips(Vector3(0, -900, 0), 4, CHIP)
-	_chips(Vector3(0, -900, 0), 4, NEEDLE)
-	# Every kind of tree sawn into its pieces now, not at the first swing at one.
+## Every kind of tree sawn into its pieces while the loading screen is up, not
+## at the first swing at one.
+func _saw_all() -> void:
 	if _flora != null:
 		for kind in Flora.FIRS.size():
 			_pieces(kind)
+
+
+## FIRST TIMES (SCRIPT_prewarm.gd): a log, a burst of chips and of needles, and
+## every kind of tree as it stands once it has been cut into: stump, crown, the
+## notched band with its fresh wood and its rings.
+func warm(stage: Node3D) -> void:
+	var at := stage.global_position
+	var across := stage.global_basis.x
+	var before := get_child_count()
+	var body := _log_body(0.2)
+	add_child(body)
+	body.global_position = at
+	_chips(at, 4, CHIP)
+	_chips(at, 4, NEEDLE)
+	if _flora != null:
+		for kind in Flora.FIRS.size():
+			var sawn := _pieces(kind)
+			var root := Node3D.new()
+			add_child(root)
+			root.global_transform = Transform3D(Basis.from_scale(Vector3.ONE * 0.12),
+					at + across * (float(kind) - Flora.FIRS.size() * 0.5) * 0.4 - Vector3.UP * 0.3)
+			var halves := _carved(sawn, Vector3(1, 0, 0), float(sawn["girth"]) * 0.7, (BAND_HIGH - BAND_LOW) * 0.6)
+			for mesh in [sawn["stump"], sawn["top"], halves[0], halves[1]]:
+				var mi := MeshInstance3D.new()
+				mi.mesh = mesh
+				root.add_child(mi)
+	Prewarm.gather(self, before, stage)
 
 
 ## How many swings a tree of this girth takes.

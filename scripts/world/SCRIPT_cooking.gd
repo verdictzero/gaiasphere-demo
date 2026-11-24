@@ -77,7 +77,27 @@ func _ready() -> void:
 	_ring_quad.size = Vector2(0.38, 0.38)
 	_ring_quad.material = _ring
 	add_to_group(&"usable")
+	add_to_group(Prewarm.GROUP)
 	print("[cooking] a fire is %.2f m across and %.2f m tall" % [fire_width, box.size.y * _scale])
+
+
+## FIRST TIMES (SCRIPT_prewarm.gd): a fire burning, the ghost of one being
+## placed, and a ring of progress.
+func warm(stage: Node3D) -> void:
+	var at := stage.global_position
+	var fire := _model()
+	stage.add_child(fire)
+	fire.global_transform = Transform3D(stage.global_basis.scaled(Vector3.ONE * 0.4), at - stage.global_basis.y * 0.5)
+	Fx.spawn(fire, "campfire_small", _fire_at, 0.75 * fire_width / 1.15)
+	var ghost := _model()
+	stage.add_child(ghost)
+	ghost.global_transform = Transform3D(stage.global_basis.scaled(Vector3.ONE * 0.3), at + stage.global_basis.x * 0.8)
+	for mi in ghost.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).material_override = _ghost_ok
+	var ring := MeshInstance3D.new()
+	ring.mesh = _ring_quad
+	stage.add_child(ring)
+	ring.global_position = at + stage.global_basis.y * 0.3
 
 
 ## A fire's model, sized and stood on its own lowest point.

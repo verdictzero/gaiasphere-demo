@@ -18,8 +18,10 @@ extends CanvasLayer
 ## Seconds to wait for collision under the start before arriving regardless.
 @export var ground_timeout := 20.0
 @export var fade := 1.2
+## Seconds at most that the first times are held in front of the eye (Prewarm).
+@export var warm_timeout := 8.0
 
-enum { WORLD, SCATTER, GROUND, FADE, DONE }
+enum { WORLD, SCATTER, GROUND, WARM, FADE, DONE }
 
 var _phase := WORLD
 var _left := 0.0
@@ -28,6 +30,10 @@ var _label: Label
 var _shown := 0.0
 var _scatters: Array[Node] = []
 var _explorer: Node3D
+var _stage: Node3D
+var _warm_frames := 0
+var _quiet := 0
+var _built_was := 0
 
 
 func _ready() -> void:
@@ -103,6 +109,22 @@ func _process(delta: float) -> void:
 				if _explorer != null and _explorer.has_method(&"arrive"):
 					_explorer.call(&"arrive")
 				_show(1.0)
+				_phase = WARM
+				_left = warm_timeout
+		WARM:
+			# (The stage goes up a frame after arriving, once the eye is where it will be.)
+			_left -= delta
+			if _stage == null:
+				_set_stage()
+				return
+			_warm_frames += 1
+			var built := Prewarm.built()
+			_quiet = 0 if built != _built_was else _quiet + 1
+			_built_was = built
+			# Held until nothing new has been built for a while (and a dozen frames at least).
+			if (_warm_frames >= 12 and _quiet >= 10) or _left <= 0.0:
+				print("[loading] first times got over in %d frames, %.1f s" % [_warm_frames, warm_timeout - _left])
+				_stage.queue_free()
 				_phase = FADE
 				_left = fade
 		FADE:
@@ -112,6 +134,21 @@ func _process(delta: float) -> void:
 			if _left <= 0.0:
 				_phase = DONE
 				queue_free()
+
+
+## The stage for the first times (see SCRIPT_prewarm.gd): two and a half metres
+## in front of the eye, square to it, and everything in the group set off on it.
+func _set_stage() -> void:
+	_stage = Node3D.new()
+	_stage.name = "PrewarmStage"
+	var cam := get_viewport().get_camera_3d()
+	get_parent().add_child(_stage)
+	if cam != null:
+		_stage.global_transform = Transform3D(cam.global_basis.orthonormalized(),
+				cam.global_position - cam.global_basis.z * 2.5 - cam.global_basis.y * 0.2)
+	_built_was = Prewarm.built()
+	for n in get_tree().get_nodes_in_group(Prewarm.GROUP):
+		n.call(&"warm", _stage)
 
 
 ## LOADING and a whole percentage that never goes backwards.

@@ -154,7 +154,7 @@ func _ready() -> void:
 	var cool_tex := GradientTexture1D.new()
 	cool_tex.gradient = cool
 	_spark_flow.color_ramp = cool_tex
-	_warm_up.call_deferred()
+	add_to_group(Prewarm.GROUP)
 
 
 ## A soft round blot for the dust.
@@ -172,16 +172,18 @@ func _puff_texture() -> Texture2D:
 	return tex
 
 
-## One of each thing made where nobody can see it, so the first blow does not
-## stall on shaders.
-func _warm_up() -> void:
-	_burst(Vector3(0, -900, 0), Vector3.UP, 4, 2)
+## FIRST TIMES (SCRIPT_prewarm.gd): a blow's grit and dust, its sparks and their
+## flash, and a loose stone.
+func warm(stage: Node3D) -> void:
+	var at := stage.global_position
+	var before := get_child_count()
+	_burst(at, Vector3.UP, 4, 2)
+	_sparks(at, stage.global_basis.z)
 	if _flora != null and _flora.rock_mesh(0) != null:
 		var body := _stone_body(0, 0.2)
-		body.freeze = true
 		add_child(body)
-		body.global_position = Vector3(0, -900, 0)
-		get_tree().create_timer(2.0).timeout.connect(body.queue_free)
+		body.global_position = at - stage.global_basis.x * 0.5
+	Prewarm.gather(self, before, stage)
 
 
 ## How many blows a boulder of this width (metres) takes.

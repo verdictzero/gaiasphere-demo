@@ -137,6 +137,38 @@ func _ready() -> void:
 	_drop_flow.gravity = Vector3(0, -9.8, 0)
 	_drop_flow.scale_min = 0.4
 	_drop_flow.scale_max = 1.6
+	add_to_group(Prewarm.GROUP)
+
+
+## FIRST TIMES (SCRIPT_prewarm.gd): a cow cut in two (hide, and the meat of the
+## cut), the gobbets and drops of a cut, a cut of beef lying, and the fire of
+## the beam's burst.
+func warm(stage: Node3D) -> void:
+	var at := stage.global_position
+	var before := get_child_count()
+	var skin := {}
+	if _herds != null:
+		for herd in _herds._herds:
+			for cow in herd["cows"]:
+				var found: Array = (cow["node"] as Node).find_children("*", "MeshInstance3D", true, false)
+				if not found.is_empty() and skin.is_empty():
+					var mi := found[0] as MeshInstance3D
+					skin = {"arrays": mi.mesh.surface_get_arrays(0), "material": mi.mesh.surface_get_material(0),
+						"transform": Transform3D(mi.global_basis, at)}
+	if not skin.is_empty():
+		var whole := _whole(skin)
+		_cows -= 1
+		var body: RigidBody3D = whole["body"]
+		var halves := _cut(whole, Plane(Vector3(1, 0, 0), Vector3.ZERO))
+		for half in halves:
+			_body(half, body.global_transform, 0, 1, whole["material"])
+	_spray(at, -stage.global_basis.z)
+	var card := MeshInstance3D.new()
+	card.mesh = _steak_card()
+	add_child(card)
+	card.global_position = at + stage.global_basis.x * 0.4
+	Fx.spawn(self, "explosion_small", to_local(at), 0.3)
+	Prewarm.gather(self, before, stage)
 
 
 # ------------------------------------------------------------------ the swing
@@ -595,21 +627,7 @@ func _process(delta: float) -> void:
 ## Cuts of raw beef thrown out of a cut: `count` of them, out to either side of
 ## the blade's line and up, to drop and lie in the grass.
 func _drop_steaks(at: Vector3, normal: Vector3, travel: Vector3, count: int) -> void:
-	if _steak_quad == null:
-		var mat := StandardMaterial3D.new()
-		mat.albedo_texture = load("res://assets/ui/item_beef.png")
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		mat.alpha_scissor_threshold = 0.45
-		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		mat.roughness = 1.0
-		mat.metallic = 0.0
-		mat.metallic_specular = 0.0
-		_steak_quad = QuadMesh.new()
-		_steak_quad.size = Vector2(0.3, 0.3)
-		_steak_quad.material = mat
-		_steak_shape = SphereShape3D.new()
-		_steak_shape.radius = 0.1
+	_steak_card()
 	for i in count:
 		var body := RigidBody3D.new()
 		body.mass = 0.4
@@ -633,6 +651,26 @@ func _drop_steaks(at: Vector3, normal: Vector3, travel: Vector3, count: int) -> 
 		_steaks.append([body, 0.0])
 	while _steaks.size() > 60:
 		(_steaks.pop_front()[0] as Node).queue_free()
+
+
+## The card a cut of beef is drawn on (made the first time it is wanted).
+func _steak_card() -> QuadMesh:
+	if _steak_quad == null:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_texture = load("res://assets/ui/item_beef.png")
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		mat.alpha_scissor_threshold = 0.45
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		mat.roughness = 1.0
+		mat.metallic = 0.0
+		mat.metallic_specular = 0.0
+		_steak_quad = QuadMesh.new()
+		_steak_quad.size = Vector2(0.3, 0.3)
+		_steak_quad.material = mat
+		_steak_shape = SphereShape3D.new()
+		_steak_shape.radius = 0.1
+	return _steak_quad
 
 
 func _exit_tree() -> void:

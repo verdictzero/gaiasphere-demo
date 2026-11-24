@@ -117,6 +117,7 @@ func _ready() -> void:
 	_torch.position = Vector3(0.22, -0.18, 0.0)
 	_torch.visible = false
 	_cam.add_child(_torch)
+	add_to_group(Prewarm.GROUP)
 	floor_max_angle = deg_to_rad(50.0)
 	floor_snap_length = 0.4
 	_spot = get_node_or_null(landing_spot_path) as Node3D
@@ -341,3 +342,12 @@ func _button(action: StringName, button: JoyButton) -> void:
 	var ev := InputEventJoypadButton.new()
 	ev.button_index = button
 	InputMap.action_add_event(action, ev)
+
+
+## FIRST TIMES (SCRIPT_prewarm.gd): the torch is lit while the stage stands, so
+## the first time it is switched on it has nothing to set up.
+func warm(stage: Node3D) -> void:
+	if _torch == null or _torch.visible:
+		return
+	_torch.visible = true
+	stage.tree_exiting.connect(func() -> void: _torch.visible = false)
