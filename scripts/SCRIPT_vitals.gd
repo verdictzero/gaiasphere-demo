@@ -10,8 +10,9 @@ extends CanvasLayer
 #             food. At nothing you are put back where you started, fed enough to
 #             go on, with everything you were carrying. Going under the cloud sea
 #             does the same.
-#   stamina   spent by running, jumping and every swing of the axe or sword;
-#             comes back when you ease off. Run it to nothing and you cannot
+#   stamina   spent by running, jumping, swimming and every swing of the axe
+#             or sword; comes back when you ease off (in the water: when you
+#             float still). Run it to nothing and you cannot
 #             run again until some of it is back.
 #   hunger    how fed you are, 100 full. It runs down by itself, slowly, and
 #             faster for every bit of effort: getting stamina back is paid for
@@ -60,6 +61,18 @@ extends CanvasLayer
 @export var breath := 45.0
 @export var breath_back := 3.5
 @export var drown_harm := 14.0
+## SWIMMING IS WORK. Stamina a second while swimming along, and how many times
+## that with the head under. Floating still at the surface costs nothing and
+## gets stamina back at `float_rest` of the usual rate: the way to rest out of
+## your depth. Swum out (no stamina left, until the second wind), you swim at
+## half speed, a breath under water goes `tired_breath` times as fast, and at
+## the surface you can no longer keep your mouth clear while you keep swimming:
+## the air goes at `tired_gulp` of a breath's rate instead of coming back.
+@export var swim_cost := 1.6
+@export var dive_effort := 1.4
+@export var float_rest := 0.35
+@export var tired_breath := 1.8
+@export var tired_gulp := 0.3
 ## What one berry is worth.
 @export var berry_food := 14.0
 ## And one cut of raw beef.
@@ -255,8 +268,12 @@ func _process(delta: float) -> void:
 	# `breath` seconds, and when it is gone the water takes health instead.
 	var eyes := float(_explorer.get("eye_height")) if _explorer.get("eye_height") != null else 1.6
 	under = not flying and _explorer.get("deep") != null and float(_explorer.get("deep")) > eyes + 0.05
-	if under:
-		oxygen = maxf(oxygen - 100.0 / maxf(breath, 1.0) * delta, 0.0)
+	var swimming: bool = not flying and _explorer.get("swimming") == true
+	var stroking: bool = swimming and (Vector2(_explorer.velocity.x, _explorer.velocity.z).length() > 0.6 or absf(_explorer.velocity.y) > 0.6)
+	var swum_out: bool = swimming and spent
+	if under or (swum_out and stroking):
+		var rate := (tired_breath if swum_out else 1.0) if under else tired_gulp
+		oxygen = maxf(oxygen - 100.0 / maxf(breath, 1.0) * rate * delta, 0.0)
 		if oxygen <= 0.0:
 			hurt(drown_harm * delta, "YOU DROWNED")
 			if _dead:
@@ -282,18 +299,21 @@ func _process(delta: float) -> void:
 		spend(jump_cost)
 	if running:
 		spend(run_cost * delta)
+	elif stroking:
+		spend(swim_cost * (dive_effort if under else 1.0) * delta)
 	else:
 		_rest += delta
 		if _rest >= regain_wait and stamina < ceiling():
 			# Walking gets it back too, more slowly than standing.
 			var moving := Vector2(_explorer.velocity.x, _explorer.velocity.z).length() > 1.0
-			var back := minf(regain * recovery() * (0.6 if moving else 1.0) * delta, ceiling() - stamina)
+			var back := minf(regain * recovery() * (float_rest if swimming else (0.6 if moving else 1.0)) * delta, ceiling() - stamina)
 			stamina += back
 			hunger = maxf(hunger - back * food_per_stamina, 0.0)
 	stamina = minf(stamina, maxf(ceiling(), stamina - 30.0 * delta))      # the ceiling coming down takes it with it, gently
 	if spent and stamina >= minf(second_wind, ceiling() * 0.6):
 		spent = false
 	_explorer.set("run_allowed", not spent)
+	_explorer.set("swim_tired", swum_out)
 	_flash = maxf(_flash - delta * 1.6, 0.0)
 	_view.queue_redraw()
 

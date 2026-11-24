@@ -60,6 +60,10 @@ var buoyancy := 1.0
 ## How far the water stands over the feet, metres (0 on dry ground, and while
 ## flying). The head is under when it is over the eyes (SCRIPT_vitals.gd's air).
 var deep := 0.0
+## Afloat: out of its depth and off the bottom.
+var swimming := false
+## Swum out (SCRIPT_vitals.gd): no stamina left in the water, and slow for it.
+var swim_tired := false
 
 var _cam: Camera3D
 var _pitch := 0.0
@@ -213,6 +217,7 @@ func _physics_process(delta: float) -> void:
 		fast = fast and run_allowed
 	if flying:
 		deep = 0.0
+		swimming = false
 		_fly(move, rise, fast, delta)
 	else:
 		_walk(move, rise, fast, delta)
@@ -235,8 +240,8 @@ func _walk(move: Vector2, rise: float, fast: bool, delta: float) -> void:
 		var level := float(_water.call(&"world_level_at", global_position))
 		if not is_nan(level):
 			deep = maxf(level - global_position.y, 0.0)
-	var swimming := deep > 1.3 and not (is_on_floor() and deep < 1.45)
-	var speed := swim_speed if swimming else (run_speed if fast else walk_speed)
+	swimming = deep > 1.3 and not (is_on_floor() and deep < 1.45)
+	var speed := swim_speed * (0.5 if swim_tired else 1.0) if swimming else (run_speed if fast else walk_speed)
 	if deep > 0.3 and not swimming:
 		speed *= 0.7
 	var flat := want * speed

@@ -6,6 +6,8 @@ var flying := false
 var running := false
 var run_allowed := true
 var deep := 0.0
+var swimming := false
+var swim_tired := false
 var grounded := true
 var arrivals := 0
 
