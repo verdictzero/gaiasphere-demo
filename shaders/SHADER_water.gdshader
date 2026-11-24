@@ -105,35 +105,17 @@ global uniform vec4 enviro_sky_horizon;
 varying vec3 world_pos;
 varying vec4 flow;
 
-// Height of the swell at a point, 0..1 at a peak. A field of separate, irregular
-// peaks (sharpened noise at two sizes) carried outward from the islet. The
-// carrying is the flow-map trick: the field slides along the outward direction in
-// two overlapping cycles, each fading out as it resets, so it moves for ever
-// without stretching. A faint ring train under it keeps the sense of waves
-// leaving the middle.
+#include "res://shaders/SHADERINC_swell.gdshaderinc"
+
 float swell(vec2 p, float t) {
-	vec2 d = p - mere_centre;
-	float r = length(d);
-	vec2 dir = d / max(r, 0.001);
-	float reach = wave_length * 2.2;
-	float rate = wave_pace / reach;
-	float ph0 = fract(t * rate);
-	float ph1 = fract(t * rate + 0.5);
-	vec2 q0 = (p - dir * ph0 * reach) / wave_length;
-	vec2 q1 = (p - dir * ph1 * reach) / wave_length + vec2(0.37, 0.61);
-	float n0 = textureLod(swell_noise, q0 * 0.21, 0.0).r * 0.65 + textureLod(swell_noise, q0 * 0.57 + 0.3, 0.0).r * 0.35;
-	float n1 = textureLod(swell_noise, q1 * 0.21, 0.0).r * 0.65 + textureLod(swell_noise, q1 * 0.57 + 0.3, 0.0).r * 0.35;
-	float n = mix(n0, n1, abs(1.0 - 2.0 * ph0));
-	float peaks = pow(smoothstep(0.3, 0.85, n), 1.7);
-	float ring = pow(sin(r * 6.2832 / (wave_length * 1.9) - t * wave_pace * 0.5) * 0.5 + 0.5, 2.0);
-	return clamp(peaks * 0.85 + ring * 0.15 * (0.4 + n), 0.0, 1.0);
+	return swell_field(swell_noise, mere_centre, wave_length, wave_pace, p, t);
 }
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	flow = CUSTOM0;
 	float still = 1.0 - clamp(UV2.y, 0.0, 1.0);
-	VERTEX.y += (swell(world_pos.xz, TIME) - 0.35) * wave_height * still * (0.6 + min(enviro_wind.z, 2.4));
+	VERTEX.y += swell_lift(swell(world_pos.xz, TIME), wave_height * still, enviro_wind.z);
 }
 
 float linear_depth(vec2 uv, mat4 inv_proj) {

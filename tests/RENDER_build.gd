@@ -63,8 +63,23 @@ func _process(_dt: float) -> bool:
 			# (You come to in the wreck under the mere: the building is done on dry
 			# ground, in the meadow up the shore, clear of the herd in its middle.)
 			var glade := Flora.glade()
-			var spot := Vector3(glade.x + 30.0, 0.0, glade.y)
-			spot.y = float(_scene.get_node("GaiaSphere").call(&"height_at", spot, 0.0)) + 0.4
+			# (The most level patch of it: the walk in is up the steps from the ground.)
+			var world := _scene.get_node("GaiaSphere")
+			var spot := Vector3.ZERO
+			var least := 1e9
+			for k in 24:
+				var try := Vector3(glade.x, 0.0, glade.y) + Vector3(cos(float(k) * 0.9), 0.0, sin(float(k) * 0.9)) * (18.0 + float(k % 4) * 9.0)
+				var low := 1e9
+				var high := -1e9
+				for c in [Vector3.ZERO, Vector3(5, 0, 0), Vector3(-5, 0, 0), Vector3(0, 0, 5), Vector3(0, 0, -5)]:
+					var y := float(world.call(&"height_at", try + c, 0.0))
+					low = minf(low, y)
+					high = maxf(high, y)
+				if high - low < least:
+					least = high - low
+					spot = try
+			spot.y = float(world.call(&"height_at", spot, 0.0)) + 0.4
+			print("build: on a patch that falls %.2f m in ten" % least)
 			explorer.flying = false
 			explorer.global_position = spot
 			cam.rotation.x = -0.42
