@@ -171,6 +171,9 @@ func _use_label() -> String:
 	var built := get_node_or_null(^"../../Building")
 	if built != null and String(built.call(&"holding")) != "":
 		return "PLACE"
+	var fires := get_node_or_null(^"../../Cooking")
+	if fires != null and bool(fires.call(&"holding")):
+		return "PLACE"
 	match String(_hand.get("tool")):
 		"axe":
 			return "CHOP"

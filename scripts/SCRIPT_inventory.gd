@@ -35,14 +35,15 @@ const ITEMS := {
 	"roof": {"name": "Plank Roof", "icon": "res://assets/ui/item_roof.png"},
 	"gable": {"name": "Gable", "icon": "res://assets/ui/item_gable.png"},
 	"stairs": {"name": "Plank Stairs", "icon": "res://assets/ui/item_stairs.png"},
+	"campfire": {"name": "Cooking Fire", "icon": "res://assets/ui/item_campfire.png"},
 	"foundation": {"name": "Stone Foundation", "icon": "res://assets/ui/item_foundation.png"},
 	"steps": {"name": "Stone Steps", "icon": "res://assets/ui/item_steps.png"},
 }
 
 ## What can be made, in the order the list shows it, and what each takes.
 const RECIPES := [
-	# (Until there is a fire to cook on: a log burnt under a cut of beef.)
-	{"makes": "steak", "needs": {"beef": 1, "log": 1}},
+	# (Beef is cooked on the fire, not in the bag: SCRIPT_cooking.gd.)
+	{"makes": "campfire", "needs": {"log": 3, "stone": 6}},
 	{"makes": "wall", "needs": {"log": 4}},
 	{"makes": "doorway", "needs": {"log": 6}},
 	{"makes": "floor", "needs": {"log": 3}},

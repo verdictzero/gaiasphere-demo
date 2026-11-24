@@ -621,6 +621,9 @@ func _bite() -> void:
 		var built := get_node_or_null(^"../Building")
 		if built != null and bool(built.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
 			return
+		var fires := get_node_or_null(^"../Cooking")
+		if fires != null and bool(fires.call(&"strike", _cam.global_position, -_cam.global_basis.z)):
+			return
 	# The pickaxe is for rock and nothing else (SCRIPT_mining.gd).
 	if tool == "pickaxe":
 		var mine := get_node_or_null(^"../Mining")

@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/SCRIPT_inventory.gd" id="inventory"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_watermark.gd" id="watermark"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_building.gd" id="building"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_cooking.gd" id="cooking"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cow_herds.gd" id="cows"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cow_slicing.gd" id="cowslicing"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_crashed_shuttle.gd" id="shuttle"]
@@ -79,6 +80,9 @@ script = ExtResource("berrybushes")
 
 [node name="Building" type="Node3D" parent="."]
 script = ExtResource("building")
+
+[node name="Cooking" type="Node3D" parent="."]
+script = ExtResource("cooking")
 
 [node name="CowHerds" type="Node3D" parent="."]
 script = ExtResource("cows")

@@ -8,7 +8,7 @@ extends SceneTree
 var _frames := 0
 var _cam: Camera3D
 var _subject: Node3D
-var _queue: Array = ["stairs"]
+var _queue: Array = ["campfire"]
 var _wood: Woodcutting
 
 
@@ -122,6 +122,15 @@ func _stage(what: String) -> void:
 				# Standing on nothing, the sunk metre would show: a card hides it.
 				pass
 			span = box.size.length() * 0.95
+		"campfire":
+			var model: Node3D = (load("res://assets/cooking/cooking_fire.glb") as PackedScene).instantiate()
+			model.scale = Vector3.ONE * 0.1
+			model.position = Vector3(0, -0.55, 0)
+			var turn := Node3D.new()
+			turn.add_child(model)
+			turn.rotation_degrees = Vector3(0.0, 30.0, 0.0)
+			_subject.add_child(turn)
+			span = 1.75
 		"katana":
 			var model: Node3D = (load("res://assets/katana/katana.glb") as PackedScene).instantiate()
 			model.transform = Transform3D(Basis().scaled(Vector3.ONE * SwordPlay.KATANA_SCALE), Vector3(0, -60.0 * SwordPlay.KATANA_SCALE, 0))
