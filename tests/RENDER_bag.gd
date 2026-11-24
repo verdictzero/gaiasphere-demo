@@ -48,16 +48,24 @@ func _process(_dt: float) -> bool:
 		ok = ok and _bag.count_of("log") == 150
 		# CRAFTING: a wall takes four logs; a foundation cannot be made without stone,
 		# and can with it; a click on its row in the list does the same.
-		ok = ok and _bag.craft(1) and _bag.count_of("wall") == 1 and _bag.count_of("log") == 146
-		ok = ok and not _bag.can_craft(6) and not _bag.craft(6) and _bag.count_of("log") == 146
+		var row := func(makes: String) -> int:
+			for i in Inventory.RECIPES.size():
+				if String(Inventory.RECIPES[i]["makes"]) == makes:
+					return i
+			return -1
+		var wall: int = row.call("wall")
+		var found: int = row.call("foundation")
+		var steps: int = row.call("steps")
+		ok = ok and _bag.craft(wall) and _bag.count_of("wall") == 1 and _bag.count_of("log") == 146
+		ok = ok and not _bag.can_craft(found) and not _bag.craft(found) and _bag.count_of("log") == 146
 		_bag.add("stone", 20)
 		var ev := InputEventMouseButton.new()
 		ev.button_index = MOUSE_BUTTON_LEFT
 		ev.pressed = true
-		ev.position = _bag._craft_row(6).get_center()
+		ev.position = _bag._craft_row(found).get_center()
 		_bag._on_gui_input(ev)
 		ok = ok and _bag.count_of("foundation") == 1 and _bag.count_of("stone") == 12 and _bag.count_of("log") == 144
-		ok = ok and _bag.craft(7) and _bag.count_of("stone") == 7 and not _bag.can_craft(6)
+		ok = ok and _bag.craft(steps) and _bag.count_of("stone") == 7 and not _bag.can_craft(found)
 		_bag._craft_hover = 1
 		_bag._view.queue_redraw()
 		print("bag: clicks and crafting %s" % ("ok" if ok else "FAILED"))
