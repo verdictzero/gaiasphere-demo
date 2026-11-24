@@ -72,6 +72,8 @@ uniform sampler2D swell_noise : filter_linear_mipmap, repeat_enable;
 uniform float wave_height = 0.42;
 uniform float wave_length = 13.0;
 uniform float wave_pace = 2.6;
+uniform float level_near = 24.0;
+uniform float level_far = 46.0;
 
 group_uniforms flow;
 uniform float flow_speed = 0.9;
@@ -115,7 +117,13 @@ void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	flow = CUSTOM0;
 	float still = 1.0 - clamp(UV2.y, 0.0, 1.0);
-	VERTEX.y += swell_lift(swell(world_pos.xz, TIME), wave_height * still, enviro_wind.z);
+	// DEAD LEVEL ROUND THE EYE. The half-in, half-out line on the lens
+	// (SHADER_underwater) is drawn at the water's level, flat; so the surface is
+	// held at that level for every vertex within `level_near` of the eye (wider
+	// than the mesh's widest quad, so the one the eye is in is flat whole) and the
+	// swell lets in from there to `level_far`.
+	float off = smoothstep(level_near, level_far, distance(world_pos.xz, MAIN_CAM_INV_VIEW_MATRIX[3].xz));
+	VERTEX.y += swell_lift(swell(world_pos.xz, TIME), wave_height * still, enviro_wind.z) * off;
 }
 
 float linear_depth(vec2 uv, mat4 inv_proj) {

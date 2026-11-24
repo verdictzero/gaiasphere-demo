@@ -88,13 +88,6 @@ uniform float foam_rise = 7.0;
 // How far the surface rides up and down across the lens, metres, its waves across
 // the screen, and how fast they run.
 uniform float wave_height = 0.0;
-// The swell of the water the eye is in (SCRIPT_underwater_view.gd copies these
-// from the water's own material; a height of 0 where it has none).
-uniform vec2 swell_centre = vec2(0.0);
-uniform sampler2D swell_noise : filter_linear_mipmap, repeat_enable;
-uniform float swell_height = 0.0;
-uniform float swell_length = 13.0;
-uniform float swell_pace = 2.6;
 uniform float wave_cells = 2.0;
 uniform float wave_speed = 2.4;
 
@@ -102,9 +95,6 @@ group_uniforms shafts;
 uniform float shafts : hint_range(0.0, 2.0) = 0.35;
 uniform float shaft_bars = 16.0;
 group_uniforms;
-
-global uniform vec4 enviro_wind;
-#include "res://shaders/SHADERINC_swell.gdshaderinc"
 
 void vertex() {
 	// The quad (2 m square, `UnderwaterView`) over the whole screen, wherever it is.
@@ -161,14 +151,12 @@ void fragment() {
 
 	// ---- the lens: under the water there, or not -----------------------------
 	vec3 at_lens = eye + ray * (lens / max(-ray_v.z, 1e-3));
-	// THE LINE IS WHERE THE WATER IS: flat across the lens, at the height the
-	// water's own surface stands just there, swell and all (the same sum the
-	// surface is drawn by, SHADERINC_swell). No lapping of its own is added: any
-	// difference between the two shows as a gap with the bed in it.
+	// THE LINE IS WHERE THE WATER IS: flat across the lens, at the water's own
+	// level. The surface is drawn dead level for some way round the eye for just
+	// this (SHADER_water lets its rise and fall in only further off), and no
+	// lapping of the line's own is added: any difference between the two shows
+	// as a gap with the bed in it.
 	float wave = 0.004;
-	if (swell_height > 0.0) {
-		wave += swell_lift(swell_field(swell_noise, swell_centre, swell_length, swell_pace, (eye + to_world * vec3(0.0, 0.0, -lens)).xz, TIME), swell_height, enviro_wind.z);
-	}
 	float h = at_lens.y - (water_y + wave);
 	// The same in pixels, by how fast it changes across the screen.
 	float hp = h / max(fwidth(h), 1e-6);

@@ -59,28 +59,7 @@ func _wanted() -> bool:
 		return false
 	global_position = p
 	_mat.set_shader_parameter(&"water_y", y)
-	# The swell the surface there is drawn with, so the lens's line stands where
-	# the water does: the mere has one, running water none.
-	var rise := 0.0
-	var surface := _water.get(&"material") as ShaderMaterial
-	var flows: Variant = _water.get(&"_flows")
-	var height := 0.0
-	if surface != null and flows != null and flows.has_lagoon():
-		var middle: Vector2 = flows.lagoon_center()
-		var shores: Vector2 = flows.lagoon_shores((Vector2(p.x, p.z) - middle).angle())
-		if Vector2(p.x, p.z).distance_to(middle) < shores.y + 6.0:
-			# (A value the material leaves alone reads as null: the shader's own then.)
-			var read := func(what: StringName, otherwise: float) -> float:
-				var v: Variant = surface.get_shader_parameter(what)
-				return float(v) if v != null else otherwise
-			height = read.call(&"wave_height", 0.42)
-			_mat.set_shader_parameter(&"swell_centre", middle)
-			_mat.set_shader_parameter(&"swell_noise", surface.get_shader_parameter(&"swell_noise"))
-			_mat.set_shader_parameter(&"swell_length", read.call(&"wave_length", 13.0))
-			_mat.set_shader_parameter(&"swell_pace", read.call(&"wave_pace", 2.6))
-			rise = height * 0.65 * 3.0
-	_mat.set_shader_parameter(&"swell_height", height)
-	return p.y + lens_low(cam) < y + rise + 0.02
+	return p.y + lens_low(cam) < y + 0.02
 
 
 ## How far under the eye the lens's lowest corner is, metres (negative: under):
