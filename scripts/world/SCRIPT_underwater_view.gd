@@ -59,7 +59,33 @@ func _wanted() -> bool:
 		return false
 	global_position = p
 	_mat.set_shader_parameter(&"water_y", y)
-	return p.y + lens_low(cam) < y + 0.02
+	# THE SWELL. Still water rises and falls (SHADER_water), and the waterline has
+	# to stand where the surface does. The surface is flat between its vertices,
+	# so the shader is given the triangle of it the lens is over and the swell's
+	# own settings, and works the height at each corner exactly as the surface's
+	# shader does.
+	var height := 0.0
+	var surface := _water.material
+	if surface != null:
+		var lens := float(_mat.get_shader_parameter(&"lens"))
+		var tri := _water.lagoon_triangle(p - cam.global_basis.z * lens)
+		if tri.size() == 3:
+			# (A value the material leaves alone reads as null: the shader's own then.)
+			var read := func(what: StringName, otherwise: float) -> float:
+				var v: Variant = surface.get_shader_parameter(what)
+				return float(v) if v != null else otherwise
+			height = read.call(&"wave_height", 0.42)
+			_mat.set_shader_parameter(&"swell_a", tri[0])
+			_mat.set_shader_parameter(&"swell_b", tri[1])
+			_mat.set_shader_parameter(&"swell_c", tri[2])
+			var centre: Variant = surface.get_shader_parameter(&"mere_centre")
+			_mat.set_shader_parameter(&"swell_centre", centre if centre != null else Vector2.ZERO)
+			_mat.set_shader_parameter(&"swell_noise", surface.get_shader_parameter(&"swell_noise"))
+			_mat.set_shader_parameter(&"swell_length", read.call(&"wave_length", 13.0))
+			_mat.set_shader_parameter(&"swell_pace", read.call(&"wave_pace", 2.6))
+	_mat.set_shader_parameter(&"swell_height", height)
+	# (Shown while the lens could be under the highest the swell ever stands.)
+	return p.y + lens_low(cam) < y + height * 0.65 * 3.0 + 0.02
 
 
 ## How far under the eye the lens's lowest corner is, metres (negative: under):

@@ -96,9 +96,34 @@ uniform float shafts : hint_range(0.0, 2.0) = 0.35;
 uniform float shaft_bars = 16.0;
 group_uniforms;
 
+// THE SWELL of the still water the eye is in (SCRIPT_underwater_view.gd sets
+// these): the three corners of the surface's own triangle over the lens, as the
+// mesh has them, and the swell's settings copied from the water's material. A
+// height of 0 where there is none.
+uniform vec3 swell_a = vec3(0.0);
+uniform vec3 swell_b = vec3(1.0, 0.0, 0.0);
+uniform vec3 swell_c = vec3(0.0, 0.0, 1.0);
+uniform vec2 swell_centre = vec2(0.0);
+uniform sampler2D swell_noise : filter_linear_mipmap, repeat_enable;
+uniform float swell_height = 0.0;
+uniform float swell_length = 13.0;
+uniform float swell_pace = 2.6;
+global uniform vec4 enviro_wind;
+#include "res://shaders/SHADERINC_swell.gdshaderinc"
+
+// How far each corner of that triangle stands over the water's level just now.
+varying flat vec3 corner_lift;
+
 void vertex() {
 	// The quad (2 m square, `UnderwaterView`) over the whole screen, wherever it is.
 	POSITION = vec4(VERTEX.xy, 0.0, 1.0);
+	corner_lift = vec3(0.0);
+	if (swell_height > 0.0) {
+		corner_lift = vec3(
+				swell_lift(swell_field(swell_noise, swell_centre, swell_length, swell_pace, swell_a.xz, TIME), swell_height, enviro_wind.z),
+				swell_lift(swell_field(swell_noise, swell_centre, swell_length, swell_pace, swell_b.xz, TIME), swell_height, enviro_wind.z),
+				swell_lift(swell_field(swell_noise, swell_centre, swell_length, swell_pace, swell_c.xz, TIME), swell_height, enviro_wind.z));
+	}
 }
 
 float uw_hash(vec2 p) {
@@ -151,12 +176,21 @@ void fragment() {
 
 	// ---- the lens: under the water there, or not -----------------------------
 	vec3 at_lens = eye + ray * (lens / max(-ray_v.z, 1e-3));
-	// THE LINE IS WHERE THE WATER IS: flat across the lens, at the water's own
-	// level. The surface is drawn dead level for some way round the eye for just
-	// this (SHADER_water lets its rise and fall in only further off), and no
-	// lapping of the line's own is added: any difference between the two shows
-	// as a gap with the bed in it.
+	// THE LINE IS WHERE THE WATER IS: straight across the lens, at the height the
+	// water's own surface stands there, swell and all (worked from the corners of
+	// the surface's triangle, as the surface is). No lapping of the line's own is
+	// added: any difference between the two shows as a gap with the bed in it.
 	float wave = 0.004;
+	if (swell_height > 0.0) {
+		// Where the lens is in the triangle, and so how high the surface is there.
+		vec2 e0 = swell_b.xz - swell_a.xz;
+		vec2 e1 = swell_c.xz - swell_a.xz;
+		vec2 d = at_lens.xz - swell_a.xz;
+		float den = e0.x * e1.y - e0.y * e1.x;
+		float u = (d.x * e1.y - d.y * e1.x) / den;
+		float v = (e0.x * d.y - e0.y * d.x) / den;
+		wave += corner_lift.x * (1.0 - u - v) + corner_lift.y * u + corner_lift.z * v;
+	}
 	float h = at_lens.y - (water_y + wave);
 	// The same in pixels, by how fast it changes across the screen.
 	float hp = h / max(fwidth(h), 1e-6);

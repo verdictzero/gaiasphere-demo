@@ -101,6 +101,11 @@ var _world: Node = null
 var _mi: MeshInstance3D = null
 var _surfaces: Array = []   ## per river: {"river": River, "levels": PackedFloat32Array, "steep": PackedFloat32Array}
 var _lagoon_y := NAN
+## The lagoon's own vertices as they were laid (field frame), `_lagoon_cols` to a
+## row, a row every step round: for `lagoon_triangle`.
+var _lagoon_verts := PackedVector3Array()
+var _lagoon_cols := 0
+var _lagoon_mid := Vector2.ZERO
 ## For `level_at`: the flows, and the river points in `LOOKUP_CELL` cells,
 ## Vector2i(river, point) each.
 var _flows: FlowTerrain = null
@@ -342,6 +347,33 @@ func world_level_at(p: Vector3) -> float:
 	var o := global_position
 	var y := level_at(p.x - o.x, p.z - o.z)
 	return y + o.y if not is_nan(y) else NAN
+
+
+## The three corners (world) of the triangle of the lagoon's surface that lies
+## over a point of the world, as the mesh has them before any swell lifts them;
+## empty if the point is not over the lagoon. The surface between its vertices is
+## flat, so its height anywhere in a triangle is settled by those three alone:
+## what the lens's waterline is drawn from (SCRIPT_underwater_view.gd).
+func lagoon_triangle(p: Vector3) -> PackedVector3Array:
+	var cols := _lagoon_cols
+	if cols < 2 or _lagoon_verts.size() < cols * 2:
+		return PackedVector3Array()
+	var o := global_position
+	var q := Vector2(p.x - o.x, p.z - o.z)
+	var rows := _lagoon_verts.size() / cols - 1
+	var at := int(floor(fposmod((q - _lagoon_mid).angle(), TAU) / TAU * float(rows)))
+	for step in [0, -1, 1]:
+		var i := posmod(at + step, rows)
+		for k in range(cols - 1):
+			var a0 := i * cols + k
+			var a1 := a0 + cols
+			for tri in [[a0, a1, a0 + 1], [a0 + 1, a1, a1 + 1]]:
+				var a := _lagoon_verts[tri[0]]
+				var b := _lagoon_verts[tri[1]]
+				var c := _lagoon_verts[tri[2]]
+				if Geometry2D.point_is_inside_triangle(q, Vector2(a.x, a.z), Vector2(b.x, b.z), Vector2(c.x, c.z)):
+					return PackedVector3Array([a + o, b + o, c + o])
+	return PackedVector3Array()
 
 
 ## The mesh, in the field's frame: every river's sweep, in one surface.
@@ -586,6 +618,9 @@ func _lagoon(st: Dictionary, field: IslandField, hub: IslandField.Island, flows:
 			st["tan"].append_array(PackedFloat32Array([tan.x, 0.0, tan.y, 1.0]))
 			# Flat: its flow time is its metres, at a flat reach's pace.
 			st["flow"].append_array(PackedFloat32Array([lap * float(i) / float(n), 1.0, 0.0, 0.0]))
+	_lagoon_verts = (st["v"] as PackedVector3Array).slice(base)
+	_lagoon_cols = cols
+	_lagoon_mid = c
 	var idx: PackedInt32Array = st["idx"]
 	for i in range(n):
 		for k in range(cols - 1):
