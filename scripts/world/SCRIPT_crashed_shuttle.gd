@@ -260,10 +260,12 @@ func _rock_piles(field: IslandField, at: Vector2, back: Vector2) -> void:
 
 # ------------------------------------------------------------------ air getting out
 
-## A bubble, as three layers a light can work on: [0] its colour with only a thin
-## wall of it there at all, [1] the lie of that wall as a normal map (a ball's,
-## leaning out to the edge), [2] roughness in red and metalness in green. No
-## shine is painted on: what glints is what the sun and the torch put there.
+## A bubble, baked as a ball for a light to work on. Three layers: [0] its colour,
+## with how much of it is there (a faint body, more toward the edge where a real
+## one turns the light back, and the very thinnest ring of solid wall round the
+## rim); [1] a ball's normals, the whole of it, so the sun, the torch and the
+## wreck's lamps put their own shine on it where they would; [2] roughness in red
+## and metalness in green. No shine is painted on.
 static func bubble_layers() -> Array:
 	var side := 128
 	var colour := Image.create(side, side, true, Image.FORMAT_RGBA8)
@@ -273,16 +275,17 @@ static func bubble_layers() -> Array:
 		for x in side:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / float(side) * 2.0 - Vector2.ONE
 			var r := p.length()
-			# The wall: a hair of a ring, thinner than the bubble is wide by far.
-			var wall := smoothstep(0.8, 0.86, r) * (1.0 - smoothstep(0.93, 0.99, r))
-			colour.set_pixel(x, y, Color(0.96, 1.0, 1.0, wall))
-			var flat := p.limit_length(0.96)
+			var inside := 1.0 - smoothstep(0.965, 0.995, r)
+			# The body: nearly clear face on, thickening to the edge.
+			var body := (0.2 + 0.5 * pow(clampf(r, 0.0, 1.0), 5.0)) * inside
+			# The wall: a hair's breadth, right at the rim.
+			var wall := smoothstep(0.925, 0.95, r) * inside
+			colour.set_pixel(x, y, Color(0.9, 0.97, 1.0, clampf(maxf(body, wall), 0.0, 1.0)))
+			var flat := p.limit_length(0.985)
 			var n := Vector3(flat.x, -flat.y, sqrt(maxf(1.0 - flat.length_squared(), 0.0))).normalized()
 			lie.set_pixel(x, y, Color(n.x * 0.5 + 0.5, n.y * 0.5 + 0.5, n.z * 0.5 + 0.5, 1.0))
-			# Glassy, and only part mirror: a full mirror has nothing bright to show down
-			# here and goes dark. A touch duller at the very edge.
-			var rough := lerpf(0.08, 0.3, smoothstep(0.9, 0.98, r))
-			feel.set_pixel(x, y, Color(rough, 0.3, 0.0, 1.0))
+			# Glassy all over, and a little of a mirror.
+			feel.set_pixel(x, y, Color(0.12, 0.25, 0.0, 1.0))
 	var out: Array = []
 	for img: Image in [colour, lie, feel]:
 		img.generate_mipmaps()
@@ -302,13 +305,14 @@ func _bubbles() -> void:
 	mat.metallic = 1.0
 	mat.metallic_texture = layers[2]
 	mat.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
-	# CUT OUT, NOT BLENDED. Under water the whole view is redrawn from a copy of
-	# the screen taken before anything see-through is drawn (SHADER_underwater, and
-	# the water's own surface from above), so a blended bubble is painted over
-	# and never seen. A cut-out one is solid where it is there at all, is in that
-	# copy, and is seen: its thin wall, with the water showing through its middle.
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	mat.alpha_scissor_threshold = 0.3
+	# NOT BLENDED. Under water the whole view is redrawn from a copy of the screen
+	# taken before anything see-through is drawn (SHADER_underwater, and the
+	# water's own surface from above), so a blended bubble is painted over and
+	# never seen. This one is drawn solid, pixel by pixel, as many of its pixels
+	# as it is opaque there (a screen-door): it is in that copy, takes light and
+	# shadow like anything solid, and still lets the water show through its body.
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
+	mat.alpha_hash_scale = 1.0
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.billboard_keep_scale = true
 	mat.vertex_color_use_as_albedo = true

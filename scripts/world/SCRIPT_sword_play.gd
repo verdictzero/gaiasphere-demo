@@ -58,7 +58,7 @@ const FOOD := {
 	"steak": ["steak_food", "res://assets/ui/item_steak.png"],
 }
 # The katana model: metres per unit, and how far up from its middle (its own units) the hand closes.
-const KATANA_SCALE := 0.0046
+const KATANA_SCALE := 0.0069
 const KATANA_GRIP := -44.0
 const AXE_CHOP := [Vector3(42.0, -14.0, -30.0), Vector3(-96.0, 12.0, 34.0)]
 const CUTS := [

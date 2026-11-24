@@ -133,7 +133,7 @@ func _stage(what: String) -> void:
 			span = 1.75
 		"katana":
 			var model: Node3D = (load("res://assets/katana/katana.glb") as PackedScene).instantiate()
-			model.transform = Transform3D(Basis().scaled(Vector3.ONE * SwordPlay.KATANA_SCALE), Vector3(0, -60.0 * SwordPlay.KATANA_SCALE, 0))
+			model.transform = Transform3D(Basis().scaled(Vector3.ONE * 0.0046), Vector3(0, -60.0 * 0.0046, 0))
 			var turn := Node3D.new()
 			turn.add_child(model)
 			turn.rotation_degrees = Vector3(0.0, 90.0, -45.0)
