@@ -276,16 +276,17 @@ static func bubble_layers() -> Array:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / float(side) * 2.0 - Vector2.ONE
 			var r := p.length()
 			var inside := 1.0 - smoothstep(0.965, 0.995, r)
-			# The body: nearly clear face on, thickening to the edge.
-			var body := (0.2 + 0.5 * pow(clampf(r, 0.0, 1.0), 5.0)) * inside
+			# The body: all but clear face on (a speckle of it, no more), thickening
+			# only close to the edge.
+			var body := (0.05 + 0.6 * pow(clampf(r, 0.0, 1.0), 9.0)) * inside
 			# The wall: a hair's breadth, right at the rim.
 			var wall := smoothstep(0.925, 0.95, r) * inside
-			colour.set_pixel(x, y, Color(0.9, 0.97, 1.0, clampf(maxf(body, wall), 0.0, 1.0)))
+			colour.set_pixel(x, y, Color(0.97, 1.0, 1.0, clampf(maxf(body, wall), 0.0, 1.0)))
 			var flat := p.limit_length(0.985)
 			var n := Vector3(flat.x, -flat.y, sqrt(maxf(1.0 - flat.length_squared(), 0.0))).normalized()
 			lie.set_pixel(x, y, Color(n.x * 0.5 + 0.5, n.y * 0.5 + 0.5, n.z * 0.5 + 0.5, 1.0))
 			# Glassy all over, and a little of a mirror.
-			feel.set_pixel(x, y, Color(0.12, 0.25, 0.0, 1.0))
+			feel.set_pixel(x, y, Color(0.12, 0.1, 0.0, 1.0))
 	var out: Array = []
 	for img: Image in [colour, lie, feel]:
 		img.generate_mipmaps()
