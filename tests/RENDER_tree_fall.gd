@@ -28,15 +28,19 @@ func _process(_d: float) -> bool:
 		enviro.hour = 11.0
 		enviro.set_weather("clear", 0.0)
 		var flora: Flora = _scene.get_node("Flora")
-		var here: Vector3 = ex.global_position
+		var here: Vector3 = _scene.get_node("LandingSpot").call(&"hatch_spot")
 		var tree := {}
 		for i in 900:
 			var ang := float(i) * 0.7
 			var p := here + Vector3(cos(ang), 0.0, sin(ang)) * (6.0 + 0.2 * float(i)) + Vector3(0, 1.5, 0)
 			var t := flora.tree_on(p, Vector3.ZERO, 0.0, 4.0)
-			if not t.is_empty() and float(t["radius"]) > 0.25 and (t["origin"] as Vector3).y > 0.5:
+			if not t.is_empty() and float(t["radius"]) >= 0.2:
 				tree = t
 				break
+		if tree.is_empty():
+			print("tree fall: no tree found")
+			quit(1)
+			return true
 		var foot: Vector3 = tree["origin"]
 		# Stand beside it, swing (felling) at it, and watch from off to the side.
 		var from := foot + Vector3(float(tree["radius"]) + 1.6, 1.6, 0.0)
