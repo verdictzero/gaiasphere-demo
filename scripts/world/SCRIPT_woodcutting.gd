@@ -116,6 +116,7 @@ func warm(stage: Node3D) -> void:
 	body.global_position = at
 	_chips(at, 4, CHIP)
 	_chips(at, 4, NEEDLE)
+	_fronds(at, 3, 0.5)
 	if _flora != null:
 		for kind in Flora.FIRS.size():
 			var sawn := _pieces(kind)
@@ -621,6 +622,81 @@ func _crash(f: Dictionary) -> void:
 	# The crown, where it came down: needles thrown up along the top of the tree.
 	_chips(foot + away * height * 0.68 + Vector3.UP * 1.0, 160, NEEDLE,
 			Vector3(height * 0.2 + radius * 4.0, 1.2, height * 0.2 + radius * 4.0), 2.6)
+	# And sprays of it torn off whole: the boughs smashed off as the crown hits,
+	# thrown up and fluttering down, more for a bigger tree, along its whole top.
+	_fronds(foot + away * height * 0.62 + Vector3.UP * 1.2, clampi(int(height * 4.0), 24, 110), height * 0.22 + 1.5)
+
+
+var _frond_mat: StandardMaterial3D
+var _frond_quad: QuadMesh
+var _frond_flows := {}
+
+
+## FIR FRONDS: sprays of the tree's own branch (assets/fir/textures/
+## fir_branch_basecolor.png, cut out by its alpha) torn off and thrown up, each
+## spinning as it goes, falling slowly against the air the way a leafy thing
+## does, and shrinking away once it is down. `reach` is how far along and across
+## the crown they start.
+func _fronds(at: Vector3, amount: int, reach: float) -> void:
+	if _frond_mat == null:
+		_frond_mat = StandardMaterial3D.new()
+		_frond_mat.albedo_texture = load("res://assets/fir/textures/fir_branch_basecolor.png")
+		_frond_mat.albedo_color = Color(0.72, 0.82, 0.66)
+		_frond_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		_frond_mat.alpha_scissor_threshold = 0.5
+		_frond_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_frond_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		_frond_mat.roughness = 0.8
+		_frond_mat.backlight_enabled = true
+		_frond_mat.backlight = Color(0.12, 0.2, 0.05)
+		_frond_quad = QuadMesh.new()
+		_frond_quad.size = Vector2(0.9, 0.45)      # the picture is twice as long as it is wide
+	var key := snappedf(reach, 0.5)
+	var m: ParticleProcessMaterial = _frond_flows.get(key)
+	if m == null:
+		m = ParticleProcessMaterial.new()
+		m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+		m.emission_box_extents = Vector3(reach, 0.8, reach)
+		m.direction = Vector3.UP
+		m.spread = 70.0
+		m.initial_velocity_min = 2.0
+		m.initial_velocity_max = 6.5
+		m.gravity = Vector3(0, -6.0, 0)
+		# The air holds them up: they slow, and drift down.
+		m.damping_min = 1.6
+		m.damping_max = 3.2
+		m.angle_min = 0.0
+		m.angle_max = 360.0
+		m.angular_velocity_min = -260.0
+		m.angular_velocity_max = 260.0
+		m.scale_min = 0.45
+		m.scale_max = 1.3
+		# Whole until the end of their time, then gone in a moment.
+		var shrink := Curve.new()
+		shrink.add_point(Vector2(0.0, 1.0))
+		shrink.add_point(Vector2(0.8, 1.0))
+		shrink.add_point(Vector2(1.0, 0.0))
+		var tex := CurveTexture.new()
+		tex.curve = shrink
+		m.scale_curve = tex
+		if _frond_flows.size() > 12:
+			_frond_flows.clear()
+		_frond_flows[key] = m
+	var p := GPUParticles3D.new()
+	p.amount = amount
+	p.lifetime = 2.4
+	p.one_shot = true
+	p.explosiveness = 0.85
+	p.randomness = 0.5
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.process_material = m
+	p.draw_pass_1 = _frond_quad
+	p.material_override = _frond_mat
+	p.visibility_aabb = AABB(-Vector3.ONE * (reach + 14.0), Vector3.ONE * (reach + 14.0) * 2.0)
+	add_child(p)
+	p.global_position = at
+	p.emitting = true
+	get_tree().create_timer(3.2).timeout.connect(p.queue_free)
 
 
 ## The ground under a point, by a ray down through it (the terrain has collision
