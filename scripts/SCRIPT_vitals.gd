@@ -93,7 +93,7 @@ var stamina := 100.0
 ## Air, 0 to 100: goes down with the head under water, comes back fast above it.
 var oxygen := 100.0
 ## True from running stamina out until `second_wind` of it is back.
-## GOD MODE, for trying things out (F3, or the tick in the graphics menu):
+## GOD MODE, for trying things out (F3, or the tick in the options panel, SCRIPT_options_menu.gd):
 ## nothing hurts, no breath runs out, nothing tires or starves, and building is
 ## free: every piece can be crafted for nothing and set down without being used
 ## up (SCRIPT_inventory.gd, SCRIPT_building.gd).
@@ -333,7 +333,7 @@ func _box(r: Rect2, fill: Color, radius: float, edge := Color(0, 0, 0, 0), width
 
 
 func _draw_view() -> void:
-	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
+	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open:
 		return
 	var k := UiFit.scale(_view.size)
 	# Harm: red in at the edges of the screen, gone in a moment.

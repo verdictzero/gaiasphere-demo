@@ -19,6 +19,27 @@ const NORMAL := "res://assets/detail/textures/detail_normal.png"
 
 static var _made := {}       # [source material, tiles] -> ShaderMaterial
 
+## THE LOOK, live (SCRIPT_options_menu.gd's sliders): how many times finer the
+## bumps are than the grime, how deep they are, and how strongly the grime shows.
+static var grain := 8.0
+static var depth := 0.6
+static var grime := 1.0
+
+
+## Every detailed material there is, and every one made from now on, to this look.
+static func set_look(new_grain: float, new_depth: float, new_grime: float) -> void:
+	grain = new_grain
+	depth = new_depth
+	grime = new_grime
+	for m: ShaderMaterial in _made.values():
+		_look(m)
+
+
+static func _look(m: ShaderMaterial) -> void:
+	m.set_shader_parameter("detail_normal_density", grain)
+	m.set_shader_parameter("detail_bump", depth)
+	m.set_shader_parameter("detail_strength", float(m.get_meta(&"strength", 1.0)) * grime)
+
 
 static func apply(root: Node, tile_metres := 0.5, strength := 1.0) -> void:
 	var meshes: Array = root.find_children("*", "MeshInstance3D", true, false)
@@ -76,7 +97,8 @@ static func _detailed(std: StandardMaterial3D, tiles: float, strength: float) ->
 	m.set_shader_parameter("detail_grime", load(GRIME))
 	m.set_shader_parameter("detail_normal", load(NORMAL))
 	m.set_shader_parameter("detail_tiles", tiles)
-	m.set_shader_parameter("detail_strength", strength)
+	m.set_meta(&"strength", strength)
+	_look(m)
 	_made[key] = m
 	return m
 

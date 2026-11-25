@@ -38,7 +38,8 @@ To run it from source, open the folder in Godot 4.7-dev5 and press play.
 | Hotbar slot | 1 - 9 | |
 | Bag | Tab or I | Start |
 | Graphics menu (draw distances, LOD, grass, shadows, effects) | O or F10 | |
-| Time and environment panel (hour, day length, moon, weather, fog, grade) | P or F9 | |
+| Time and environment panel (hour, day length, moon, weather, fog, grade) | P or F8 | |
+| Options panel (god mode; the detail layer's grain, depth and grime) | F9 or K | |
 | Back to the start | R | Back |
 | Free the mouse | Esc (click to take it again) | |
 | Full screen | F11 | |

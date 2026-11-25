@@ -35,7 +35,6 @@ const ROWS := [
 	["bloom", "Bloom", "tick"],
 	["god_rays", "God rays", "tick"],
 	["fps", "Show frame rate", "tick"],
-	["debug", "God mode (nothing hurts, free building)", "tick"],
 	["veg_distance", "Vegetation draw distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["lod_distance", "Vegetation LOD distance", "slide", 0.5, 2.0, 0.05, "x"],
 	["impostor_distance", "Tree impostor distance", "slide", 0.5, 2.0, 0.05, "x"],
@@ -102,7 +101,7 @@ func _ready() -> void:
 	_defaults = {"veg_distance": 1.0, "lod_distance": 1.0, "impostor_distance": 1.0, "grass_distance": 1.0,
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 220.0, "render_scale": 1.0,
 		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false,
-		"shadows": true, "shadow_quality": 1.0, "debug": false,
+		"shadows": true, "shadow_quality": 1.0,
 		"window_mode": 0.0, "window_size": 4.0, "view_height": 0.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
 	if _enviro != null:
 		_defaults.merge(_enviro.call(&"graphics_now"), true)
@@ -155,14 +154,6 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
-	# (Debug mode is also turned on and off by its own key: the tick follows it.)
-	if bool(values["debug"]) != Vitals.debug:
-		if _debug_was == Vitals.debug:
-			Vitals.debug = bool(values["debug"])        # the tick was changed
-		else:
-			values["debug"] = Vitals.debug              # the key was pressed
-			_view.queue_redraw()
-	_debug_was = Vitals.debug
 	_apply_view_height()          # (the window may have been dragged to another size)
 	_fps.visible = bool(values["fps"])
 	if _fps.visible:
@@ -208,7 +199,6 @@ func _apply_view_height() -> void:
 ## The window, the viewport and the camera. A phone has one window the size of
 ## its screen, so there only what is drawn inside it is touched.
 var _window_was: Array[int] = [-1, -1]
-var _debug_was := false
 
 
 func _apply_display() -> void:
@@ -247,8 +237,7 @@ func _apply_display() -> void:
 func _save() -> void:
 	var cfg := ConfigFile.new()
 	for key in values:
-		if key != "debug":          # (god mode is for the run it was turned on in, never kept)
-			cfg.set_value("graphics", key, values[key])
+		cfg.set_value("graphics", key, values[key])
 	cfg.save(FILE)
 
 
@@ -258,9 +247,10 @@ func set_open(open: bool) -> void:
 	menu_open = open
 	_view.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	if open:
-		var other := get_node_or_null(^"../EnvironmentMenu")
-		if other != null and EnvironmentMenu.menu_open:
-			other.call(&"set_open", false)
+		for other_name in ["EnvironmentMenu", "OptionsMenu"]:
+			var other := get_node_or_null("../" + other_name)
+			if other != null and other.has_method(&"set_open"):
+				other.call(&"set_open", false)
 		_was_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:

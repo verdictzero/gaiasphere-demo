@@ -2,7 +2,7 @@ class_name EnvironmentMenu
 extends CanvasLayer
 
 # THE TIME AND ENVIRONMENT PANEL: the clock, the moon, the weather and the look
-# of the light. P or F9 (the ENV touch button) opens it.
+# of the light. P or F8 (the ENV touch button) opens it.
 #
 # Every row is a property of the Enviro node (SCRIPT_enviro.gd), read from it
 # while the panel is open, so the hour slider moves as time passes and the
@@ -57,7 +57,7 @@ func _ready() -> void:
 			_defaults[row[0]] = _read(row[0])
 	if not InputMap.has_action(&"wv_environment"):
 		InputMap.add_action(&"wv_environment")
-		for code in [KEY_P, KEY_F9]:
+		for code in [KEY_P, KEY_F8]:
 			var key := InputEventKey.new()
 			key.physical_keycode = code
 			InputMap.action_add_event(&"wv_environment", key)
@@ -109,7 +109,7 @@ func set_open(open: bool) -> void:
 	if open == menu_open or _enviro == null:
 		return
 	if open:
-		for other_name in ["GraphicsMenu", "Inventory"]:
+		for other_name in ["GraphicsMenu", "OptionsMenu", "Inventory"]:
 			var other := get_node_or_null("../" + other_name)
 			if other != null and other.has_method(&"set_open"):
 				other.call(&"set_open", false)
@@ -261,7 +261,7 @@ func _draw_view() -> void:
 	_box(p.grow(10.0 * k), Color(0, 0, 0, 0.22), 34.0)
 	_box(p, PANEL, 26.0, EDGE, 1.5)
 	_label(p.position + Vector2(34.0, 52.0) * k, "TIME AND ENVIRONMENT", 26.0, Color(INK.r, INK.g, INK.b, 0.92))
-	_label(Vector2(p.end.x - 34.0 * k, p.position.y + 50.0 * k), "P or F9 to close", 19.0, Color(INK.r, INK.g, INK.b, 0.45), 2)
+	_label(Vector2(p.end.x - 34.0 * k, p.position.y + 50.0 * k), "P or F8 to close", 19.0, Color(INK.r, INK.g, INK.b, 0.45), 2)
 	for i in BUTTONS.size():
 		var b := _button_rect(i)
 		_box(b, Color(1, 1, 1, 0.07), 12.0, EDGE, 1.5)
