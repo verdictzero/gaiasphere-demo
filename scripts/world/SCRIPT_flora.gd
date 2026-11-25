@@ -61,6 +61,7 @@ var _mere_reach := 0.0
 var _path_a := Vector2.ZERO      # the cobbled way over the causeway: its two ends and half its width
 var _path_b := Vector2.ZERO
 var _path_half := 0.0
+var _crash: Variant = null       # the mere's FlowTerrain, for where the shuttle's skid is
 
 
 func _ready() -> void:
@@ -87,6 +88,7 @@ func _ready() -> void:
 		_path_half = 2.9
 		_mere_reach = float(_field.get("flow_lagoon_radius")) * 1.25
 	_glade = Vector3.ZERO
+	_crash = flows if (flows != null and flows.has_lagoon()) else null
 	if flows != null and flows.has_lagoon():
 		var site: PackedVector2Array = flows.crash_site()
 		if site[1] != Vector2.ZERO:
@@ -99,6 +101,11 @@ func _ready() -> void:
 ## Is a point on the cobbled way across the causeway (or within `spare` metres
 ## of it)? Nothing grows on the cobbles; the verges either side are green.
 func _on_path(x: float, z: float, spare: float) -> bool:
+	# (Nor in the shuttle's skid and divot: ploughed earth.)
+	if _crash != null:
+		var c: Vector2 = _crash.crash_weight(x, z)
+		if c.x > 0.3 or c.y > 0.15:
+			return true
 	if _path_half <= 0.0:
 		return false
 	var ab := _path_b - _path_a

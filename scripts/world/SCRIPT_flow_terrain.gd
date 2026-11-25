@@ -385,11 +385,14 @@ func lagoon(x: float, z: float, g: float) -> float:
 
 # ------------------------------------------------------------- the crash
 # WHERE THE SHUTTLE CAME DOWN (SCRIPT_crashed_shuttle.gd stands the wreck in it).
-# It came in over the shore, ploughed a GOUGE down the beach and the shelf, and
-# stopped at the foot of the shelf in a DIVOT of its own making: a bowl of sand
-# a couple of dozen metres across with a thrown-up rim. All of it is terrain,
-# from here, so the mesh, the collision and the bake have it; `crash_splat`
-# turns the ground it broke to bare sand.
+# It came in low over the meadow on the hill, touched down there, and SKIDDED:
+# a long GOUGE down the hill, the beach and the shelf, shallow and narrow where it
+# first touched, deeper and wider as it ploughed on, with the dirt it turned up
+# banked in berms along both sides, until it stopped at the foot of the shelf in
+# a DIVOT of its own making: a bowl of sand a couple of dozen metres across with
+# a thrown-up rim. All of it is terrain, from here, so the mesh, the collision and
+# the bake have it; `crash_splat` turns the ground it broke to bare sand, and
+# nothing grows in it (SCRIPT_flora.gd).
 #
 # The place is fixed by the mere's own shape: straight across from the causeway,
 # CRASH_IN metres in from the outer shore, facing the middle.
@@ -398,9 +401,13 @@ const CRASH_IN := 19.0            ## metres in from the outer shore the wreck li
 const CRASH_BOWL := 11.0          ## the divot's radius
 const CRASH_DEPTH := 1.5          ## and how deep its middle is dug
 const CRASH_RIM := 0.45           ## the lip thrown up round it
-const CRASH_GOUGE := 48.0         ## how far back up the shore the gouge runs
+const CRASH_GOUGE := 95.0         ## how far back up the shore and the hill the gouge runs
 const CRASH_WIDE := 5.0           ## its half-width at the wreck (it narrows going back)
 const CRASH_CUT := 1.7            ## and its depth there (it shallows going back)
+const CRASH_BERM := 0.6           ## the dirt banked up either side of it
+## The last share of the gouge, at its far end, where it first touched down: it
+## starts there from nothing.
+const CRASH_TOUCH := 0.22
 
 var _crash_at := Vector2.ZERO
 var _crash_out := Vector2.ZERO    # from the wreck back up the shore: the way it came from, reversed
@@ -419,6 +426,20 @@ func crash_site() -> PackedVector2Array:
 	return PackedVector2Array([_crash_at, _crash_out])
 
 
+## The gouge at `along` metres back from the wreck: (its half-width, how much of
+## its full depth, how far a point `across` it is off its wandering middle).
+func _gouge_at(d: Vector2) -> Vector3:
+	var along := d.dot(_crash_out)
+	var t := clampf(along / CRASH_GOUGE, 0.0, 1.0)
+	# From nothing where it touched down to its full width and depth at the wreck.
+	var touch := smoothstep(1.0, 1.0 - CRASH_TOUCH, t)
+	var wide := lerpf(CRASH_WIDE, CRASH_WIDE * 0.6, t) * lerpf(0.35, 1.0, touch)
+	var deep := lerpf(1.0, 0.5, t) * touch
+	# It wanders a little: nothing that weighs what a shuttle does slides straight.
+	var off := absf(d.dot(Vector2(-_crash_out.y, _crash_out.x)) - 1.2 * sin(along * 0.16) - 2.0 * sin(along * 0.037))
+	return Vector3(wide, deep, off)
+
+
 ## (how much of the divot, how much of the gouge) is at a point, each 0 to 1.
 func crash_weight(x: float, z: float) -> Vector2:
 	if _crash_out == Vector2.ZERO:
@@ -431,11 +452,8 @@ func crash_weight(x: float, z: float) -> Vector2:
 	var along := d.dot(_crash_out)
 	var gouge := 0.0
 	if along > -2.0 and along < CRASH_GOUGE:
-		var t := clampf(along / CRASH_GOUGE, 0.0, 1.0)
-		var wide := lerpf(CRASH_WIDE, CRASH_WIDE * 0.45, t)
-		# It wanders a little: nothing that weighs what a shuttle does slides straight.
-		var off := absf(d.dot(Vector2(-_crash_out.y, _crash_out.x)) - 1.2 * sin(along * 0.16))
-		gouge = (1.0 - smoothstep(wide * 0.45, wide, off)) * (1.0 - t * t) * smoothstep(-2.0, 2.0, along)
+		var g := _gouge_at(d)
+		gouge = (1.0 - smoothstep(g.x * 0.45, g.x, g.z)) * minf(g.y * 3.0, 1.0) * smoothstep(-2.0, 2.0, along)
 	return Vector2(bowl, gouge)
 
 
@@ -443,25 +461,33 @@ func crash_weight(x: float, z: float) -> Vector2:
 func crash(x: float, z: float, h: float) -> float:
 	if _crash_out == Vector2.ZERO:
 		return h
+	var d := Vector2(x, z) - _crash_at
+	var along := d.dot(_crash_out)
+	# The berms: what the gouge turned up, banked along both its sides (not over the bowl).
+	var berm := 0.0
+	if along > 0.0 and along < CRASH_GOUGE:
+		var g := _gouge_at(d)
+		var side := g.z / maxf(g.x, 0.1)
+		berm = CRASH_BERM * g.y * smoothstep(0.75, 1.05, side) * (1.0 - smoothstep(1.05, 1.9, side)) \
+				* smoothstep(CRASH_BOWL * 0.8, CRASH_BOWL * 1.3, d.length())
 	var w := crash_weight(x, z)
 	if w.x <= 0.0 and w.y <= 0.0:
 		# The rim stands a little way outside the bowl.
-		var far := Vector2(x, z).distance_to(_crash_at)
+		var far := d.length()
+		var out0 := h + berm
 		if far < CRASH_BOWL * 1.5:
 			var lip := far / CRASH_BOWL
-			return h + CRASH_RIM * smoothstep(1.0, 1.12, lip) * (1.0 - smoothstep(1.12, 1.5, lip))
-		return h
-	var d := Vector2(x, z) - _crash_at
-	var along := d.dot(_crash_out)
-	var t := clampf(along / CRASH_GOUGE, 0.0, 1.0)
+			out0 += CRASH_RIM * smoothstep(1.0, 1.12, lip) * (1.0 - smoothstep(1.12, 1.5, lip))
+		return out0
+	var g2 := _gouge_at(d)
 	var dug := h - CRASH_DEPTH * w.x
-	var cut := h - CRASH_CUT * lerpf(1.0, 0.25, t) * w.y
+	var cut := h - CRASH_CUT * g2.y * w.y
 	# Above the water the gouge is never cut below it: there is no water to fill
 	# a trench in the beach, and one dug under the mere's level would stand dry.
 	if h > _lag_level + 0.15:
 		cut = maxf(cut, _lag_level + 0.15)
-	var out := minf(dug, cut)
-	# Thrown up either side of the gouge, and round the bowl where the gouge does not leave it.
+	var out := minf(dug, cut) + berm
+	# Thrown up round the bowl where the gouge does not leave it.
 	var far2 := d.length() / CRASH_BOWL
 	out += CRASH_RIM * smoothstep(0.85, 1.0, far2) * (1.0 - smoothstep(1.0, 1.4, far2)) * (1.0 - w.y)
 	return out
