@@ -24,6 +24,7 @@ func _process(_d: float) -> bool:
 			enviro.advance = false
 			enviro.hour = 11.0
 			enviro.set_weather("clear", 0.0)
+			enviro.set_physics_process(false)
 			var g := Flora.glade()
 			var at := Vector3(g.x + 12.0, 0.0, g.y + 6.0)
 			at.y = float(_scene.get_node("GaiaSphere").call(&"height_at", at, 0.0))
@@ -36,6 +37,9 @@ func _process(_d: float) -> bool:
 			_n = 0
 		return false
 	_n += 1
+	if _n == 30:
+		# The wind held still, so the two pictures differ only by the push.
+		_scene.get_node("Enviro").set_process(false)
 	if _n == 40:
 		root.get_viewport().get_texture().get_image().save_png("res://renders/plant_push_on.png")
 		ex.set("flying", true)
