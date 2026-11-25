@@ -766,7 +766,30 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			basis = Basis(Vector3(1, 0, 0), (_hash(cx, cz, 47) - 0.5) * 0.7) * basis
 			basis = Basis(Vector3(0, 0, 1), (_hash(cx, cz, 48) - 0.5) * 0.7) * basis
 			_push(bufs[kind], basis.scaled(Vector3.ONE * size), Vector3(x, float(s["height"]) - 0.1 * size, z))
+	# The rock the shuttle turned up round its divot and along its skid, those of
+	# it that lie in this tile (SCRIPT_crashed_shuttle.gd's `debris`).
+	for d in _crash_debris(f):
+		var where: Transform3D = d[1]
+		if int(floor(where.origin.x / tile)) == key.x and int(floor(where.origin.z / tile)) == key.y:
+			_push(bufs[int(d[0])], where.basis, where.origin)
 	return bufs
+
+
+var _debris: Variant = null
+var _debris_lock := Mutex.new()
+
+
+func _crash_debris(f: IslandField) -> Array:
+	_debris_lock.lock()
+	if _debris == null:
+		_debris = []
+		if _crash != null:
+			var site: PackedVector2Array = _crash.crash_site()
+			if site[1] != Vector2.ZERO:
+				_debris = CrashedShuttle.debris(f, site[0], site[1])
+	var out: Array = _debris
+	_debris_lock.unlock()
+	return out
 
 
 func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:

@@ -17,7 +17,8 @@ extends Node3D
 # (both are terrain: FlowTerrain's crash). The hull lies along the gouge, tail
 # up it and nose out on the bed, a little sunk in the sand, rolled a little to
 # one side, with heaps of the rock it turned up round the divot's rim and
-# either side of the gouge.
+# either side of the gouge (`debris`: laid down by SCRIPT_flora.gd as boulders,
+# so the pickaxe breaks them).
 #
 # The hull is solid (its own mesh, both faces), so its floor can be stood on and
 # its walls stop you; what grew or lay on the bed under it is cleared.
@@ -114,7 +115,6 @@ func _ready() -> void:
 		flicker.amount = 0.45
 		lamp.add_child(flicker)
 	_bubbles()
-	_rock_piles(field, at, site[1])
 	var stand := global_transform * STAND
 	_facing = -global_basis.z.normalized()               # out of the door, up the slope
 	_facing.y = 0.0
@@ -202,27 +202,13 @@ func landing_heading() -> Vector2:
 # ------------------------------------------------------------------ what it threw up
 
 ## ROCK PILES round the divot and along the gouge: what the hull turned up out of
-## the bed and shouldered aside. The island's own boulders, in heaps of a few
-## each, the bigger ones solid.
-func _rock_piles(field: IslandField, at: Vector2, back: Vector2) -> void:
+## the bed and the hill and shouldered aside, in heaps of a few each. They are the
+## island's own boulders, laid down with the rest by SCRIPT_flora.gd from this
+## list, so they are drawn, solid and broken with the pickaxe like any other
+## (SCRIPT_mining.gd). Each is [kind (Flora.BOULDERS), where]: plain metres.
+static func debris(field: IslandField, at: Vector2, back: Vector2) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 60317
-	var material: Material = load("res://materials/MAT_boulder.tres")
-	var meshes: Array = []
-	var shapes: Array = []
-	for b in Flora.BOULDERS:
-		var scene: Node = (load("res://assets/boulder/%s/%s_lod1.gltf" % [b, b]) as PackedScene).instantiate()
-		var mesh: Mesh = (scene.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
-		scene.free()
-		meshes.append(mesh)
-		shapes.append((mesh as ArrayMesh).create_convex_shape(true, true))
-	var holder := Node3D.new()
-	holder.name = "RockPiles"
-	holder.top_level = true                    # (plain metres, not the hull's tilt and size)
-	add_child(holder)
-	holder.global_transform = Transform3D()
-	var body := StaticBody3D.new()
-	holder.add_child(body)
 	var side := Vector2(-back.y, back.x)
 	var spots: Array = []
 	# Round the rim of the divot, leaving the mouth of the gouge open.
@@ -232,10 +218,15 @@ func _rock_piles(field: IslandField, at: Vector2, back: Vector2) -> void:
 		if dir.dot(back) > 0.8:
 			continue
 		spots.append(at + dir * (FlowTerrain.CRASH_BOWL * rng.randf_range(0.95, 1.2)))
-	# And shouldered out either side of the gouge.
-	for along in [15.0, 25.0, 36.0]:
+	# And shouldered out either side of the gouge, on its berms, all the way back
+	# up the hill (following its wander, and its narrowing).
+	for along in [15.0, 25.0, 36.0, 50.0, 64.0, 78.0]:
 		for hand in [-1.0, 1.0]:
-			spots.append(at + back * (along + rng.randf_range(-2.5, 2.5)) + side * hand * (FlowTerrain.CRASH_WIDE * rng.randf_range(0.9, 1.25)))
+			var a: float = along + rng.randf_range(-2.5, 2.5)
+			var wander := 1.2 * sin(a * 0.16) + 2.0 * sin(a * 0.037)
+			var wide := lerpf(FlowTerrain.CRASH_WIDE, FlowTerrain.CRASH_WIDE * 0.6, a / FlowTerrain.CRASH_GOUGE)
+			spots.append(at + back * a + side * (wander + hand * wide * rng.randf_range(1.0, 1.3)))
+	var out: Array = []
 	for spot: Vector2 in spots:
 		var count := rng.randi_range(3, 7)
 		for n in count:
@@ -243,19 +234,10 @@ func _rock_piles(field: IslandField, at: Vector2, back: Vector2) -> void:
 			var width := rng.randf_range(0.9, 1.5) if big else rng.randf_range(0.3, 0.8)
 			var p: Vector2 = spot if big else spot + Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.6, 1.9)
 			var ground := field.height_at(p.x, p.y, 0.0)
-			var kind := rng.randi_range(0, meshes.size() - 1)
+			var kind := rng.randi_range(0, Flora.BOULDERS.size() - 1)
 			var turn := Basis.from_euler(Vector3(rng.randf_range(-0.5, 0.5), rng.randf() * TAU, rng.randf_range(-0.5, 0.5)))
-			var where := Transform3D(turn.scaled(Vector3.ONE * width), Vector3(p.x, ground - 0.12 * width, p.y))
-			var rock := MeshInstance3D.new()
-			rock.mesh = meshes[kind]
-			rock.material_override = material
-			holder.add_child(rock)
-			rock.global_transform = where
-			if width > 0.55:
-				var cs := CollisionShape3D.new()
-				cs.shape = shapes[kind]
-				body.add_child(cs)
-				cs.global_transform = where
+			out.append([kind, Transform3D(turn.scaled(Vector3.ONE * width), Vector3(p.x, ground - 0.12 * width, p.y))])
+	return out
 
 
 # ------------------------------------------------------------------ air getting out
