@@ -59,6 +59,16 @@ leaves, and its berries go in the bag. The bag
 holds what you gather: left click moves a stack, right click splits it. There
 is nothing to craft yet.
 
+A truck on one wheel waits up on the hill by the first herd of cows. Face it and
+press the use button to get in; the view goes behind it. Forward and back drive
+and brake (and reverse), left and right steer, Space (A, JUMP) kicks the strut
+and jumps it, Shift (RUN) gives it more power, L lights the headlights, the
+mouse or right stick swings the view round, and the use button again gets you
+out. Two gyroscopes keep it upright: it leans into turns like a bike, tips
+forward under power and back under braking, and lands level. When nobody is in
+it, it rolls to a stop and stays put (`scripts/world/SCRIPT_uni_truck.gd`,
+`assets/truck/`).
+
 Walk into the water and you wade, then swim; hold down to go under. Flying has
 no collision and its speed runs from a crawl to crossing the island in seconds.
 

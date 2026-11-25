@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """A .glb brought in with its pictures cut down to size: every embedded image is
 resized so its longer side is at most `side` pixels and stored again as a JPEG
-(or a PNG if it has any see-through in it). Everything else is carried over.
+(or a PNG if it has any see-through in it, unless `opaque` is given: a model
+whose materials are all opaque has no use for a few stray see-through texels
+left by its baking). Everything else is carried over.
 
-    python3 tools/import_glb_small.py <in.glb> <out.glb> [side=1024]
+    python3 tools/import_glb_small.py <in.glb> <out.glb> [side=1024] [opaque]
 """
 import json
 import struct
@@ -13,7 +15,7 @@ import cv2
 import numpy as np
 
 
-def main(src, dst, side=1024):
+def main(src, dst, side=1024, opaque=False):
     data = open(src, "rb").read()
     n = struct.unpack_from("<I", data, 12)[0]
     doc = json.loads(data[20:20 + n])
@@ -29,7 +31,7 @@ def main(src, dst, side=1024):
             k = side / max(h, w)
             if k < 1.0:
                 img = cv2.resize(img, (round(w * k), round(h * k)), interpolation=cv2.INTER_AREA)
-            if img.ndim == 3 and img.shape[2] == 4 and img[..., 3].min() < 250:
+            if not opaque and img.ndim == 3 and img.shape[2] == 4 and img[..., 3].min() < 250:
                 ok, enc = cv2.imencode(".png", img)
                 image_views[i]["mimeType"] = "image/png"
             else:
@@ -54,4 +56,5 @@ def main(src, dst, side=1024):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 1024)
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 1024,
+         len(sys.argv) > 4 and sys.argv[4] == "opaque")

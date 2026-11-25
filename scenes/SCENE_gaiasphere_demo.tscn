@@ -31,6 +31,7 @@
 [ext_resource type="Resource" path="res://data/ISLANDFIELD_forest_003_r2.tres" id="field"]
 [ext_resource type="Material" path="res://materials/MAT_terrain.tres" id="terrain_mat"]
 [ext_resource type="Material" path="res://materials/MAT_cliff_wall.tres" id="cliff_mat"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_uni_truck.gd" id="unitruck"]
 [ext_resource type="Material" path="res://materials/MAT_cloud_sea.tres" id="cloud_mat"]
 [ext_resource type="Material" path="res://materials/MAT_water.tres" id="water_mat"]
 [ext_resource type="Material" path="res://materials/MAT_underwater_003_r2.tres" id="uw_mat"]
@@ -88,6 +89,9 @@ script = ExtResource("cows")
 
 [node name="CowSlicing" type="Node3D" parent="."]
 script = ExtResource("cowslicing")
+
+[node name="UniTruck" type="Node3D" parent="."]
+script = ExtResource("unitruck")
 
 [node name="ForestMotes" type="Node3D" parent="."]
 script = ExtResource("motes")

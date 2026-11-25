@@ -158,7 +158,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _menus() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or UniTruck.driving
 
 
 func _process(_delta: float) -> void:

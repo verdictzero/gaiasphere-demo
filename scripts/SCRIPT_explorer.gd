@@ -17,6 +17,9 @@ extends CharacterBody3D
 # underwater view all read the viewport's active camera, which is this node's,
 # so nothing has to be told where the player is.
 #
+# IN THE UNI-TRUCK (SCRIPT_uni_truck.gd) it rides in the cab and the truck is
+# driven instead; looking swings the truck's view round.
+#
 # CONTROLS: WASD or the left stick to move, the mouse or the right stick to
 # look, Space / A to jump (up, flying or swimming), Ctrl or C / B down, Shift /
 # left stick click to run, F / Y to fly, the wheel or [ ] for flying speed,
@@ -64,6 +67,10 @@ var deep := 0.0
 var swimming := false
 ## Swum out (SCRIPT_vitals.gd): no stamina left in the water, and slow for it.
 var swim_tired := false
+## The vehicle being driven (SCRIPT_uni_truck.gd), or null on foot. While there
+## is one the body rides in it: the vehicle moves it, and looking swings the
+## vehicle's view round.
+var driving: Node = null
 
 var _cam: Camera3D
 var _pitch := 0.0
@@ -134,6 +141,8 @@ func _ready() -> void:
 ## Put the body down at the start. The loading cover calls this once there is
 ## ground there to stand on.
 func arrive() -> void:
+	if driving != null:
+		driving.call(&"get_out")
 	global_position = _home() + Vector3.UP * 0.2
 	velocity = Vector3.ZERO
 	_face(_home_facing())
@@ -181,7 +190,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif not arrived:
 		return
 	elif event.is_action_pressed(&"wv_light"):
-		_torch.visible = not _torch.visible
+		if driving != null:
+			driving.call(&"lights")
+		else:
+			_torch.visible = not _torch.visible
+	elif driving != null:
+		if event.is_action_pressed(&"wv_home"):
+			arrive()
 	elif event.is_action_pressed(&"wv_fly"):
 		flying = not flying
 		velocity = Vector3.ZERO
@@ -198,6 +213,9 @@ func _fly_step(by: float) -> void:
 
 
 func _look(by: Vector2) -> void:
+	if driving != null:
+		driving.call(&"look", by)
+		return
 	rotate_y(-by.x)
 	_pitch = clampf(_pitch - by.y, -1.55, 1.55)
 	_cam.rotation.x = _pitch
@@ -208,6 +226,12 @@ func _physics_process(delta: float) -> void:
 	if stick.length_squared() > 0.0:
 		_look(stick * deg_to_rad(stick_look_speed) * delta)
 	if not arrived:
+		return
+	if driving != null:
+		velocity = Vector3.ZERO
+		running = false
+		deep = 0.0
+		swimming = false
 		return
 	var move := Input.get_vector(&"wv_left", &"wv_right", &"wv_forward", &"wv_back")
 	var rise := Input.get_axis(&"wv_down", &"wv_up")

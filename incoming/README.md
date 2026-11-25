@@ -1,6 +1,5 @@
 # Models handed over to be worked in later. Godot skips this folder (.gdignore),
 # so nothing here is imported or shipped until it is moved into assets/.
 
-- uni_truck_proto_incomplete.glb: a one-wheeled truck prototype, incomplete
-  (gyroscope, spring, wheel and tyre, hub motor, spindle, shock, frame, body;
-  9 meshes, 22 textures, no animation).
+(Empty for now. The one-wheeled truck that was here is in the game:
+assets/truck/uni_truck.glb, its pictures cut down by tools/import_glb_small.py.)

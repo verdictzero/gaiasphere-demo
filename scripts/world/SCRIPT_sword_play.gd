@@ -169,6 +169,13 @@ func _process(delta: float) -> void:
 	if not _find_parts():
 		return
 	_ensure_hand()
+	# Driving (SCRIPT_uni_truck.gd): nothing in the hand, and the hand not drawn.
+	_bob.visible = not UniTruck.driving
+	if UniTruck.driving:
+		_prompt.visible = false
+		_light.light_energy = 0.0
+		_motes.emitting = false
+		return
 	_sway(delta)
 	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open:
 		return
