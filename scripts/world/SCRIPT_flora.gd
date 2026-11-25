@@ -216,23 +216,7 @@ func _build_layers() -> void:
 		"kinds": fern_kinds, "prefill": true, "place": _place_ferns, "height": 2.0, "near_field": true,
 	})
 
-	# --- bushes: cards cut from the bush photos, crossed and leaned for volume
-	var leaves := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
-		"albedo_tex": load("res://assets/bush/textures/bush_atlas_basecolor.png"),
-		"tint": Color(0.72, 0.84, 0.6), "alpha_cut": 0.42, "roughness": 0.6, "specular": 0.12,
-		"wind_bend": 0.1, "wind_flutter": 0.035, "atlas_columns": 4.0, "near_gone": 1.3, "near_solid": 4.2,
-		"backlight": Color(0.12, 0.17, 0.04)})
-	_layers.append({
-		"name": "bushes", "tile": 24.0, "radius": 170.0 * _scale, "stride": STRIDE_CUSTOM,
-		"dists": [22.0 * _scale, 70.0 * _scale], "shadow_lods": 1,
-		# Three differently built bushes; every card in each shows a different photo,
-		# some mirrored, at its own turn, lean and size, so nothing reads as a cross.
-		"kinds": [
-			{"lods": [_bush_mesh(leaves, 5, 4, 11), _bush_mesh(leaves, 3, 1, 11), _bush_mesh(leaves, 2, 0, 11)]},
-			{"lods": [_bush_mesh(leaves, 4, 4, 23), _bush_mesh(leaves, 3, 1, 23), _bush_mesh(leaves, 2, 0, 23)]},
-			{"lods": [_bush_mesh(leaves, 5, 3, 37), _bush_mesh(leaves, 3, 1, 37), _bush_mesh(leaves, 2, 0, 37)]}],
-		"prefill": true, "place": _place_bushes, "height": 4.0, "near_field": true,
-	})
+	# (No plain bushes: the only bushes are the berry bushes, SCRIPT_berry_bushes.gd.)
 
 	# --- seaweed, under the mere
 	var weed := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
@@ -367,54 +351,6 @@ static func _grass_mesh(mat: Material) -> ArrayMesh:
 				st.set_uv2(Vector2(1.0 - uv.y, 0.0))
 				st.set_color(Color.WHITE * (0.6 + 0.4 * (1.0 - uv.y)))
 				st.add_vertex(corners[i][0])
-	var mesh := st.commit()
-	mesh.surface_set_material(0, mat)
-	return mesh
-
-
-## A bush a metre tall and a metre across, rooted at the origin: `upright` cards
-## through its middle and `leaning` smaller ones tipped outward round it, so it has
-## a top when seen from above. NOTHING IS REGULAR: each card has its own turn, its
-## own lean, size and place off the middle, shows its own photo from the atlas
-## (the whole part of its U picks the column; the shader adds the plant's own
-## variant to that), and may be mirrored. Normals swell outward from the bush's
-## heart, so it is lit as a rounded mass and not as flat cards.
-static func _bush_mesh(mat: Material, upright: int, leaning: int, seed_value: int) -> ArrayMesh:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var heart := Vector3(0, 0.45, 0)
-	var cards: Array = []       # [origin, across, up, size, column, mirrored]
-	for k in upright:
-		var a := PI * (float(k) + rng.randf_range(-0.38, 0.38)) / float(upright) + rng.randf() * 0.5
-		var across := Vector3(cos(a), 0, sin(a))
-		var up := (Vector3.UP + Vector3(rng.randf_range(-0.14, 0.14), 0, rng.randf_range(-0.14, 0.14))).normalized()
-		cards.append([Vector3(rng.randf_range(-0.1, 0.1), 0, rng.randf_range(-0.1, 0.1)), across, up,
-				rng.randf_range(0.8, 1.08), rng.randi() % 4, rng.randf() < 0.5])
-	for k in leaning:
-		var a := TAU * (float(k) + rng.randf_range(-0.3, 0.3)) / float(maxi(leaning, 1)) + rng.randf() * 1.5
-		var out := Vector3(cos(a), 0, sin(a))
-		cards.append([out * rng.randf_range(0.1, 0.22) + Vector3(0, rng.randf_range(0.06, 0.2), 0), out.cross(Vector3.UP),
-				(Vector3.UP + out * rng.randf_range(0.55, 0.95)).normalized(), rng.randf_range(0.6, 0.82),
-				rng.randi() % 4, rng.randf() < 0.5])
-	for card in cards:
-		var o: Vector3 = card[0]
-		var ax: Vector3 = card[1]
-		var up: Vector3 = card[2]
-		var size: float = card[3]
-		var u0 := float(card[4]) + (0.999 if card[5] else 0.001)
-		var u1 := float(card[4]) + (0.001 if card[5] else 0.999)
-		var corners := [[o - ax * 0.5 * size, Vector2(u0, 1)], [o + ax * 0.5 * size, Vector2(u1, 1)],
-				[o + ax * 0.5 * size + up * size, Vector2(u1, 0)], [o - ax * 0.5 * size + up * size, Vector2(u0, 0)]]
-		for i in [0, 1, 2, 0, 2, 3]:
-			var pos: Vector3 = corners[i][0]
-			var uv: Vector2 = corners[i][1]
-			st.set_normal(((pos - heart).normalized() * 0.7 + Vector3.UP * 0.5).normalized())
-			st.set_uv(uv)
-			st.set_uv2(Vector2(clampf(pos.y, 0.0, 1.0), 0.0))
-			st.set_color(Color.WHITE * (0.55 + 0.45 * clampf(pos.y * 1.3, 0.0, 1.0)))
-			st.add_vertex(pos)
 	var mesh := st.commit()
 	mesh.surface_set_material(0, mat)
 	return mesh
@@ -625,47 +561,6 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			_push(bufs[kind], basis, Vector3(x, float(s["height"]) - 0.03, z))
 	return bufs
 
-
-func _place_bushes(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
-	var bufs := [PackedFloat32Array(), PackedFloat32Array(), PackedFloat32Array()]
-	var grid := 3.2
-	var tile := float(layer["tile"])
-	var x0 := float(key.x) * tile
-	var z0 := float(key.y) * tile
-	var n := int(round(tile / grid))
-	for iz in n:
-		for ix in n:
-			var cx := key.x * n + ix
-			var cz := key.y * n + iz
-			var x := x0 + (float(ix) + _hash(cx, cz, 81)) * grid
-			var z := z0 + (float(iz) + _hash(cx, cz, 82)) * grid
-			# Thickets: bushes crowd together and leave gaps, on two scales.
-			var thicket := _smooth_noise(x / 34.0, z / 34.0, 83) * 0.6 + _smooth_noise(x / 11.0, z / 11.0, 84) * 0.4
-			var open := meadow(x, z)
-			# Thickest at the wood's edge round a meadow, thinner in its middle.
-			var want := (thicket - 0.3) * 1.9 * (1.0 - 0.75 * smoothstep(0.75, 1.0, open)) + 0.35 * open * (1.0 - open) * 4.0
-			if _hash(cx, cz, 85) > want * density:
-				continue
-			if Vector2(x, z).distance_to(_islet) < _clearing * 0.9:
-				continue
-			if _on_path(x, z, 1.3):
-				continue
-			var s := f.sample(x, z)
-			if not bool(s.get("on_land", false)):
-				continue
-			var surface := String(s.get("surface", ""))
-			if surface == "rock" or surface == "sand" or float(s.get("slope", 0.0)) > 0.55 \
-					or float(s.get("flow_weight", 0.0)) > 0.35 or float(s.get("flatten", 0.0)) > 0.25:
-				continue
-			var variant := float(int(_hash(cx, cz, 86) * 4.0) % 4)
-			# Knee to waist high: undergrowth, not a wall of green at head height.
-			var tall := 0.5 + 0.8 * _hash(cx, cz, 87) * _hash(cx, cz, 88)
-			var wide := tall * (1.05 + 0.35 * _hash(cx, cz, 89))
-			var basis := Basis(Vector3.UP, _hash(cx, cz, 90) * TAU).scaled(Vector3(wide, tall, wide))
-			var buf: PackedFloat32Array = bufs[int(_hash(cx, cz, 92) * 3.0) % 3]
-			_push(buf, basis, Vector3(x, float(s["height"]) - 0.08, z))
-			buf.append_array([variant, _hash(cx, cz, 91), 1.0, 0.0])
-	return bufs
 
 
 func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
