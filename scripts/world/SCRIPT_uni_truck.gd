@@ -48,14 +48,17 @@ extends Node3D
 @export var cloud_sea_path: NodePath = ^"../CloudSea"
 
 @export_group("Body")
-## Model units to metres: the modelled wheel is 2.52 across the radius.
-@export var model_scale := 0.28
+## Model units to metres: the modelled wheel is 2.52 across the radius (at
+## 0.42, a wheel a metre across the radius on a truck 6.8 m long and 5 m high).
+## Everything that goes by its size (the suspension's travel, the view's
+## distance, the room it needs to park and to be got out of) follows this.
+@export var model_scale := 0.42
 @export var mass := 1400.0
 
 @export_group("Suspension")
 ## Metres the wheel can ride up above where it hangs at rest, and drop below it.
-@export var bump_travel := 0.2
-@export var droop_travel := 0.12
+@export var bump_travel := 0.3
+@export var droop_travel := 0.18
 ## Newtons a metre, and of damping a metre a second.
 @export var spring_rate := 60000.0
 @export var damping := 12000.0
@@ -71,7 +74,7 @@ extends Node3D
 ## Radians a second of turn at a standstill, and at top speed.
 @export var turn_rate := Vector2(1.7, 0.75)
 ## How hard the jump kicks, metres a second straight up.
-@export var jump_speed := 6.5
+@export var jump_speed := 7.5
 
 @export_group("Gyros")
 ## Stiffness (1/s) of the upright hold.
@@ -83,8 +86,8 @@ extends Node3D
 @export var max_lean := 38.0
 
 @export_group("View")
-@export var chase_distance := 9.5
-@export var chase_height := 1.9
+@export var chase_distance := 14.0
+@export var chase_height := 2.8
 
 ## True while someone is driving (anything that reads the hand and the hotbar
 ## stands down: SCRIPT_sword_play.gd, SCRIPT_building.gd, SCRIPT_cooking.gd).
@@ -179,8 +182,10 @@ func _build(at: Transform3D) -> void:
 	body.center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	body.center_of_mass = COM * s
 	# A box of a truck: 2.5 wide, 1.9 high, 4.5 long (about its middle).
-	body.inertia = Vector3(mass / 12.0 * (1.9 * 1.9 + 4.5 * 4.5), mass / 12.0 * (2.5 * 2.5 + 4.5 * 4.5),
-			mass / 12.0 * (2.5 * 2.5 + 1.9 * 1.9))
+	var w := 9.0 * s
+	var h := 6.8 * s
+	var l := 16.1 * s
+	body.inertia = Vector3(mass / 12.0 * (h * h + l * l), mass / 12.0 * (w * w + l * l), mass / 12.0 * (w * w + h * h))
 	body.linear_damp = 0.05
 	body.angular_damp = 0.5
 	body.can_sleep = false
@@ -231,6 +236,11 @@ func _build(at: Transform3D) -> void:
 	_cam.cull_mask = 0xFFFFF & ~(1 << (WorldReflection.MIRROR_LAYER - 1))
 	add_child(_cam)
 	body.freeze = true
+
+
+## How big it is against the size it was first made at (0.28 to the metre).
+func _k() -> float:
+	return model_scale / 0.28
 
 
 func _box(lo: Vector3, hi: Vector3, shrink := 1.0) -> void:
@@ -335,7 +345,7 @@ func _find_home() -> bool:
 			# Level enough to stand on: the ground a truck's length round about.
 			var worst := 0.0
 			for j in 6:
-				var q := p + Vector2.from_angle(TAU * float(j) / 6.0) * 3.0
+				var q := p + Vector2.from_angle(TAU * float(j) / 6.0) * 3.0 * _k() * _k()
 				worst = maxf(worst, absf(_ground(q) - y))
 			if worst > 0.9 or _cluttered(Vector3(p.x, y, p.y)):
 				continue
@@ -364,14 +374,14 @@ func _ground(p: Vector2) -> float:
 func _cluttered(at: Vector3) -> bool:
 	if _flora == null:
 		return false
-	if _flora.has_method(&"tree_on") and not (_flora.call(&"tree_on", at + Vector3.UP * 1.5, Vector3.ZERO, 0.0, 5.0) as Dictionary).is_empty():
+	if _flora.has_method(&"tree_on") and not (_flora.call(&"tree_on", at + Vector3.UP * 1.5, Vector3.ZERO, 0.0, 5.0 * _k()) as Dictionary).is_empty():
 		return true
 	if _flora.has_method(&"_rock_layer"):
 		var layer: Dictionary = _flora.call(&"_rock_layer")
 		for key in layer.get("cache", {}):
 			for buf: PackedFloat32Array in layer["cache"][key]:
 				for i in range(0, buf.size(), Flora.STRIDE):
-					if Vector2(buf[i + 3] - at.x, buf[i + 11] - at.z).length() < 5.5:
+					if Vector2(buf[i + 3] - at.x, buf[i + 11] - at.z).length() < 5.5 * _k():
 						return true
 	return false
 
@@ -382,9 +392,9 @@ func _cluttered(at: Vector3) -> bool:
 func can_use(from: Vector3, dir: Vector3) -> bool:
 	if body == null or _driver or not _placed:
 		return false
-	if from.distance_to(body.global_position) > 7.5:
+	if from.distance_to(body.global_position) > 7.5 * _k():
 		return false
-	var q := PhysicsRayQueryParameters3D.create(from, from + dir.normalized() * 5.0)
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir.normalized() * 5.0 * _k())
 	if _explorer is CollisionObject3D:
 		q.exclude = [(_explorer as CollisionObject3D).get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
@@ -449,7 +459,7 @@ func get_out() -> void:
 	var b := body.global_transform
 	var heading := _heading()
 	var right := heading.cross(Vector3.UP).normalized()
-	var spot := b.origin + Vector3.UP * 3.0
+	var spot := b.origin + Vector3.UP * 3.0 * _k()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.35
 	capsule.height = 1.8
@@ -457,6 +467,7 @@ func get_out() -> void:
 	q.shape = capsule
 	q.exclude = [co.get_rid()]
 	for off in [-right * 2.4, right * 2.4, heading * 3.6, -heading * 3.6, -right * 3.4, right * 3.4]:
+		off *= _k()
 		var p: Vector3 = b.origin + off
 		p.y = _ground(Vector2(p.x, p.z))
 		q.transform = Transform3D(Basis(), p + Vector3.UP * 1.0)
