@@ -213,6 +213,9 @@ func _build(at: Transform3D) -> void:
 	body.add_child(stop)
 	_strut()
 	_split_gyros()
+	# Wear laid over its paint, close to: grime, pitting, scratches and dents in a
+	# half-metre tile, projected on in each part's own space (SCRIPT_detail_layer.gd).
+	DetailLayer.apply(_model, 0.5)
 	for side in [-1.0, 1.0]:
 		var lamp := SpotLight3D.new()
 		lamp.light_color = Color(1.0, 0.95, 0.85)
@@ -876,3 +879,4 @@ func warm(stage: Node3D) -> void:
 	var copy := (load(MODEL) as PackedScene).instantiate() as Node3D
 	copy.scale = Vector3.ONE * 0.03
 	stage.add_child(copy)
+	DetailLayer.apply(copy, 0.5)
