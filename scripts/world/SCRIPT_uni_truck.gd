@@ -66,11 +66,11 @@ extends Node3D
 @export_group("Drive")
 @export var top_speed := 24.0
 @export var boost_speed := 34.0
-@export var drive_accel := 7.0
-@export var boost_accel := 10.0
-@export var brake_accel := 14.0
+@export var drive_accel := 11.0
+@export var boost_accel := 16.0
+@export var brake_accel := 18.0
 ## Tyre on the ground: the most it can push, as a fraction of the load on it.
-@export var grip := 1.05
+@export var grip := 1.6
 ## Radians a second of turn at a standstill, and at top speed.
 @export var turn_rate := Vector2(1.7, 0.75)
 ## How hard the jump kicks, metres a second straight up.
@@ -83,7 +83,7 @@ extends Node3D
 ## The most angular acceleration the gyros can give, radians a second squared.
 @export var gyro_authority := 40.0
 ## Furthest it leans into a turn or into the throttle, degrees.
-@export var max_lean := 38.0
+@export var max_lean := 42.0
 
 @export_group("View")
 @export var chase_distance := 14.0
@@ -135,6 +135,7 @@ var _look_ground := 0.0
 var _driver := false
 var _entered_at := 0
 var _old_layers := Vector2i.ZERO
+var _solid_again := 0
 
 # Wheel and suspension state.
 var _d := 0.0                     # metres the wheel rides above its rest (+ up)
@@ -454,8 +455,6 @@ func get_out() -> void:
 	driving = false
 	_explorer.set("driving", null)
 	var co := _explorer as CollisionObject3D
-	co.collision_layer = _old_layers.x
-	co.collision_mask = _old_layers.y
 	var b := body.global_transform
 	var heading := _heading()
 	var right := heading.cross(Vector3.UP).normalized()
@@ -476,6 +475,9 @@ func get_out() -> void:
 			break
 	_explorer.global_position = spot
 	_explorer.set("velocity", Vector3.ZERO)
+	# Solid again only once it is out: made solid in the cab and then moved, the
+	# body is swept out through the truck in one step and throws it off the hill.
+	_solid_again = 2
 	if _explorer.has_method(&"_face"):
 		_explorer.call(&"_face", heading)
 	for c in _explorer.get_children():
@@ -518,6 +520,11 @@ func _heading() -> Vector3:
 
 
 func _physics_process(delta: float) -> void:
+	if _solid_again > 0:
+		_solid_again -= 1
+		if _solid_again == 0 and not _driver:
+			(_explorer as CollisionObject3D).collision_layer = _old_layers.x
+			(_explorer as CollisionObject3D).collision_mask = _old_layers.y
 	if not _placed:
 		if _find_home():
 			_build(_home)
@@ -638,7 +645,7 @@ func _drive(throttle: float, steer: float, boost: bool, delta: float) -> void:
 		limit = brake_accel
 	var pull := clampf((want - along) * 4.0, -limit, limit) * mass
 	# Sideways, the tyre will not slide unless pushed past its grip.
-	var hold := -across * mass * 12.0
+	var hold := -across * mass * 18.0
 	var most := grip * _load
 	var total := Vector2(pull, hold)
 	if total.length() > most:
@@ -669,8 +676,9 @@ func _gyros(throttle: float, steer: float, delta: float) -> void:
 	# The turn asked for: quicker standing still than at speed, and the other way
 	# round in reverse, as a car's.
 	var rate := lerpf(turn_rate.x, turn_rate.y, clampf(absf(along) / top_speed, 0.0, 1.0))
-	# No quicker than the tyre can hold at this speed (a lean of about 40 degrees).
-	rate = minf(rate, 0.85 * grip * _g / maxf(absf(along), 0.1))
+	# No quicker than a lean of about 45 degrees will balance at this speed (the
+	# tyre could hold more; the truck would be on its ear).
+	rate = minf(rate, 0.9 * minf(grip, 1.15) * _g / maxf(absf(along), 0.1))
 	var yaw_want := -steer * rate * (-1.0 if along < -1.0 else 1.0)
 	if not _grounded:
 		yaw_want *= 0.6
