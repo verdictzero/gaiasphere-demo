@@ -5,6 +5,10 @@
 // Drawn as a MultiMesh (SCRIPT_berry_bushes.gd): INSTANCE_CUSTOM.x is how much of
 // this bush is there, 0 none to 1 all, faded through a screen-door dither, which
 // is how a stripped bush's leaves come back.
+//
+// Its levels of detail hand over to each other through the same kind of dither
+// (SHADERINC_lod_fade): through a band round each hand-over distance a bush is
+// in both levels, the nearer thinning out exactly as the farther fills in.
 shader_type spatial;
 render_mode cull_disabled, depth_draw_opaque, world_vertex_coords;
 
@@ -19,17 +23,19 @@ uniform float wind_flutter = 0.035;
 uniform float height = 2.5;
 
 #include "res://shaders/SHADERINC_wind.gdshaderinc"
+#include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 
 varying float grown;
 
 void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
 	grown = INSTANCE_CUSTOM.x;
+	lod_keep = lod_fade_window(root, MAIN_CAM_INV_VIEW_MATRIX[3].xyz);
 	float up = clamp((VERTEX.y - root.y) / (height * length(MODEL_MATRIX[1].xyz)), 0.0, 1.0);
 	// Each bush in its own time, and its outer twigs a little out of step with its middle.
 	float phase = fract(root.x * 0.137 + root.z * 0.291) + 0.15 * fract(dot(VERTEX.xz - root.xz, vec2(0.71, 0.53)));
 	VERTEX += wind_offset(VERTEX, vec2(up * up, phase), wind_bend, wind_flutter);
-	if (grown <= 0.0) {
+	if (grown <= 0.0 || lod_fade_gone(lod_keep)) {
 		VERTEX = root;          // none of it showing: no triangle at all
 	}
 }
@@ -41,7 +47,7 @@ void fragment() {
 		discard;
 	}
 	float dither = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));
-	if (dither >= grown) {
+	if (dither >= grown || lod_fade_discard(FRAGCOORD.xy)) {
 		discard;
 	}
 	ALBEDO = c.rgb * tint;

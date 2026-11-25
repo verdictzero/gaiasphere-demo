@@ -54,7 +54,7 @@ var _bare: Mesh
 var _bare_mat: ShaderMaterial
 var _leafy_mm: MultiMesh
 var _bare_mm: MultiMesh
-var _leafy_slot := {}            # square -> [level of detail, its instance in that level's MultiMesh]
+var _leafy_slot := {}            # square -> [[level of detail, its instance in that level's MultiMesh], ...]
 var _leafy_mms: Array[MultiMesh] = []      # one to a level of detail
 var _filled_at := Vector3(1e9, 0, 0)       # where the player was when the levels were last dealt out
 var _stale := true               # the MultiMeshes need filling again
@@ -107,6 +107,13 @@ func _ready() -> void:
 	if OS.has_feature("mobile"):
 		for i in lod_distances.size():
 			lod_distances[i] *= 0.65
+	# Where each level takes over from the one before and hands on to the next,
+	# for the dither between them (SHADERINC_lod_fade; 0 = no edge that side).
+	for level in _leafy_mms.size():
+		var mmi := get_node(NodePath("Leafy" if level == 0 else "Leafy%d" % level)) as MultiMeshInstance3D
+		mmi.set_instance_shader_parameter(&"lod_in", lod_distances[level - 1] if level > 0 else 0.0)
+		mmi.set_instance_shader_parameter(&"lod_out",
+				lod_distances[level] if level < _leafy_mms.size() - 1 and level < lod_distances.size() else 0.0)
 	_bare_mm = _multimesh(_bare, _bare_mat, "Bare")
 	_leaf_mat = _cutout(load("res://assets/leaves/berry_leaves_atlas.png"), Color(0.78, 0.9, 0.7))
 	_leaf_mat.backlight_enabled = true
@@ -140,6 +147,21 @@ static func _bush_material(mesh: Mesh) -> ShaderMaterial:
 	return m
 
 
+## The levels of detail are by distance from the eye (the camera, which while
+## driving is behind the truck and not where the player sits).
+func _eye() -> Vector3:
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if cam != null:
+		return cam.global_position
+	return _explorer.global_position if _explorer != null else Vector3.ZERO
+
+
+## Half the hand-over band (SHADERINC_lod_fade's LOD_BAND), and how far the eye
+## goes before the bushes are dealt out again, metres.
+const LOD_BAND := 0.12
+const REFILL := 2.5
+
+
 func _multimesh(mesh: Mesh, mat: Material, called: String) -> MultiMesh:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -158,7 +180,7 @@ func _multimesh(mesh: Mesh, mat: Material, called: String) -> MultiMesh:
 ## Both MultiMeshes filled from what stands and what state each is in.
 func _fill() -> void:
 	_stale = false
-	var here := _explorer.global_position if _explorer != null else Vector3.ZERO
+	var here := _eye()
 	_filled_at = here
 	var levels: Array = []
 	for i in _leafy_mms.size():
@@ -170,13 +192,21 @@ func _fill() -> void:
 			continue
 		var growing := _growing.has(sq)
 		if not _stripped.has(sq) or growing:
-			# Which fineness: by how far off it stands.
+			# Which fineness: by how far off it stands. Near a hand-over it is in
+			# both levels, and the shader dithers between them by its distance from
+			# the eye; the band is widened by how far the eye may go before the
+			# next refill, so it never runs off the end of the levels it is in.
 			var away := ((_live[sq] as Transform3D).origin - here).length()
-			var level := 0
-			while level < _leafy_mms.size() - 1 and level < lod_distances.size() and away > lod_distances[level]:
-				level += 1
-			_leafy_slot[sq] = [level, (levels[level] as Array).size()]
-			(levels[level] as Array).append([_live[sq], float(_growing[sq]) if growing else 1.0])
+			var slots: Array = []
+			for level in _leafy_mms.size():
+				var lo := lod_distances[level - 1] * (1.0 - LOD_BAND) - REFILL if level > 0 else -1.0
+				var last := level >= _leafy_mms.size() - 1 or level >= lod_distances.size()
+				var hi := 1e9 if last else lod_distances[level] * (1.0 + LOD_BAND) + REFILL
+				if away < lo or away > hi:
+					continue
+				slots.append([level, (levels[level] as Array).size()])
+				(levels[level] as Array).append([_live[sq], float(_growing[sq]) if growing else 1.0])
+			_leafy_slot[sq] = slots
 		if _stripped.has(sq) or growing:
 			bare.append([_live[sq], 1.0])
 	var pairs: Array = [[_bare_mm, bare]]
@@ -318,11 +348,13 @@ func _process(delta: float) -> void:
 			_stripped.erase(sq)
 			_stale = true
 		elif _leafy_slot.has(sq) and not _stale and _leafy_mm != null:
-			_leafy_mms[int(_leafy_slot[sq][0])].set_instance_custom_data(int(_leafy_slot[sq][1]), Color(grown, 0, 0, 0))
+			for slot in _leafy_slot[sq]:
+				_leafy_mms[int(slot[0])].set_instance_custom_data(int(slot[1]), Color(grown, 0, 0, 0))
 	if not _drops.is_empty():
 		_gather(delta, here + Vector3(0, 0.9, 0))
-	# Walked a few steps: the bushes are dealt out to their levels again.
-	if here.distance_to(_filled_at) > 2.5:
+	# Walked a few steps (or the view has moved, as it does round the truck): the
+	# bushes are dealt out to their levels again.
+	if _eye().distance_to(_filled_at) > REFILL:
 		_stale = true
 	if _stale and _leafy_mm != null:
 		_fill()
