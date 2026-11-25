@@ -624,7 +624,7 @@ func _crash(f: Dictionary) -> void:
 			Vector3(height * 0.2 + radius * 4.0, 1.2, height * 0.2 + radius * 4.0), 2.6)
 	# And sprays of it torn off whole: the boughs smashed off as the crown hits,
 	# thrown up and fluttering down, more for a bigger tree, along its whole top.
-	_fronds(foot + away * height * 0.62 + Vector3.UP * 1.2, clampi(int(height * 4.0), 24, 110), height * 0.22 + 1.5)
+	_fronds(foot + away * height * 0.62 + Vector3.UP * 1.2, clampi(int(height * 5.0), 30, 140), height * 0.22 + 1.5)
 
 
 var _frond_mat: StandardMaterial3D
@@ -641,14 +641,14 @@ func _fronds(at: Vector3, amount: int, reach: float) -> void:
 	if _frond_mat == null:
 		_frond_mat = StandardMaterial3D.new()
 		_frond_mat.albedo_texture = load("res://assets/fir/textures/fir_branch_basecolor.png")
-		_frond_mat.albedo_color = Color(0.72, 0.82, 0.66)
+		_frond_mat.albedo_color = Color(1.15, 1.3, 1.05)
 		_frond_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 		_frond_mat.alpha_scissor_threshold = 0.5
 		_frond_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_frond_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		_frond_mat.roughness = 0.8
 		_frond_mat.backlight_enabled = true
-		_frond_mat.backlight = Color(0.12, 0.2, 0.05)
+		_frond_mat.backlight = Color(0.3, 0.42, 0.14)
 		_frond_quad = QuadMesh.new()
 		_frond_quad.size = Vector2(0.9, 0.45)      # the picture is twice as long as it is wide
 	var key := snappedf(reach, 0.5)
@@ -669,8 +669,8 @@ func _fronds(at: Vector3, amount: int, reach: float) -> void:
 		m.angle_max = 360.0
 		m.angular_velocity_min = -260.0
 		m.angular_velocity_max = 260.0
-		m.scale_min = 0.45
-		m.scale_max = 1.3
+		m.scale_min = 0.6
+		m.scale_max = 1.6
 		# Whole until the end of their time, then gone in a moment.
 		var shrink := Curve.new()
 		shrink.add_point(Vector2(0.0, 1.0))
