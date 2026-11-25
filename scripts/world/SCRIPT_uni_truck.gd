@@ -826,7 +826,7 @@ func _make_prompts() -> void:
 	_prompt = _label(font, 24, 0.68, 0.74)
 	_prompt.text = "DRIVE  [E]"
 	layer.add_child(_prompt)
-	_hint = _label(font, 20, 0.86, 0.92)
+	_hint = _label(font, 20, 0.05, 0.1)
 	_hint.text = "STICK  drive and steer      JUMP  jump      RUN  more power      USE  get out" \
 			if DisplayServer.is_touchscreen_available() else \
 			"W S  drive      A D  steer      SPACE  jump      SHIFT  more power      L  lights      E  get out"
