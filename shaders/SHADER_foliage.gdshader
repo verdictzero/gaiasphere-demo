@@ -39,10 +39,30 @@ uniform float fade_end = 0.0;
 // pixel culled) by `near_gone`. 0 = stays solid.
 uniform float near_gone = 0.0;
 uniform float near_solid = 0.0;
+// BRUSHED ASIDE: metres the tips lean away from whatever is pushing through
+// (0 = nothing moves them). The pushers are two globals, xyz where and w how wide:
+// `plant_push_a` the player's feet (SCRIPT_explorer.gd), `plant_push_b` the
+// truck's wheel (SCRIPT_uni_truck.gd). Only what is level with the pusher's body,
+// from a little under its feet to a little over its head, is moved.
+uniform float push_bend = 0.0;
+global uniform vec4 plant_push_a;
+global uniform vec4 plant_push_b;
 
 #include "res://shaders/SHADERINC_wind.gdshaderinc"
 #include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 global uniform float enviro_wetness;
+
+// Away from `p` (xyz, radius w): out to the side and a little down, most at the
+// tips (`sway` is UV2.x, 0 at the root), easing off to nothing at the radius.
+vec3 pushed_aside(vec3 v, vec4 p, float sway) {
+	vec2 d = v.xz - p.xz;
+	float dist = length(d);
+	float h = v.y - p.y;
+	float near = (1.0 - smoothstep(p.w * 0.35, p.w, dist)) * smoothstep(-0.7, -0.2, h) * (1.0 - smoothstep(1.7, 2.3, h));
+	vec2 away = d / (dist + 0.05);
+	float k = near * push_bend * sway;
+	return vec3(away.x * k, -k * 0.55, away.y * k);
+}
 
 varying vec3 shade;
 varying float dissolve;
@@ -63,6 +83,10 @@ void vertex() {
 		}
 	}
 	VERTEX += wind_offset(VERTEX, UV2, wind_bend, wind_flutter);
+	if (push_bend > 0.0) {
+		vec3 here = VERTEX;
+		VERTEX += pushed_aside(here, plant_push_a, UV2.x) + pushed_aside(here, plant_push_b, UV2.x);
+	}
 	shade = COLOR.rgb;
 	// Only an atlas has per-instance data; without it INSTANCE_CUSTOM is not defined.
 	if (atlas_columns > 1.5) {

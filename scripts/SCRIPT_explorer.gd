@@ -225,6 +225,10 @@ func _physics_process(delta: float) -> void:
 	var stick := Input.get_vector(&"wv_look_left", &"wv_look_right", &"wv_look_up", &"wv_look_down")
 	if stick.length_squared() > 0.0:
 		_look(stick * deg_to_rad(stick_look_speed) * delta)
+	# The grass and the seaweed lean out of the way of the feet (SHADER_foliage's
+	# push_bend); not while flying or riding.
+	var brush := 0.0 if (flying or driving != null or not arrived) else 0.85
+	RenderingServer.global_shader_parameter_set(&"plant_push_a", Vector4(global_position.x, global_position.y, global_position.z, brush))
 	if not arrived:
 		return
 	if driving != null:

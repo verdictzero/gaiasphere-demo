@@ -231,7 +231,7 @@ func _build_layers() -> void:
 	var weed := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
 		"albedo_tex": load("res://assets/seaweed/textures/seaweed_atlas_basecolor.png"),
 		"tint": Color(0.4, 0.5, 0.26), "alpha_cut": 0.4, "roughness": 0.22, "specular": 0.45,
-		"wind_bend": 1.5, "wind_flutter": 0.08, "atlas_columns": 2.0,
+		"wind_bend": 1.5, "wind_flutter": 0.08, "atlas_columns": 2.0, "push_bend": 0.45,
 		"backlight": Color(0.1, 0.16, 0.04)})
 	_layers.append({
 		"name": "seaweed", "tile": 24.0, "radius": 120.0 * _scale, "stride": STRIDE_CUSTOM,
@@ -262,7 +262,7 @@ func _build_layers() -> void:
 	var blades := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
 		"albedo_tex": load("res://assets/grass/textures/grass_atlas_basecolor.png"),
 		"tint": Color(0.62, 0.7, 0.5), "alpha_cut": 0.36, "roughness": 0.7,
-		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0,
+		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0, "push_bend": 0.3,
 		"backlight": Color(0.035, 0.05, 0.015), "specular": 0.04, "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
 		"fade_start": reach * 0.72, "fade_end": reach * 0.98})
 	_blades = blades

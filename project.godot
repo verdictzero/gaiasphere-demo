@@ -97,6 +97,14 @@ enviro_flash={
 "type": "float",
 "value": 0.0
 }
+plant_push_a={
+"type": "vec4",
+"value": Vector4(0, -100000, 0, 0)
+}
+plant_push_b={
+"type": "vec4",
+"value": Vector4(0, -100000, 0, 0)
+}
 
 tod_water_tint={
 "type": "color",

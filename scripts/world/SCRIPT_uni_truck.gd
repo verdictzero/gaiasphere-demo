@@ -602,6 +602,8 @@ func _wheel(delta: float) -> void:
 	else:
 		_normal = info["normal"]
 		_contact = info["point"]
+	# The grass and the seaweed lean out of the wheel's way (SHADER_foliage's push_bend).
+	RenderingServer.global_shader_parameter_set(&"plant_push_b", Vector4(_contact.x, _contact.y, _contact.z, 1.5 * _k()))
 	# The coilover: preloaded to carry the truck at rest, stiffer as it is pressed,
 	# a damper on how fast it moves, and the bump stop at the end of the travel.
 	var speed := (_d - _d_was) / delta
