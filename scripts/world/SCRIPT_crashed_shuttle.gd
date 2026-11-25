@@ -219,7 +219,7 @@ static func debris(field: IslandField, at: Vector2, back: Vector2) -> Array:
 	for i in rng.randi_range(7, 12):
 		var dir := back.rotated(rng.randf_range(0.5, TAU - 0.5))
 		var out := FlowTerrain.CRASH_BOWL * (rng.randf_range(0.85, 1.25) if rng.randf() < 0.7 else rng.randf_range(1.3, 2.0))
-		heaps.append([at + dir * out, rng.randi_range(1, 7), rng.randf_range(0.8, 2.8), rng.randf_range(0.5, 1.6)])
+		heaps.append([at + dir * out, rng.randi_range(2, 8), rng.randf_range(0.8, 2.8), rng.randf_range(0.8, 2.0)])
 	# ALONG THE SKID: wherever it threw them, mostly onto the berms, now and then
 	# far out to one side, and a few left lying in the trench itself.
 	var along := rng.randf_range(10.0, 16.0)
@@ -236,16 +236,16 @@ static func debris(field: IslandField, at: Vector2, back: Vector2) -> Array:
 			off = (1.0 if rng.randf() < 0.5 else -1.0) * wide * rng.randf_range(1.8, 3.5)    # flung
 		# Fewer and smaller the further back up the hill, where it hit softest.
 		var spent := 1.0 - along / FlowTerrain.CRASH_GOUGE
-		heaps.append([at + back * along + side * (wander + off), rng.randi_range(1, 3 + int(5.0 * spent)),
-				rng.randf_range(0.5, 2.4), rng.randf_range(0.35, 0.7 + 0.9 * spent)])
-		along += rng.randf_range(3.0, 13.0)
+		heaps.append([at + back * along + side * (wander + off), rng.randi_range(1, 4 + int(5.0 * spent)),
+				rng.randf_range(0.6, 2.6), rng.randf_range(0.6, 0.9 + 1.0 * spent)])
+		along += rng.randf_range(3.0, 10.0)
 	var out: Array = []
 	for heap: Array in heaps:
 		var centre: Vector2 = heap[0]
 		var count: int = heap[1]
 		for n in count:
 			# Sizes fall away steeply: a few big ones, many small.
-			var width := lerpf(0.2, float(heap[3]), pow(rng.randf(), 2.2)) if n > 0 else float(heap[3]) * rng.randf_range(0.8, 1.1)
+			var width := lerpf(0.3, float(heap[3]), pow(rng.randf(), 1.6)) if n > 0 else float(heap[3]) * rng.randf_range(0.8, 1.1)
 			var p := centre + Vector2.from_angle(rng.randf() * TAU) * float(heap[2]) * sqrt(rng.randf()) * (0.0 if n == 0 else 1.0)
 			var ground := field.height_at(p.x, p.y, 0.0)
 			var kind := rng.randi_range(0, Flora.BOULDERS.size() - 1)
