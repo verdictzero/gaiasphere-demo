@@ -29,7 +29,10 @@ uniform sampler2D detail_normal : hint_normal, filter_linear_mipmap_anisotropic,
 // metres on every part).
 uniform float detail_tiles = 2.0;
 uniform float detail_strength : hint_range(0.0, 1.5) = 1.0;
-uniform float detail_bump : hint_range(0.0, 2.0) = 0.8;
+uniform float detail_bump : hint_range(0.0, 2.0) = 0.6;
+// The bumps are laid this many times finer than the grime: a fine, faint grain
+// across the metal rather than dents you can pick out.
+uniform float detail_normal_density = 8.0;
 // Beyond this many metres the detail has faded to nothing (it would only shimmer).
 uniform float detail_far = 40.0;
 
@@ -56,9 +59,10 @@ void fragment() {
 	float grime = texture(detail_grime, obj_pos.zy).r * w.x
 			+ texture(detail_grime, obj_pos.xz).r * w.y
 			+ texture(detail_grime, obj_pos.xy).r * w.z;
-	vec3 dn = (texture(detail_normal, obj_pos.zy).xyz * 2.0 - 1.0) * w.x
-			+ (texture(detail_normal, obj_pos.xz).xyz * 2.0 - 1.0) * w.y
-			+ (texture(detail_normal, obj_pos.xy).xyz * 2.0 - 1.0) * w.z;
+	vec3 np = obj_pos * detail_normal_density;
+	vec3 dn = (texture(detail_normal, np.zy).xyz * 2.0 - 1.0) * w.x
+			+ (texture(detail_normal, np.xz).xyz * 2.0 - 1.0) * w.y
+			+ (texture(detail_normal, np.xy).xyz * 2.0 - 1.0) * w.z;
 	dn.xy *= detail_bump * near;
 
 	ALBEDO = base.rgb * mix(1.0, grime, k);
