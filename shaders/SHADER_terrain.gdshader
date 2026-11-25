@@ -65,6 +65,19 @@ uniform float causeway_reach = 0.0;
 uniform float cobble_size = 4.4;
 uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 
+// THE SHUTTLE'S SKID AND DIVOT (FlowTerrain's crash; SCRIPT_bridge.gd sets these):
+// the ground it broke is churned earth, not the meadow's soil or the beach's sand.
+// crash_at: the wreck's xz; crash_out: the way back up the skid; crash_shape: the
+// divot's radius, the skid's length, its half-width at the wreck, and its
+// touch-down share (FlowTerrain's CRASH_BOWL, CRASH_GOUGE, CRASH_WIDE, CRASH_TOUCH).
+uniform sampler2D churned_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D churned_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec2 crash_at = vec2(0.0);
+uniform vec2 crash_out = vec2(0.0);
+uniform vec4 crash_shape = vec4(0.0);
+uniform float churned_size = 2.6;
+uniform vec3 churned_tint : source_color = vec3(0.78, 0.7, 0.62);
+
 uniform sampler2D caustic_tex : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float caustic_size = 15.0;
 uniform float caustic_speed = 1.0;
@@ -268,6 +281,35 @@ void fragment() {
 			vec2 tilt = across * cn.x + run * cn.y;          // the normal map, turned with it
 			world_n = normalize(mix(world_n, normalize(geo_n + vec3(tilt.x, 0.0, tilt.y) * detail * 1.4), cw));
 			roughness = mix(roughness, 0.8, cw);
+		}
+	}
+	if (crash_shape.x > 0.0) {
+		// The same shapes FlowTerrain digs (crash_weight), reached out a little past
+		// the cut onto the berms, with a ragged edge.
+		vec2 d = p - crash_at;
+		float far = length(d);
+		float churn = 1.0 - smoothstep(crash_shape.x * 0.7, crash_shape.x * 1.25, far + (macro2 - 0.5) * 3.0);
+		float along = dot(d, crash_out);
+		if (along > -2.0 && along < crash_shape.y) {
+			float t = clamp(along / crash_shape.y, 0.0, 1.0);
+			float touch = smoothstep(1.0, 1.0 - crash_shape.w, t);
+			float wide = mix(crash_shape.z, crash_shape.z * 0.6, t) * mix(0.35, 1.0, touch);
+			float off = abs(dot(d, vec2(-crash_out.y, crash_out.x)) - 1.2 * sin(along * 0.16) - 2.0 * sin(along * 0.037));
+			float edge = wide * 1.45 * mix(0.75, 1.15, macro2) + (macro - 0.5) * 1.5;
+			churn = max(churn, (1.0 - smoothstep(edge * 0.75, edge, off)) * smoothstep(0.0, 0.25, touch + 0.05));
+		}
+		if (churn > 0.0) {
+			vec2 mp = p / churned_size;
+			vec3 mud = textureGrad(churned_albedo, mp, dFdx(mp), dFdy(mp)).rgb * churned_tint;
+			// Clods outlast the edge: it breaks up into lumps, not a blur.
+			churn = smoothstep(0.35, 0.65, churn + (height_of(mud / churned_tint) - 0.5) * 0.8);
+			// Under the water it is the bed's: only the shallows show it.
+			churn *= smoothstep(mere_level - 2.5, mere_level + 0.2, world_pos.y);
+			albedo = mix(albedo, mud, churn);
+			vec3 mn = textureGrad(churned_normal, mp, dFdx(mp), dFdy(mp)).xyz * 2.0 - 1.0;
+			world_n = normalize(mix(world_n, normalize(geo_n + vec3(mn.x, 0.0, mn.y) * detail * 1.5), churn));
+			roughness = mix(roughness, 0.92, churn);
+			damp = max(damp, churn * 0.25);
 		}
 	}
 	albedo *= mix(1.0, 0.62 + macro * 0.5 + macro2 * 0.26, macro_strength);

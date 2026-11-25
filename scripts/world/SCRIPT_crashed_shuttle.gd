@@ -212,33 +212,47 @@ static func debris(field: IslandField, at: Vector2, back: Vector2) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 60317
 	var side := Vector2(-back.y, back.x)
-	var spots: Array = []
-	# Round the rim of the divot, leaving the mouth of the gouge open.
-	for i in 9:
-		var ang := TAU * (float(i) + rng.randf_range(-0.25, 0.25)) / 9.0
-		var dir := back.rotated(ang)
-		if dir.dot(back) > 0.8:
-			continue
-		spots.append(at + dir * (FlowTerrain.CRASH_BOWL * rng.randf_range(0.95, 1.2)))
-	# And shouldered out either side of the gouge, on its berms, all the way back
-	# up the hill (following its wander, and its narrowing).
-	for along in [15.0, 25.0, 36.0, 50.0, 64.0, 78.0]:
-		for hand in [-1.0, 1.0]:
-			var a: float = along + rng.randf_range(-2.5, 2.5)
-			var wander := 1.2 * sin(a * 0.16) + 2.0 * sin(a * 0.037)
-			var wide := lerpf(FlowTerrain.CRASH_WIDE, FlowTerrain.CRASH_WIDE * 0.6, a / FlowTerrain.CRASH_GOUGE)
-			spots.append(at + back * a + side * (wander + hand * wide * rng.randf_range(1.0, 1.3)))
+	# Heaps: [where, how many, how far they spread, how big the biggest].
+	var heaps: Array = []
+	# ROUND THE DIVOT, at no regular spacing, some on the rim and some thrown well
+	# out past it, none in the mouth of the skid.
+	for i in rng.randi_range(7, 12):
+		var dir := back.rotated(rng.randf_range(0.5, TAU - 0.5))
+		var out := FlowTerrain.CRASH_BOWL * (rng.randf_range(0.85, 1.25) if rng.randf() < 0.7 else rng.randf_range(1.3, 2.0))
+		heaps.append([at + dir * out, rng.randi_range(1, 7), rng.randf_range(0.8, 2.8), rng.randf_range(0.5, 1.6)])
+	# ALONG THE SKID: wherever it threw them, mostly onto the berms, now and then
+	# far out to one side, and a few left lying in the trench itself.
+	var along := rng.randf_range(10.0, 16.0)
+	while along < FlowTerrain.CRASH_GOUGE * 0.9:
+		var wander := 1.2 * sin(along * 0.16) + 2.0 * sin(along * 0.037)
+		var wide := lerpf(FlowTerrain.CRASH_WIDE, FlowTerrain.CRASH_WIDE * 0.6, along / FlowTerrain.CRASH_GOUGE)
+		var roll := rng.randf()
+		var off: float
+		if roll < 0.15:
+			off = rng.randf_range(-0.5, 0.5) * wide                        # in the trench
+		elif roll < 0.8:
+			off = (1.0 if rng.randf() < 0.5 else -1.0) * wide * rng.randf_range(0.95, 1.6)   # on a berm
+		else:
+			off = (1.0 if rng.randf() < 0.5 else -1.0) * wide * rng.randf_range(1.8, 3.5)    # flung
+		# Fewer and smaller the further back up the hill, where it hit softest.
+		var spent := 1.0 - along / FlowTerrain.CRASH_GOUGE
+		heaps.append([at + back * along + side * (wander + off), rng.randi_range(1, 3 + int(5.0 * spent)),
+				rng.randf_range(0.5, 2.4), rng.randf_range(0.35, 0.7 + 0.9 * spent)])
+		along += rng.randf_range(3.0, 13.0)
 	var out: Array = []
-	for spot: Vector2 in spots:
-		var count := rng.randi_range(3, 7)
+	for heap: Array in heaps:
+		var centre: Vector2 = heap[0]
+		var count: int = heap[1]
 		for n in count:
-			var big := n == 0
-			var width := rng.randf_range(0.9, 1.5) if big else rng.randf_range(0.3, 0.8)
-			var p: Vector2 = spot if big else spot + Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.6, 1.9)
+			# Sizes fall away steeply: a few big ones, many small.
+			var width := lerpf(0.2, float(heap[3]), pow(rng.randf(), 2.2)) if n > 0 else float(heap[3]) * rng.randf_range(0.8, 1.1)
+			var p := centre + Vector2.from_angle(rng.randf() * TAU) * float(heap[2]) * sqrt(rng.randf()) * (0.0 if n == 0 else 1.0)
 			var ground := field.height_at(p.x, p.y, 0.0)
 			var kind := rng.randi_range(0, Flora.BOULDERS.size() - 1)
-			var turn := Basis.from_euler(Vector3(rng.randf_range(-0.5, 0.5), rng.randf() * TAU, rng.randf_range(-0.5, 0.5)))
-			out.append([kind, Transform3D(turn.scaled(Vector3.ONE * width), Vector3(p.x, ground - 0.12 * width, p.y))])
+			var turn := Basis.from_euler(Vector3(rng.randf_range(-0.6, 0.6), rng.randf() * TAU, rng.randf_range(-0.6, 0.6)))
+			# Not quite round: squashed or stretched a little, each its own way.
+			var shape := Vector3(rng.randf_range(0.8, 1.2), rng.randf_range(0.7, 1.1), rng.randf_range(0.8, 1.2)) * width
+			out.append([kind, Transform3D(turn * Basis.from_scale(shape), Vector3(p.x, ground - 0.15 * width, p.y))])
 	return out
 
 

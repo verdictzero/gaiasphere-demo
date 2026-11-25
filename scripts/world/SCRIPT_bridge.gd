@@ -38,6 +38,15 @@ func _ready() -> void:
 		# How far out its banks run: under the water their steep faces are cliff.
 		ground.set_shader_parameter("causeway_reach", FlowTerrain.CAUSEWAY_HALF + FlowTerrain.CAUSEWAY_BANK + 1.5)
 		ground.set_shader_parameter("mere_level", float(isl.base_y) + float(flows.lagoon_level()))
+		# The shuttle's skid and divot, churned earth (SHADER_terrain's crash_*).
+		var site: PackedVector2Array = flows.crash_site()
+		if site[1] != Vector2.ZERO:
+			ground.set_shader_parameter("churned_albedo", load("res://textures/polyhaven/brown_mud_03_basecolor.jpg"))
+			ground.set_shader_parameter("churned_normal", load("res://textures/polyhaven/brown_mud_03_normal.jpg"))
+			ground.set_shader_parameter("crash_at", site[0])
+			ground.set_shader_parameter("crash_out", site[1])
+			ground.set_shader_parameter("crash_shape", Vector4(FlowTerrain.CRASH_BOWL, FlowTerrain.CRASH_GOUGE,
+					FlowTerrain.CRASH_WIDE, FlowTerrain.CRASH_TOUCH))
 	var water := get_node_or_null(water_path)
 	if water != null and water.get(&"material") is ShaderMaterial:
 		var c: Vector2 = flows.lagoon_center()
