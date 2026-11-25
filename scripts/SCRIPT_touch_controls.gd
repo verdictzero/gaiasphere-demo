@@ -141,7 +141,21 @@ func _shown(i: int) -> bool:
 
 func _thumb_centre(i: int) -> Vector2:
 	var edge := UiFit.insets(size)
-	return size - Vector2(edge.z, edge.w) + (THUMB[i]["at"] as Vector2) * _k()
+	return size - Vector2(edge.z, edge.w) + ((THUMB[i]["at"] as Vector2) - Vector2(0.0, _lift())) * _k()
+
+
+## ON A SQUARER SCREEN (a folding phone opened out) the thumb's buttons, held in
+## the bottom-right corner, come in over the bars and the hotbar in the middle of
+## the bottom edge: the narrower the screen, the further up they are lifted, to
+## stand clear of them with room to spare. Layout units (a screen 1080 tall).
+func _lift() -> float:
+	var wide := size.x / maxf(_k(), 0.001)
+	# The middle cluster reaches 390 either side of the middle; JUMP, the
+	# furthest-in button, stands 470 in from the right; and 110 is the gap kept.
+	var short := (wide * 0.5 + 390.0 + 110.0) - (wide - 470.0)
+	# (A 16:9 screen is just clear already; an opened folding phone, about 6:5, is
+	# short by 130 and gets the whole lift.)
+	return smoothstep(20.0, 130.0, short) * 190.0
 
 
 func _row_rect(i: int) -> Rect2:
