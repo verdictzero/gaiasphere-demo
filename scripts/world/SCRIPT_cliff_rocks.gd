@@ -48,10 +48,11 @@ const KINDS := [
 var _lod_ends := {}        # kind -> [distances]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 3
+const CACHE_VERSION := 4
 
 var _field: IslandField
 var _sizes := {}           # kind -> Vector3 size in metres, as made
+var _low := {}             # kind -> how far below its origin it reaches, as made (the kit hangs from its top)
 var _meshes := {}          # kind -> [lod meshes]
 var _hulls := {}           # kind -> convex shape of its coarsest mesh
 var _material: ShaderMaterial
@@ -115,6 +116,7 @@ func _read_manifest() -> void:
 		# Every level the simplifier makes, from the finest of the kit's own.
 		var lods: Array = MeshLods.chain(Flora._mesh_of("res://assets/cliff/%s/%s_lod0.gltf" % [kind[0], kind[0]]) as ArrayMesh)
 		_meshes[kind[0]] = lods
+		_low[kind[0]] = (lods[0] as Mesh).get_aabb().position.y
 		var size: Vector3 = _sizes.get(kind[0], Vector3.ONE * 16.0)
 		_lod_ends[kind[0]] = MeshLods.distances(lods.size(), maxf(size.x, size.y) * 1.2)
 
@@ -182,7 +184,9 @@ func _layout(field: IslandField) -> Array:
 			var yaw := atan2(out_dir.x, out_dir.y) + rng.randf_range(-0.35, 0.35)
 			var basis := Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, rng.randf_range(-0.12, 0.12)) \
 					* Basis(Vector3.BACK, rng.randf_range(-0.15, 0.15))
-			var y := foot - rng.randf_range(1.0, 3.0)
+			# (The kit was made to hang from the island's rim: its origin is at its
+			# top. Its underside goes a metre or two into the ground at the foot.)
+			var y := foot - rng.randf_range(0.8, 2.5) - float(_low[KINDS[k][0]]) * s
 			out.append([k, Transform3D(basis.scaled_local(Vector3(sx, s, sz)), Vector3(at.x, y, at.y))])
 	return out
 
