@@ -424,6 +424,10 @@ const MEADOW_RISE := 8.0
 ## How far the walls run out (a cliff), and the ramp toward the mere, metres.
 const MEADOW_WALL := 8.0
 const MEADOW_RAMP := 115.0
+## The most the meadow's top stands over the mere, metres, and the slope (rise
+## over run) of the graded way up to it along the shuttle's path.
+const MEADOW_OVER_WATER := 20.0
+const CRASH_GRADE := 0.2
 
 var _meadow_c := Vector2.ZERO
 var _meadow_h := 0.0
@@ -447,6 +451,9 @@ func _place_meadow(field: IslandField, isl) -> void:
 		return
 	var m := field.mask_for(isl, _meadow_c.x, _meadow_c.y)
 	_meadow_h = field.base_height(_meadow_c.x, _meadow_c.y, m, isl, 0.0, 0.0, false) - isl.base_y + MEADOW_RISE
+	# (And no higher over the mere than an easy climb from it comes to: the ground
+	# here stands 25 m up of itself, and a third again on top of that was a wall.)
+	_meadow_h = minf(_meadow_h, _lag_level + MEADOW_OVER_WATER)
 
 
 ## The ground `g` with the meadow's hill in it: A HILL, NOT A PLATEAU (the user:
@@ -460,7 +467,21 @@ func meadow(x: float, z: float, g: float) -> float:
 	var r := Vector2(x, z).distance_to(_meadow_c)
 	if r > MEADOW_R + MEADOW_RAMP:
 		return g
-	return lerpf(g, _meadow_h, 1.0 - smoothstep(MEADOW_R * 0.45, MEADOW_R + MEADOW_RAMP, r))
+	var h := lerpf(g, _meadow_h, 1.0 - smoothstep(MEADOW_R * 0.45, MEADOW_R + MEADOW_RAMP, r))
+	# THE WAY UP FROM THE WATER, graded: along the shuttle's path the ground is cut
+	# to an even climb of CRASH_GRADE from the shore, so nothing between the mere
+	# and the meadow is steeper than that (the bank there was 40 degrees).
+	# (And the hill never fills the mere in: in the water the ground is as it was,
+	# and up the shore the hill may only raise it to the mere's own bank. It used
+	# to stand 8 m of hill in the shallows, 17 m inside the shore.)
+	var out := -lagoon_at(x, z).x
+	if out <= 0.0:
+		return g
+	var near := 1.0 - smoothstep(22.0, 65.0, crash_clear(x, z))
+	h = minf(h, maxf(g, _lag_level + 0.3 + LAGOON_BANK * out))
+	if near > 0.0:
+		h = lerpf(h, minf(h, _lag_level + 0.3 + CRASH_GRADE * out), near)
+	return h
 
 
 ## How far a point is from the shuttle's path (the line from the wreck up over
