@@ -155,7 +155,8 @@ func _ready() -> void:
 				# (and what the tops are drawn with: the ground's own surfaces)
 				"stochastic", "stochastic_scale", "moss_size", "soil_size", "litter_size", "sand_size",
 				"meadow_size", "dry_size", "floor_size", "moss_tint", "soil_tint", "litter_tint", "sand_tint",
-				"meadow_tint", "dry_tint", "floor_tint"]:
+				"meadow_tint", "dry_tint", "floor_tint",
+				"strata_strength", "strata_bed", "strata_warp", "strata_dip"]:
 			var v: Variant = terrain.get_shader_parameter(p)
 			if v != null:
 				_material.set_shader_parameter(p, v)

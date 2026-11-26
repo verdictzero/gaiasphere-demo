@@ -2,7 +2,7 @@ extends SceneTree
 
 # THE CLIFF BLOCK BY ITSELF, in the rock shader, from two sides: as handed over
 # (left), at its first level of detail (1000 triangles, middle) and its second
-# (700, right), with the baked edge wear and crevices on (top row) and off
+# (700, right), with the strata and the baked edge wear and crevices on (top row) and off
 # (bottom row). To renders/cliff_block.png.
 #
 #   godot --path . --script res://tests/RENDER_cliff_block.gd
@@ -26,6 +26,7 @@ func _initialize() -> void:
 		if row == 1:
 			mat.set_shader_parameter("edge_wear", 0.0)
 			mat.set_shader_parameter("crevice", 0.0)
+			mat.set_shader_parameter("strata_strength", 0.0)
 		for i in meshes.size():
 			var mi := MeshInstance3D.new()
 			mi.mesh = meshes[i]

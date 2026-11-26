@@ -58,3 +58,40 @@ void lay(float layer, vec2 uv, vec2 dx, vec2 dy, out vec3 a, out vec3 n) {
 	n = mix(na, nb, b) * 2.0 - 1.0;
 }
 
+
+
+// STRATA: the beds the island's rock is laid down in, drawn on its SIDES ONLY (a
+// face that looks up or down has none), and GLOBAL: they are a function of where
+// a point is in the world and nothing else, so a bed runs on unbroken from one
+// block of cliff to the next and across the terrain's own rock between them.
+// Each bed is `strata_bed` metres thick, has a tone of its own, a dark parting
+// where it meets the next, and fine laminae within; the whole stack dips a
+// little (`strata_dip`) and wanders (`strata_warp`, by a noise laid on from the
+// two sides), so the lines are not ruled. Past a couple of hundred metres the
+// partings and laminae fade (they would only shimmer) and the beds' tones stay.
+uniform float strata_strength : hint_range(0.0, 1.5) = 0.85;
+uniform float strata_bed = 1.9;
+uniform float strata_warp = 1.6;
+uniform vec2 strata_dip = vec2(0.035, 0.018);
+
+// x: what to multiply the rock's colour by; y: how far to tip its normal up (+)
+// or down (-) for the parting's groove.
+vec2 strata_at(vec3 wp, vec3 n, float dist) {
+	float side = 1.0 - smoothstep(0.45, 0.8, abs(n.y));
+	if (side <= 0.0 || strata_strength <= 0.0) {
+		return vec2(1.0, 0.0);
+	}
+	vec2 sw = n.xz * n.xz;
+	sw /= sw.x + sw.y + 1e-4;
+	float warp = textureLod(macro_noise, wp.zy / 41.0, 0.0).r * sw.x + textureLod(macro_noise, wp.xy / 41.0, 0.0).r * sw.y;
+	float y = (wp.y + (warp - 0.5) * strata_warp + dot(wp.xz, strata_dip)) / strata_bed;
+	float id = floor(y);
+	float f = fract(y);
+	float h = fract(sin(id * 12.9898) * 43758.5453);
+	float fine = 1.0 - smoothstep(60.0, 220.0, dist);
+	float parting = (1.0 - smoothstep(0.0, 0.05 + 0.09 * h, min(f, 1.0 - f))) * fine;
+	float laminae = 0.5 + 0.5 * sin(y * 6.2832 * (5.0 + 4.0 * h) + h * 6.0);
+	float tone = mix(0.78, 1.16, h) * mix(1.0, 0.9 + 0.1 * laminae, fine);
+	float k = side * strata_strength;
+	return vec2(mix(1.0, tone * (1.0 - parting * 0.55), k), (f < 0.5 ? 1.0 : -1.0) * parting * k * 0.8);
+}
