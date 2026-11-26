@@ -24,15 +24,54 @@ uniform float normal_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float triplanar_sharpness : hint_range(1.0, 16.0) = 6.0;
 uniform float detail_distance = 140.0;
 
+// THE GROUND RUNS ON OVER THE ROCK'S TOP. Where a rock faces up it is drawn as the
+// ground beside it is: the same surfaces, laid from above in world metres with
+// the same stochastic sampling, the same tints, the same patches of dry grass
+// and clearing, so the turf carries straight across from the terrain onto the
+// rock. WHICH ground (meadow, wood, soil, sand) is the rock's own to say: looked
+// up where it stands when it was placed (SCRIPT_cliff_rocks.gd) and carried in
+// INSTANCE_CUSTOM: x the wood there (the field's forest), y z w the shares of
+// ground, earth and sand. The edge of it is broken by the rock's own relief:
+// turf in the cracks first.
+uniform float top_start : hint_range(0.0, 1.0) = 0.62;   // how upward a face must look (normal.y) to begin to be ground
+uniform float top_full : hint_range(0.0, 1.0) = 0.86;    // and to be all ground
+uniform bool stochastic = true;
+uniform float stochastic_scale = 22.0;
+uniform float moss_size = 3.2;
+uniform float soil_size = 2.6;
+uniform float litter_size = 2.8;
+uniform float sand_size = 2.4;
+uniform float meadow_size = 2.4;
+uniform float dry_size = 2.6;
+uniform float floor_size = 3.0;
+uniform vec3 moss_tint : source_color = vec3(0.5, 0.66, 0.3);
+uniform vec3 soil_tint : source_color = vec3(0.8, 0.78, 0.72);
+uniform vec3 litter_tint : source_color = vec3(0.85, 0.8, 0.72);
+uniform vec3 sand_tint : source_color = vec3(0.7, 0.68, 0.62);
+uniform vec3 meadow_tint : source_color = vec3(0.68, 0.95, 0.5);
+uniform vec3 dry_tint : source_color = vec3(0.62, 0.95, 0.42);
+uniform vec3 floor_tint : source_color = vec3(0.4, 0.38, 0.33);
+const float L_MEADOW = 0.0;
+const float L_DRY = 1.0;
+const float L_MOSS = 2.0;
+const float L_LITTER = 3.0;
+const float L_FLOOR = 4.0;
+const float L_SOIL = 5.0;
+const float L_SAND = 7.0;
+
+#include "res://shaders/SHADERINC_ground_lay.gdshaderinc"
+
 #include "res://shaders/SHADERINC_lod_fade.gdshaderinc"
 global uniform float enviro_wetness;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
+varying vec4 ground_here;
 
 void vertex() {
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	w_nrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	ground_here = INSTANCE_CUSTOM;
 	lod_keep = lod_fade_window(MODEL_MATRIX[3].xyz, MAIN_CAM_INV_VIEW_MATRIX[3].xyz);
 	if (lod_fade_gone(lod_keep)) {
 		VERTEX = vec3(0.0);
@@ -68,6 +107,71 @@ void fragment() {
 	vec3 nz = vec3(tz.xy * detail + geo_n.xy, abs(tz.z) * geo_n.z);
 	vec3 world_n = normalize(nx.zyx * bw.x + ny.xzy * bw.y + nz.xyz * bw.z);
 	float roughness = 0.82;
+
+	// THE TOP: the ground beside it, carried on over (the terrain's own blend).
+	float top = smoothstep(top_start, top_full, geo_n.y);
+	if (top > 0.0) {
+		float forest = clamp(ground_here.x, 0.0, 1.0);
+		vec3 share = max(ground_here.yzw, vec3(0.0));
+		float sum = share.x + share.y + share.z;
+		share = sum > 0.01 ? share / sum : vec3(1.0, 0.0, 0.0);
+		vec2 pdx = dFdx(p);
+		vec2 pdy = dFdy(p);
+		float wood = smoothstep(0.15, 0.6, forest);
+		float dryness = smoothstep(0.56, 0.8, macro + (macro2 - 0.5) * 0.5);
+		vec3 a0; vec3 n0;
+		vec3 ground_a = vec3(0.0);
+		vec3 ground_n = vec3(0.0, 0.0, 1.0);
+		if (share.x > 0.003) {
+			vec3 grass_a = vec3(0.0);
+			vec3 grass_n = vec3(0.0, 0.0, 1.0);
+			if (wood < 1.0) {
+				lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, a0, n0);
+				grass_a = a0 * meadow_tint;
+				grass_n = n0;
+				if (dryness > 0.0) {
+					lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, a0, n0);
+					grass_a = mix(grass_a, a0 * dry_tint, dryness);
+					grass_n = mix(grass_n, n0, dryness);
+				}
+			}
+			ground_a = grass_a;
+			ground_n = grass_n;
+			if (wood > 0.0) {
+				float litter_mix = clamp(forest * (0.25 + macro2 * 1.1) * smoothstep(0.25, 0.6, macro + macro2 * 0.5), 0.0, 1.0);
+				vec3 moss_a; vec3 moss_n;
+				lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, moss_a, moss_n);
+				lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, a0, n0);
+				ground_a = mix(grass_a, mix(moss_a * moss_tint, a0 * litter_tint, litter_mix * 0.8), wood);
+				ground_n = mix(grass_n, mix(moss_n, n0, litter_mix * 0.8), wood);
+				float clearing = wood_clearing(p) * wood;
+				if (clearing > 0.0) {
+					lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, a0, n0);
+					a0 = mix(vec3(dot(a0, vec3(0.3, 0.55, 0.15))), a0, 0.4);
+					ground_a = mix(ground_a, a0 * floor_tint, clearing);
+					ground_n = mix(ground_n, n0, clearing);
+				}
+			}
+		}
+		vec3 top_a = ground_a * share.x;
+		vec3 top_n = ground_n * share.x;
+		if (share.y > 0.003) {
+			lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, a0, n0);
+			top_a += a0 * soil_tint * share.y;
+			top_n += n0 * share.y;
+		}
+		if (share.z > 0.003) {
+			lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, a0, n0);
+			top_a += a0 * sand_tint * share.z;
+			top_n += n0 * share.z;
+		}
+		// A ragged edge: the turf takes the rock's hollows (its dark) first.
+		float relief = clamp(dot(albedo / rock_tint, vec3(0.45, 0.45, 0.1)) * 2.2, 0.0, 1.0);
+		top = smoothstep(0.3, 0.7, top + (0.5 - relief) * 0.5);
+		albedo = mix(albedo, top_a, top);
+		world_n = normalize(mix(world_n, normalize(geo_n + vec3(top_n.x, 0.0, top_n.y) * detail), top));
+		roughness = mix(roughness, 0.93, top);
+	}
 
 	// (And the terrain's finish over every layer.)
 	albedo *= mix(1.0, 0.62 + macro * 0.5 + macro2 * 0.26, macro_strength);

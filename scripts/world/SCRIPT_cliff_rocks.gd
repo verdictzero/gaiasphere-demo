@@ -69,7 +69,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 12   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 14   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -88,7 +88,7 @@ var _hulls := {}           # shard -> hull points of a coarse level
 var _kit_size: Array = []  # kit -> size in metres, as made
 var _kit_low: Array = []   # kit -> how far below its origin it reaches, as made
 var _material: ShaderMaterial
-var _rocks: Array = []     # [shard, Transform3D]
+var _rocks: Array = []     # [kind, Transform3D, Color: the ground beside it (see `_ground_at`)]
 var _task := -1
 var _result: Array = []
 var _solid: StaticBody3D
@@ -137,7 +137,11 @@ func _ready() -> void:
 	var terrain := world.get(&"terrain_material") as ShaderMaterial
 	if terrain != null:
 		for p in ["ground_albedo", "ground_normal", "macro_noise", "rock_size", "rock_tint", "brightness",
-				"macro_strength", "normal_strength", "triplanar_sharpness", "detail_distance"]:
+				"macro_strength", "normal_strength", "triplanar_sharpness", "detail_distance",
+				# (and what the tops are drawn with: the ground's own surfaces)
+				"stochastic", "stochastic_scale", "moss_size", "soil_size", "litter_size", "sand_size",
+				"meadow_size", "dry_size", "floor_size", "moss_tint", "soil_tint", "litter_tint", "sand_tint",
+				"meadow_tint", "dry_tint", "floor_tint"]:
 			var v: Variant = terrain.get_shader_parameter(p)
 			if v != null:
 				_material.set_shader_parameter(p, v)
@@ -297,6 +301,8 @@ func _layout(field: IslandField) -> Array:
 			var tall := top - foot
 			if tall < 3.0:
 				continue
+			# The ground at the wall's top, for the rocks' own tops to carry on.
+			var turf := _ground_at(field, p - out_dir * 7.0)
 			# THE BLOCK, at every place: half in the wall, turned any way round, and
 			# scaled a lot (the user: "just randomize its rotation and scale a lot"),
 			# about as tall as the tier it stands against.
@@ -308,7 +314,7 @@ func _layout(field: IslandField) -> Array:
 			var bat := p - out_dir * rng.randf_range(0.0, 1.5) + along * rng.randf_range(-1.5, 1.5)
 			# (Its middle a little under the wall's: its foot in the ground below.)
 			var bmid := (foot + top) * 0.5 - (float(_kit_low[KIT.size()]) + bsize.y * 0.5) * by - rng.randf_range(0.3, 1.2)
-			out.append([SHARDS + KIT.size(), Transform3D(bturn.scaled_local(bscale), Vector3(bat.x, bmid, bat.y))])
+			out.append([SHARDS + KIT.size(), Transform3D(bturn.scaled_local(bscale), Vector3(bat.x, bmid, bat.y)), turf])
 			# Now and then one of the old kit's masses, in the wall, faced out of it.
 			if rng.randf() < kit_share:
 				var kit := _kit_for(rng, tall)
@@ -323,7 +329,7 @@ func _layout(field: IslandField) -> Array:
 							* Basis(Vector3.RIGHT, rng.randf_range(-0.1, 0.1)) * Basis(Vector3.BACK, rng.randf_range(-0.12, 0.12))
 					# (Stood on its underside: the kit hangs from its top.)
 					var ky := foot - rng.randf_range(0.8, 2.5) - float(_kit_low[kit]) * ks
-					out.append([SHARDS + kit, Transform3D(kb.scaled_local(Vector3(kx, ks, kz)), Vector3(kat.x, ky, kat.y))])
+					out.append([SHARDS + kit, Transform3D(kb.scaled_local(Vector3(kx, ks, kz)), Vector3(kat.x, ky, kat.y)), turf])
 			# And at some, a cluster of shards in front: the back of it in the wall and
 			# over its top, the front shorter and leaning out, overlapping.
 			if rng.randf() > SHARD_SHARE:
@@ -347,8 +353,17 @@ func _layout(field: IslandField) -> Array:
 				var depth := width * rng.randf_range(0.7, 1.1)
 				out.append([rng.randi_range(0, SHARDS - 1),
 						Transform3D(basis.scaled_local(Vector3(width, height, depth)),
-						Vector3(at.x, ground - rng.randf_range(0.3, 1.5), at.y))])
+						Vector3(at.x, ground - rng.randf_range(0.3, 1.5), at.y)), turf])
 	return out
+
+
+## WHAT THE GROUND IS at a point, as the rocks' shader wants it (INSTANCE_CUSTOM):
+## r the wood there (the field's forest), g b a the shares of ground, earth and
+## sand in the terrain's own splat (its rock left out: this is for what is not).
+func _ground_at(field: IslandField, at: Vector2) -> Color:
+	var s := field.sample(at.x, at.y)
+	var w: Color = s.get("weights", Color(1, 0, 0, 0))
+	return Color(float(s.get("forest", 0.0)), w.r, w.g, w.a)
 
 
 ## One of the kit that suits a wall this tall, or -1.
@@ -418,7 +433,7 @@ func _build() -> void:
 		var per: Dictionary = tiles[key]
 		if not per.has(rock[0]):
 			per[rock[0]] = []
-		per[rock[0]].append(t)
+		per[rock[0]].append([t, rock[2]])
 		var cell := Vector2i(int(floor(t.origin.x / CELL)), int(floor(t.origin.z / CELL)))
 		if not _cells.has(cell):
 			_cells[cell] = PackedInt32Array()
@@ -439,7 +454,9 @@ func _build() -> void:
 			var list: Array = tiles[key][k]
 			var lods: Array = _meshes[k]
 			var ends: Array = _lod_ends[k]
-			for t: Transform3D in list:
+			for entry: Array in list:
+				var t: Transform3D = entry[0]
+				var turf: Color = entry[1]
 				var b := t.basis
 				var o := t.origin - origin
 				if k != SHARDS + KIT.size():
@@ -447,7 +464,8 @@ func _build() -> void:
 					var fit := b * Basis.from_scale(box.size / far_box.size)
 					o += b * box.get_center() - fit * far_box.get_center()
 					b = fit
-				far.append_array([b.x.x, b.y.x, b.z.x, o.x, b.x.y, b.y.y, b.z.y, o.y, b.x.z, b.y.z, b.z.z, o.z])
+				far.append_array([b.x.x, b.y.x, b.z.x, o.x, b.x.y, b.y.y, b.z.y, o.y, b.x.z, b.y.z, b.z.z, o.z,
+						turf.r, turf.g, turf.b, turf.a])
 			for l in lods.size():
 				var lo := float(ends[l - 1]) if l > 0 else 0.0
 				if lo >= FAR_AT:
@@ -455,11 +473,13 @@ func _build() -> void:
 				var hi := FAR_AT if l == lods.size() - 1 else minf(float(ends[l]), FAR_AT)
 				var mm := MultiMesh.new()
 				mm.transform_format = MultiMesh.TRANSFORM_3D
+				mm.use_custom_data = true
 				mm.mesh = lods[l]
 				mm.instance_count = list.size()
 				for i in list.size():
-					var t: Transform3D = list[i]
+					var t: Transform3D = list[i][0]
 					mm.set_instance_transform(i, Transform3D(t.basis, t.origin - origin))
+					mm.set_instance_custom_data(i, list[i][1])
 				var mmi := MultiMeshInstance3D.new()
 				mmi.multimesh = mm
 				mmi.material_override = _material
@@ -478,8 +498,9 @@ func _build() -> void:
 		# ROCKS NEVER GO: past FAR_AT the whole square in one draw, at any distance.
 		var fm := MultiMesh.new()
 		fm.transform_format = MultiMesh.TRANSFORM_3D
+		fm.use_custom_data = true
 		fm.mesh = far_mesh
-		fm.instance_count = far.size() / 12
+		fm.instance_count = far.size() / 16
 		fm.buffer = far
 		var fmi := MultiMeshInstance3D.new()
 		fmi.multimesh = fm
