@@ -47,11 +47,11 @@ func _ready() -> void:
 	# Broken stone: the boulders' own rock, with none of the moss that grew on
 	# the outside, mapped through the world so no piece needs unwrapping.
 	_rock = StandardMaterial3D.new()
-	_rock.albedo_texture = load("res://textures/polyhaven/lichen_rock_basecolor.jpg")
+	_rock.albedo_texture = load("res://textures/polyhaven/dark_rock_02_basecolor.jpg")
 	_rock.albedo_color = Color(1.12, 1.1, 1.08)
 	_rock.normal_enabled = true
-	_rock.normal_texture = load("res://textures/polyhaven/lichen_rock_normal.jpg")
-	_rock.orm_texture = load("res://textures/polyhaven/lichen_rock_orm.jpg")
+	_rock.normal_texture = load("res://textures/polyhaven/dark_rock_02_normal.jpg")
+	_rock.orm_texture = load("res://textures/polyhaven/dark_rock_02_orm.jpg")
 	_rock.roughness = 1.0
 	_rock.metallic_specular = 0.3
 	_rock.uv1_triplanar = true

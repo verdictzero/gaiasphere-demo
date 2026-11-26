@@ -1,9 +1,9 @@
 [gd_resource type="ShaderMaterial" load_steps=7 format=3]
 
 [ext_resource type="Shader" path="res://shaders/SHADER_boulder.gdshader" id="1"]
-[ext_resource type="Texture2D" path="res://textures/polyhaven/lichen_rock_basecolor.jpg" id="2"]
-[ext_resource type="Texture2D" path="res://textures/polyhaven/lichen_rock_normal.jpg" id="3"]
-[ext_resource type="Texture2D" path="res://textures/polyhaven/lichen_rock_orm.jpg" id="4"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/dark_rock_02_basecolor.jpg" id="2"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/dark_rock_02_normal.jpg" id="3"]
+[ext_resource type="Texture2D" path="res://textures/polyhaven/dark_rock_02_orm.jpg" id="4"]
 [ext_resource type="Texture2D" path="res://textures/polyhaven/forrest_ground_01_basecolor.jpg" id="5"]
 [ext_resource type="Texture2D" path="res://textures/polyhaven/forrest_ground_01_normal.jpg" id="6"]
 

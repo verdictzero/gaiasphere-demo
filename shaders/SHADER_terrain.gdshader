@@ -113,6 +113,30 @@ float height_of(vec3 c) {
 	return clamp(dot(c, vec3(0.45, 0.45, 0.1)) * 2.2, 0.0, 1.0);
 }
 
+// THE WOOD'S CLEARINGS, worked out exactly as Flora works them out
+// (SCRIPT_flora.gd's `wood_zones`, in the same 32-bit arithmetic), so the bare
+// leafy floor is exactly where it leaves the ground bare.
+float hash32(int x, int z, int salt) {
+	uint h = (uint(x) * 73856093u) ^ (uint(z) * 19349663u) ^ (uint(salt) * 83492791u);
+	h = (h ^ (h >> 13u)) * 1274126177u;
+	h = h ^ (h >> 16u);
+	return float(h & 0xFFFFFFu) / 16777216.0;
+}
+
+float noise32(vec2 q, int salt) {
+	vec2 i = floor(q);
+	vec2 f = q - i;
+	f = f * f * (3.0 - 2.0 * f);
+	int ix = int(i.x);
+	int iz = int(i.y);
+	return mix(mix(hash32(ix, iz, salt), hash32(ix + 1, iz, salt), f.x),
+			mix(hash32(ix, iz + 1, salt), hash32(ix + 1, iz + 1, salt), f.x), f.y);
+}
+
+float wood_clearing(vec2 p) {
+	return smoothstep(0.64, 0.74, noise32(p / 30.0, 82) * 0.75 + noise32(p / 9.0, 84) * 0.25);
+}
+
 // ONE SURFACE, LAID WITHOUT A REPEAT YOU CAN SEE (stochastic sampling, after
 // Inigo Quilez's "texture repetition"): a slow noise picks, tile by tile, which
 // of eight offset copies of the picture is laid, and two neighbouring copies are
@@ -190,7 +214,7 @@ void fragment() {
 	vec3 ground_a = mix(grass_a, mix(moss_a, litter_a, litter_mix * 0.8), wood);
 	vec3 ground_n = mix(grass_n, mix(moss_n, litter_n, litter_mix * 0.8), wood);
 	// CLEARINGS in the wood: leaf-strewn floor, in patches of their own.
-	float clearing = smoothstep(0.66, 0.76, texture(macro_noise, p / 61.0 + 0.53).r) * wood;
+	float clearing = wood > 0.0 ? wood_clearing(p) * wood : 0.0;
 	if (clearing > 0.0) {
 		vec3 fl_a; vec3 fl_n;
 		lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, fl_a, fl_n);

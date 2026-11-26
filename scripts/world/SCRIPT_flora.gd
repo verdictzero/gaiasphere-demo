@@ -252,7 +252,10 @@ func _build_layers() -> void:
 	var reach := 62.0 * _scale
 	var blades := _shader_mat("res://shaders/SHADER_foliage.gdshader", {
 		"albedo_tex": load("res://assets/grass/textures/grass_atlas_basecolor.png"),
-		"tint": Color(0.62, 0.7, 0.5), "alpha_cut": 0.36, "roughness": 0.7,
+		# (Three-quarters of the way to the green of the meadow ground it stands in,
+		# leafy_grass as the terrain draws it: the blades also take light through
+		# their leaves, which the ground does not.)
+		"tint": Color(1.12, 1.22, 1.08), "alpha_cut": 0.36, "roughness": 0.7,
 		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0, "push_bend": 0.3,
 		"backlight": Color(0.035, 0.05, 0.015), "specular": 0.04, "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
 		"fade_start": reach * 0.72, "fade_end": reach * 0.98})
@@ -435,6 +438,43 @@ static func _smooth_noise(x: float, z: float, salt: int) -> float:
 			lerpf(_hash(ix, iz + 1, salt), _hash(ix + 1, iz + 1, salt), fx), fz)
 
 
+# THE SAME NOISE, IN 32 BITS, so the terrain shader can work out exactly the same
+# thing (SHADER_terrain.gdshader's `wood_zones`): GDScript's ints are 64-bit and a
+# shader's 32, so every product is cut to 32 bits as a shader's would be.
+static func _hash32(x: int, z: int, salt: int) -> float:
+	const M := 0xFFFFFFFF
+	var h := (((x & M) * 73856093) & M) ^ (((z & M) * 19349663) & M) ^ (((salt & M) * 83492791) & M)
+	h = ((h ^ (h >> 13)) * 1274126177) & M
+	h = h ^ (h >> 16)
+	return float(h & 0xFFFFFF) / float(0x1000000)
+
+
+static func _noise32(x: float, z: float, salt: int) -> float:
+	var ix := int(floor(x))
+	var iz := int(floor(z))
+	var fx := x - float(ix)
+	var fz := z - float(iz)
+	fx = fx * fx * (3.0 - 2.0 * fx)
+	fz = fz * fz * (3.0 - 2.0 * fz)
+	return lerpf(lerpf(_hash32(ix, iz, salt), _hash32(ix + 1, iz, salt), fx),
+			lerpf(_hash32(ix, iz + 1, salt), _hash32(ix + 1, iz + 1, salt), fx), fz)
+
+
+## THE WOOD'S OWN PLACES, each 0..1 (only in the wood: see `_wood`): x, a DRIFT OF
+## FERNS, thick, knee-deep, no grass under it; y, a CLEARING, bare leafy floor,
+## nothing growing. The terrain shader paints the clearings' floor from this same
+## arithmetic, so the bare ground is exactly where nothing grows.
+static func wood_zones(x: float, z: float) -> Vector2:
+	var fern := smoothstep(0.56, 0.68, _noise32(x / 38.0, z / 38.0, 81) * 0.7 + _noise32(x / 13.0, z / 13.0, 83) * 0.3)
+	var clear := smoothstep(0.64, 0.74, _noise32(x / 30.0, z / 30.0, 82) * 0.75 + _noise32(x / 9.0, z / 9.0, 84) * 0.25)
+	return Vector2(fern * (1.0 - clear), clear)
+
+
+## How much a point is in the wood (the field's forest), as the shader takes it.
+static func _wood(forest: float) -> float:
+	return smoothstep(0.15, 0.6, forest)
+
+
 ## MEADOWS: open ground among the trees, a few hundred metres across, where the
 ## forest stops and the grass grows thick. 0 in the wood, 1 well inside a meadow.
 static func meadow(x: float, z: float) -> float:
@@ -535,10 +575,14 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var cz := key.y * n + iz
 			# Ferns come in drifts: a slow hash decides where they are thick.
 			var drift := _hash(cx >> 2, cz >> 2, 23) * 0.6 + _hash(cx >> 4, cz >> 4, 24) * 0.4
-			if _hash(cx, cz, 25) > (drift - 0.28) * 1.5 * density:
-				continue
 			var x := x0 + (float(ix) + _hash(cx, cz, 26)) * grid
 			var z := z0 + (float(iz) + _hash(cx, cz, 27)) * grid
+			# The wood's drifts of ferns are thick; its clearings bare.
+			var zones := wood_zones(x, z)
+			if zones.y > 0.35:
+				continue
+			if _hash(cx, cz, 25) > maxf((drift - 0.28) * 1.5, zones.x * 1.4) * density:
+				continue
 			# A few ferns stray into the meadow's edge; none in its middle.
 			if Vector2(x, z).distance_to(_islet) < _clearing * (0.55 + 0.45 * _hash(cx, cz, 32)):
 				continue
@@ -559,6 +603,14 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var size := 0.75 + 0.6 * _hash(cx, cz, 30)
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 31) * TAU).scaled(Vector3.ONE * size)
 			_push(bufs[kind], basis, Vector3(x, float(s["height"]) - 0.03, z))
+			# In a drift, they crowd: a second fern beside the first.
+			var wood := _wood(float(s.get("forest", 0.0)))
+			if zones.x * wood > 0.5 and _hash(cx, cz, 33) < zones.x:
+				var x2 := x + grid * (_hash(cx, cz, 34) - 0.5)
+				var z2 := z + grid * 0.5
+				var size2 := 0.85 + 0.6 * _hash(cx, cz, 35)
+				_push(bufs[kind], Basis(Vector3.UP, _hash(cx, cz, 36) * TAU).scaled(Vector3.ONE * size2),
+						Vector3(x2, f.height_at(x2, z2, float(s["height"])) - 0.03, z2))
 	return bufs
 
 
@@ -661,6 +713,45 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			basis = Basis(Vector3(1, 0, 0), (_hash(cx, cz, 47) - 0.5) * 0.7) * basis
 			basis = Basis(Vector3(0, 0, 1), (_hash(cx, cz, 48) - 0.5) * 0.7) * basis
 			_push(bufs[kind], basis.scaled(Vector3.ONE * size), Vector3(x, float(s["height"]) - 0.1 * size, z))
+	# FALLEN ROCK at the foot of the tablelands' walls (IslandField's mesa_*): where
+	# the ground is level but a wall rises close by, a heap of what came off it,
+	# mostly small, now and then one the size of a car, lying toward the wall.
+	if f.mesa_enabled:
+		var tg := 7.0
+		var tn := int(round(tile / tg))
+		for iz in tn:
+			for ix in tn:
+				var cx := key.x * tn + ix
+				var cz := key.y * tn + iz
+				if _hash(cx, cz, 61) > 0.55 * density:
+					continue
+				var x := (float(cx) + _hash(cx, cz, 62)) * tg
+				var z := (float(cz) + _hash(cx, cz, 63)) * tg
+				if _on_path(x, z, 1.0):
+					continue
+				var h := f.height_at(x, z, -1e9)
+				if h < -1e8 or absf(f.height_at(x + 1.5, z, h) - h) > 0.9 or absf(f.height_at(x, z + 1.5, h) - h) > 0.9:
+					continue          # not at the foot: on the wall, or off the land
+				var best := 0.0
+				var wall := Vector2.ZERO
+				for d in 6:
+					var dir := Vector2.from_angle(TAU * float(d) / 6.0 + _hash(cx, cz, 64))
+					var rise := f.height_at(x + dir.x * 9.0, z + dir.y * 9.0, h) - h
+					if rise > best:
+						best = rise
+						wall = dir
+				if best < 7.0:
+					continue
+				var count := 1 + int(_hash(cx, cz, 65) * 4.0)
+				for r in count:
+					var u := _hash(cx * 7 + r, cz * 13 - r, 66)
+					var size_t := 0.35 + 2.4 * pow(u, 3.0)
+					var off := wall * (_hash(cx + r, cz, 67) * 3.0) + Vector2(_hash(cx, cz + r, 68) - 0.5, _hash(cx - r, cz, 69) - 0.5) * 4.0
+					var bx := x + off.x
+					var bz := z + off.y
+					var kind_t := int(_hash(cx + 3 * r, cz - 5 * r, 70) * 5.0) % 5
+					var lie := Basis(Vector3.UP, _hash(cx, cz, 71 + r) * TAU) * Basis(Vector3(1, 0, 0), (_hash(cz, cx, 72 + r) - 0.5) * 0.9)
+					_push(bufs[kind_t], lie.scaled(Vector3.ONE * size_t), Vector3(bx, f.height_at(bx, bz, h) - 0.15 * size_t, bz))
 	# The rock the shuttle turned up round its divot and along its skid, those of
 	# it that lie in this tile (SCRIPT_crashed_shuttle.gd's `debris`).
 	for d in _crash_debris(f):
@@ -728,6 +819,11 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				patch = maxf(patch, meadow)
 			if Vector2(px, pz).distance_to(_islet) < 1.3:
 				continue
+			# In the wood: none in a clearing or a drift of ferns.
+			var wood := _wood(float(s.get("forest", 0.0)))
+			if wood > 0.0:
+				var zones := wood_zones(px, pz)
+				want *= 1.0 - wood * clampf(zones.y * 1.3 + zones.x, 0.0, 1.0)
 			if _hash(cx, cz, 52) > want * patch * 0.8 * density:
 				continue
 			var x := x0 + (float(ix) + _hash(cx, cz, 53)) * grid
@@ -739,6 +835,14 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 57) * TAU).scaled(Vector3(wide, tall, wide))
 			_push(buf, basis, Vector3(x, y - 0.03, z))
 			buf.append_array([variant, _hash(cx, cz, 58), _hash(cx, cz, 59), 0.0])
+			# MEADOWS ARE THICK: a second clump between this and the next.
+			if meadow > 0.5 and _hash(cx, cz, 60) < (meadow - 0.4) * 1.4 * density:
+				var x2 := x + grid * 0.5
+				var z2 := z + grid * (_hash(cx, cz, 61) - 0.5)
+				var tall2 := 0.5 + 0.55 * _hash(cx, cz, 62)
+				_push(buf, Basis(Vector3.UP, _hash(cx, cz, 63) * TAU).scaled(Vector3(tall2 * 1.15, tall2, tall2 * 1.15)),
+						Vector3(x2, f.height_at(x2, z2, y) - 0.03, z2))
+				buf.append_array([float(int(_hash(cx, cz, 64) * 3.0) % 3), _hash(cx, cz, 65), _hash(cx, cz, 66), 0.0])
 	return [buf]
 
 
