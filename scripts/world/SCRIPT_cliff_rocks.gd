@@ -38,7 +38,7 @@ extends Node3D
 @export var world_path: NodePath = ^"../GaiaSphere"
 @export var explorer_path: NodePath = ^"../Explorer"
 ## Metres between the points the walls are searched at.
-@export var search_step := 4.5
+@export var search_step := 3.4
 ## How steep (rise over run) the ground must be to count as a wall.
 @export var wall_slope := 1.05
 ## Shards to a place on the wall, (least, most).
@@ -69,7 +69,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 12   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 13   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -305,9 +305,11 @@ func _layout(field: IslandField) -> Array:
 			var bscale := Vector3(by * rng.randf_range(0.7, 1.9), by, by * rng.randf_range(0.7, 1.9))
 			var bturn := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.14, 0.14)) \
 					* Basis(Vector3.BACK, rng.randf_range(-0.14, 0.14))
-			var bat := p - out_dir * rng.randf_range(0.0, 1.5) + along * rng.randf_range(-1.5, 1.5)
+			# TIGHTER AND DEEPER (the user's): closer together than they are wide, and
+			# most of each one back inside the wall, only its face standing out.
+			var bat := p - out_dir * rng.randf_range(1.2, 3.2) + along * rng.randf_range(-1.2, 1.2)
 			# (Its middle a little under the wall's: its foot in the ground below.)
-			var bmid := (foot + top) * 0.5 - (float(_kit_low[KIT.size()]) + bsize.y * 0.5) * by - rng.randf_range(0.3, 1.2)
+			var bmid := (foot + top) * 0.5 - (float(_kit_low[KIT.size()]) + bsize.y * 0.5) * by - rng.randf_range(0.8, 2.0)
 			out.append([SHARDS + KIT.size(), Transform3D(bturn.scaled_local(bscale), Vector3(bat.x, bmid, bat.y))])
 			# Now and then one of the old kit's masses, in the wall, faced out of it.
 			if rng.randf() < kit_share:
