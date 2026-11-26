@@ -12,7 +12,7 @@ config_version=5
 
 config/name="GaiaSphere Demo"
 config/description="A procedural floating island with rivers and a dark mere: a standalone example of the terrain and water engines."
-config/version="32"
+config/version="33"
 run/main_scene="res://scenes/SCENE_gaiasphere_demo.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 boot_splash/bg_color=Color(0, 0, 0, 1)
