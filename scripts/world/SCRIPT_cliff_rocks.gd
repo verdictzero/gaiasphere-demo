@@ -69,7 +69,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 12
+const CACHE_VERSION := 12   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -237,6 +237,8 @@ static func shard_mesh(which: int) -> ArrayMesh:
 	var bottom := Vector3(0.0, -0.08, 0.0)
 	for i in sides:
 		_tri(st, base[(i + 1) % sides], bottom, base[i], Vector3.DOWN)
+	# (Indexed, or the simplifier has nothing to work on and makes no levels.)
+	st.index()
 	return st.commit()
 
 
@@ -422,7 +424,13 @@ func _build() -> void:
 			_cells[cell] = PackedInt32Array()
 		(_cells[cell] as PackedInt32Array).append(index)
 	var half_diag := TILE * 0.71
-	var far_mesh: Mesh = (_meshes[0] as Array).back()
+	# The far stand-in is the block at its very simplest (a couple of dozen
+	# triangles), put into each rock's own box.
+	var far_mesh: Mesh = (_meshes[SHARDS + KIT.size()] as Array).back()
+	var far_box := far_mesh.get_aabb()
+	var boxes: Array = []
+	for lods: Array in _meshes:
+		boxes.append((lods[0] as Mesh).get_aabb())
 	var draws := 0
 	for key: Vector2i in tiles:
 		var origin := Vector3((float(key.x) + 0.5) * TILE, 0.0, (float(key.y) + 0.5) * TILE)
@@ -434,11 +442,11 @@ func _build() -> void:
 			for t: Transform3D in list:
 				var b := t.basis
 				var o := t.origin - origin
-				if k >= SHARDS:
-					# One of the kit or the block: the shard stood in its box.
-					var size: Vector3 = _kit_size[k - SHARDS]
-					o += b * Vector3(0.0, float(_kit_low[k - SHARDS]), 0.0)
-					b = b * Basis.from_scale(size * Vector3(1.3, 1.0, 1.3))
+				if k != SHARDS + KIT.size():
+					var box: AABB = boxes[k]
+					var fit := b * Basis.from_scale(box.size / far_box.size)
+					o += b * box.get_center() - fit * far_box.get_center()
+					b = fit
 				far.append_array([b.x.x, b.y.x, b.z.x, o.x, b.x.y, b.y.y, b.z.y, o.y, b.x.z, b.y.z, b.z.z, o.z])
 			for l in lods.size():
 				var lo := float(ends[l - 1]) if l > 0 else 0.0
