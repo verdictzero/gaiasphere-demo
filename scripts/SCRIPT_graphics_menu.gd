@@ -1,8 +1,11 @@
 class_name GraphicsMenu
 extends CanvasLayer
 
-# THE GRAPHICS MENU: how far things are drawn, how much of them, and which of
-# the camera's effects are on. O or F10 (the GFX touch button) opens it.
+# THE GRAPHICS MENU: how far things are drawn, how much of them, which of the
+# camera's effects are on, the ambient occlusion, how the cliffs are drawn and
+# the far ground's short cuts. O or F10 (the GFX touch button) opens it. Two
+# rows of presets head it, one for desktops and one for phones, six levels each
+# (`PRESET_TABLE`); a preset is lit while everything it sets is as it sets it.
 #
 # Every distance is a multiple of what this machine was given at start-up, so
 # 1.0x on a phone is the phone's own baseline and not the desktop's. Changes
@@ -18,8 +21,9 @@ const SIZES := [Vector2i(960, 540), Vector2i(1280, 720), Vector2i(1366, 768), Ve
 ## the screen it is shown on (0: the window's own).
 const VIEW_HEIGHTS := [0, 360, 540, 720, 900, 1080, 1440, 2160]
 const CAPS := [30, 60, 90, 120, 0]
-## Rows per column: the display and the camera on the left, the world on the right.
-const PER_COLUMN := 14
+## Rows per column: the display and the camera on the left, the world in the
+## middle, and on the right the ambient occlusion, the cliffs and the far ground.
+const PER_COLUMN := 15
 const ROWS := [
 	["window_mode", "Window", "step", 0.0, 2.0, 1.0, "WINDOWED,BORDERLESS,FULLSCREEN"],
 	["window_size", "Window size (windowed)", "step", 0.0, 6.0, 1.0,
@@ -46,23 +50,120 @@ const ROWS := [
 	["terrain_detail", "Terrain detail distance", "slide", 0.5, 1.5, 0.05, "x"],
 	["shadow_distance", "Shadow distance", "slide", 40.0, 400.0, 10.0, "m"],
 	["clouds", "Cloud quality", "step", 0.0, 2.0, 1.0, "LOW,MEDIUM,HIGH"],
+	# THE FAR GROUND'S SHORT CUTS (SHADERINC_ground_lay's normal_reach and
+	# stochastic_reach, on the terrain and the cliffs): each a tick, and where from.
+	["far_normals", "Far ground: no normal maps", "tick"],
+	["normal_reach", "... beyond", "slide", 20.0, 400.0, 5.0, "m"],
+	["far_single", "Far ground: no stochastic", "tick"],
+	["stochastic_reach", "... beyond", "slide", 10.0, 400.0, 5.0, "m"],
+	# HOW THE CLIFFS' ROCKS ARE DRAWN BY DISTANCE (SCRIPT_cliff_rocks.gd's `view`:
+	# each "cliff_" row is the setting of that name without the prefix).
+	["cliff_lod", "Cliff detail distance", "slide", 0.25, 4.0, 0.05, "x"],
+	["cliff_far", "Cliffs merged past", "slide", 100.0, 2000.0, 25.0, "m"],
+	# (--- the third column ---)
+	["cliff_reach", "Cliffs drawn out to", "slide", 200.0, 6000.0, 50.0, "reach"],
+	["cliff_shadow", "Cliff shadows out to", "slide", 0.0, 800.0, 10.0, "m"],
+	["cliff_occlusion", "Cliffs behind ground culled", "tick"],
+	# AMBIENT OCCLUSION over the whole frame (SCRIPT_ambient_occlusion.gd): each
+	# "ao_" row is the setting of that name without the prefix.
+	["ao_method", "Ambient occlusion", "step", 0.0, 3.0, 1.0, "OFF,FAST,SSAO,HBAO"],
+	["ao_intensity", "AO intensity", "slide", 0.0, 4.0, 0.05, "%"],
+	["ao_radius", "AO radius", "slide", 0.1, 5.0, 0.05, "m2"],
+	["ao_radius_growth", "AO radius grows far off", "slide", 0.0, 0.15, 0.005, "pc"],
+	["ao_power", "AO contrast", "slide", 0.25, 6.0, 0.05, "x"],
+	["ao_bias", "AO bias", "slide", 0.0, 0.2, 0.005, "m2"],
+	["ao_falloff", "AO depth falloff", "slide", 0.1, 4.0, 0.05, "x"],
+	["ao_max_distance", "AO reaches", "slide", 20.0, 600.0, 5.0, "m"],
+	["ao_floor_light", "AO darkest allowed", "slide", 0.0, 1.0, 0.05, "%"],
+	["ao_samples", "AO samples (Fast, SSAO)", "slide", 2.0, 32.0, 1.0, "n"],
+	["ao_directions", "HBAO directions", "slide", 2.0, 12.0, 1.0, "n"],
+	["ao_steps", "HBAO steps", "slide", 2.0, 10.0, 1.0, "n"],
 ]
-# What each preset does to the multipliers and ticks (the rest are left alone).
-const PRESETS := {
-	"LOW": {"veg_distance": 0.6, "lod_distance": 0.6, "impostor_distance": 0.6, "grass_distance": 0.6,
-		"grass_density": 0.5, "terrain_detail": 0.7, "shadow_distance": 90.0, "clouds": 0.0,
-		"veg_shadows": false, "dof": false, "god_rays": false, "bloom": true, "shadows": true, "shadow_quality": 0.0},
-	"MEDIUM": {"veg_distance": 1.0, "lod_distance": 1.0, "impostor_distance": 1.0, "grass_distance": 1.0,
-		"grass_density": 0.8, "terrain_detail": 1.0, "shadow_distance": 160.0, "clouds": 1.0,
-		"veg_shadows": true, "dof": false, "god_rays": true, "bloom": true, "shadows": true, "shadow_quality": 1.0},
-	"HIGH": {"veg_distance": 1.3, "lod_distance": 1.3, "impostor_distance": 1.2, "grass_distance": 1.3,
-		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 240.0, "clouds": 1.0,
-		"veg_shadows": true, "dof": true, "god_rays": true, "bloom": true, "shadows": true, "shadow_quality": 1.0},
-	"ULTRA": {"veg_distance": 2.0, "lod_distance": 2.0, "impostor_distance": 2.0, "grass_distance": 2.0,
-		"grass_density": 1.0, "terrain_detail": 1.5, "shadow_distance": 400.0, "clouds": 2.0,
-		"veg_shadows": true, "dof": true, "god_rays": true, "bloom": true, "shadows": true, "shadow_quality": 2.0},
+# THE PRESETS: six levels, and a row of them for each kind of machine. A level
+# sets the multipliers, the ticks and the quality steps below and leaves the rest
+# (the window, the frame limit, the field of view) alone. Each list runs
+# VERY LOW, LOW, MEDIUM, HIGH, VERY HIGH, ULTRA.
+#
+# The two rows are not the same six a notch apart. A phone draws far more pixels
+# than it has the graphics for and has little to spare for shadows and the
+# passes over the whole frame, so its row drops the rendering scale first, keeps
+# shadows short and cheap, and comes to depth of field, SSAO and MSAA only at the
+# top; a desktop's keeps its full resolution from MEDIUM and spends on distance.
+const LEVELS := ["VERY LOW", "LOW", "MEDIUM", "HIGH", "VERY HIGH", "ULTRA"]
+const KINDS := ["DESKTOP", "MOBILE"]
+const PRESET_TABLE := {
+	"DESKTOP": {
+		"render_scale": [0.6, 0.8, 1.0, 1.0, 1.0, 1.0],
+		"msaa": [0.0, 0.0, 0.0, 1.0, 2.0, 2.0],
+		"veg_distance": [0.5, 0.7, 1.0, 1.3, 1.6, 2.0],
+		"lod_distance": [0.5, 0.7, 1.0, 1.3, 1.6, 2.0],
+		"impostor_distance": [0.5, 0.7, 1.0, 1.2, 1.6, 2.0],
+		"grass_distance": [0.4, 0.6, 1.0, 1.3, 1.6, 2.0],
+		"grass_density": [0.3, 0.5, 0.8, 1.0, 1.0, 1.0],
+		"terrain_detail": [0.5, 0.7, 1.0, 1.0, 1.25, 1.5],
+		"shadows": [false, true, true, true, true, true],
+		"shadow_quality": [0.0, 0.0, 1.0, 1.0, 2.0, 2.0],
+		"shadow_distance": [60.0, 90.0, 160.0, 240.0, 320.0, 400.0],
+		"veg_shadows": [false, false, true, true, true, true],
+		"clouds": [0.0, 0.0, 1.0, 1.0, 2.0, 2.0],
+		"bloom": [false, true, true, true, true, true],
+		"god_rays": [false, false, true, true, true, true],
+		"dof": [false, false, false, true, true, true],
+		"ao_method": [0.0, 0.0, 1.0, 2.0, 3.0, 3.0],
+		"ao_samples": [4.0, 6.0, 8.0, 10.0, 12.0, 16.0],
+		"ao_max_distance": [60.0, 100.0, 160.0, 200.0, 260.0, 320.0],
+		"far_normals": [true, true, true, true, true, false],
+		"normal_reach": [40.0, 80.0, 140.0, 200.0, 300.0, 400.0],
+		"far_single": [true, true, true, true, true, false],
+		"stochastic_reach": [30.0, 60.0, 90.0, 140.0, 220.0, 400.0],
+		"cliff_lod": [0.4, 0.6, 1.0, 1.3, 2.0, 3.0],
+		"cliff_far": [250.0, 400.0, 600.0, 800.0, 1200.0, 2000.0],
+		"cliff_reach": [1200.0, 2500.0, 6000.0, 6000.0, 6000.0, 6000.0],
+		"cliff_shadow": [0.0, 80.0, 250.0, 300.0, 500.0, 800.0],
+	},
+	"MOBILE": {
+		"render_scale": [0.5, 0.6, 0.75, 0.85, 1.0, 1.0],
+		"msaa": [0.0, 0.0, 0.0, 0.0, 1.0, 2.0],
+		"veg_distance": [0.5, 0.6, 0.8, 1.0, 1.2, 1.5],
+		"lod_distance": [0.5, 0.6, 0.8, 1.0, 1.2, 1.5],
+		"impostor_distance": [0.5, 0.6, 0.8, 1.0, 1.2, 1.5],
+		"grass_distance": [0.4, 0.5, 0.7, 1.0, 1.2, 1.5],
+		"grass_density": [0.25, 0.4, 0.6, 0.8, 1.0, 1.0],
+		"terrain_detail": [0.5, 0.6, 0.8, 1.0, 1.0, 1.25],
+		"shadows": [false, false, true, true, true, true],
+		"shadow_quality": [0.0, 0.0, 0.0, 1.0, 1.0, 2.0],
+		"shadow_distance": [40.0, 60.0, 100.0, 140.0, 200.0, 280.0],
+		"veg_shadows": [false, false, false, true, true, true],
+		"clouds": [0.0, 0.0, 0.0, 1.0, 1.0, 2.0],
+		"bloom": [false, false, true, true, true, true],
+		"god_rays": [false, false, false, true, true, true],
+		"dof": [false, false, false, false, false, true],
+		"ao_method": [0.0, 0.0, 0.0, 1.0, 1.0, 2.0],
+		"ao_samples": [4.0, 4.0, 6.0, 8.0, 8.0, 12.0],
+		"ao_max_distance": [40.0, 60.0, 80.0, 120.0, 160.0, 200.0],
+		"far_normals": [true, true, true, true, true, true],
+		"normal_reach": [30.0, 50.0, 80.0, 120.0, 180.0, 300.0],
+		"far_single": [true, true, true, true, true, true],
+		"stochastic_reach": [20.0, 40.0, 60.0, 90.0, 140.0, 220.0],
+		"cliff_lod": [0.3, 0.5, 0.7, 1.0, 1.3, 2.0],
+		"cliff_far": [200.0, 300.0, 400.0, 600.0, 800.0, 1200.0],
+		"cliff_reach": [800.0, 1500.0, 2500.0, 4000.0, 6000.0, 6000.0],
+		"cliff_shadow": [0.0, 0.0, 60.0, 150.0, 250.0, 400.0],
+	},
 }
-const BUTTONS := ["LOW", "MEDIUM", "HIGH", "ULTRA", "DEFAULTS"]
+
+
+## What level `level` of `kind` sets: key -> value.
+static func preset(kind: String, level: int) -> Dictionary:
+	var out := {}
+	var table: Dictionary = PRESET_TABLE[kind]
+	for key in table:
+		out[key] = (table[key] as Array)[level]
+	return out
+
+
+const COLUMNS := 3
+const ROW_H := 46.0
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.93)
 const EDGE := Color(1, 1, 1, 0.14)
@@ -102,7 +203,16 @@ func _ready() -> void:
 		"grass_density": 1.0, "terrain_detail": 1.0, "shadow_distance": 220.0, "render_scale": 1.0,
 		"clouds": 1.0, "veg_shadows": true, "dof": true, "bloom": true, "god_rays": true, "fps": false,
 		"shadows": true, "shadow_quality": 1.0,
-		"window_mode": 0.0, "window_size": 4.0, "view_height": 0.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0}
+		"window_mode": 0.0, "window_size": 4.0, "view_height": 0.0, "msaa": 0.0, "fxaa": false, "vsync": true, "fps_cap": 4.0, "fov": 75.0,
+		"far_normals": true, "normal_reach": 140.0, "far_single": true, "stochastic_reach": 90.0}
+	# The cliffs' and the ambient occlusion's, as those begin.
+	var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
+	var view: Dictionary = cliffs.view if cliffs != null else {"lod": 1.0, "far": CliffRocks.FAR_AT,
+			"reach": CliffRocks.ALL_REACH, "shadow": 250.0, "occlusion": true}
+	for key in view:
+		_defaults["cliff_" + String(key)] = view[key]
+	for key in AmbientOcclusion.DEFAULTS:
+		_defaults["ao_" + String(key)] = float(AmbientOcclusion.DEFAULTS[key])
 	if _enviro != null:
 		_defaults.merge(_enviro.call(&"graphics_now"), true)
 	# The display and the camera, as this machine started.
@@ -155,6 +265,7 @@ func _exit_tree() -> void:
 
 func _process(_delta: float) -> void:
 	_apply_view_height()          # (the window may have been dragged to another size)
+	_apply_extra()                # (whatever of it had nothing to be set on yet)
 	_fps.visible = bool(values["fps"])
 	if _fps.visible:
 		_fps.text = "%d FPS" % Engine.get_frames_per_second()
@@ -174,6 +285,46 @@ func apply() -> void:
 		for d in _terrain_lods:
 			scaled.append(d * float(values["terrain_detail"]))
 		_world.set("lod_distances", scaled)
+	_apply_extra()
+
+
+## THE REST: the far ground's short cuts (shader settings on the terrain's and
+## the cliffs' materials), how the cliffs are drawn, and the ambient occlusion.
+## Each is sent only when it has changed, and counted as sent only once what it
+## is set on is there (the cliffs' material comes late), so this is asked again
+## every frame and costs nothing when there is nothing to do.
+var _sent := {}
+
+
+func _apply_extra() -> void:
+	var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
+	var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
+	var mats: Array = []
+	if _world != null and _world.get(&"terrain_material") is ShaderMaterial:
+		mats.append(_world.get(&"terrain_material"))
+	var cliff_mat: Variant = cliffs.get("_material") if cliffs != null else null
+	if cliff_mat is ShaderMaterial:
+		mats.append(cliff_mat)
+	# (0 is "never": the tick off.)
+	var reaches := {
+		"normal_reach": float(values["normal_reach"]) if bool(values["far_normals"]) else 0.0,
+		"stochastic_reach": float(values["stochastic_reach"]) if bool(values["far_single"]) else 0.0,
+	}
+	for key in reaches:
+		var mark := [reaches[key], mats.size()]
+		if _sent.get(key) != mark and not mats.is_empty():
+			for m: ShaderMaterial in mats:
+				m.set_shader_parameter(key, reaches[key])
+			# (Both there: done. Only the terrain's yet: sent again when the cliffs' comes.)
+			_sent[key] = mark
+	for key in values:
+		var name := String(key)
+		if name.begins_with("cliff_") and cliffs != null and _sent.get(name) != values[key]:
+			cliffs.set_view(name.substr(6), values[key])
+			_sent[name] = values[key]
+		elif name.begins_with("ao_") and ao != null and ao.is_node_ready() and _sent.get(name) != values[key]:
+			ao.put(name.substr(3), float(values[key]))
+			_sent[name] = values[key]
 
 
 ## THE VIEWPORT'S RESOLUTION: the 3D view drawn at a chosen number of lines
@@ -278,16 +429,16 @@ func _k() -> float:
 
 func _panel_rect() -> Rect2:
 	var k := _k()
-	var size := Vector2(1560.0, 196.0 + 50.0 * float(PER_COLUMN)) * k
+	var size := Vector2(1860.0, 222.0 + ROW_H * float(PER_COLUMN)) * k
 	return Rect2((_view.size - size) * 0.5, size)
 
 
 func _row_rect(i: int) -> Rect2:
 	var k := _k()
 	var p := _panel_rect()
-	var w := (p.size.x - 68.0 * k - 48.0 * k) * 0.5
-	return Rect2(p.position + Vector2(34.0 * k + (w + 48.0 * k) * float(i / PER_COLUMN), (150.0 + 50.0 * float(i % PER_COLUMN)) * k),
-			Vector2(w, 50.0 * k))
+	var w := (p.size.x - 68.0 * k - 40.0 * k * float(COLUMNS - 1)) / float(COLUMNS)
+	return Rect2(p.position + Vector2(34.0 * k + (w + 40.0 * k) * float(i / PER_COLUMN), (196.0 + ROW_H * float(i % PER_COLUMN)) * k),
+			Vector2(w, ROW_H * k))
 
 
 ## Where a row's slider runs, or its tick box sits.
@@ -295,15 +446,24 @@ func _control_rect(i: int) -> Rect2:
 	var k := _k()
 	var r := _row_rect(i)
 	if ROWS[i][2] == "tick":
-		return Rect2(Vector2(r.end.x - 122.0 * k, r.position.y + 10.0 * k), Vector2(56.0, 30.0) * k)
-	return Rect2(Vector2(r.position.x + 290.0 * k, r.position.y + 10.0 * k), Vector2(260.0, 30.0) * k)
+		return Rect2(Vector2(r.end.x - 122.0 * k, r.position.y + 8.0 * k), Vector2(56.0, 30.0) * k)
+	return Rect2(Vector2(r.position.x + 262.0 * k, r.position.y + 8.0 * k), Vector2(196.0, 30.0) * k)
 
 
-func _button_rect(i: int) -> Rect2:
+## The presets: a row for each kind of machine, six levels across, with the
+## kind's name before it and DEFAULTS standing at the end of both.
+func _preset_rect(kind: int, level: int) -> Rect2:
 	var k := _k()
 	var p := _panel_rect()
-	var w := (p.size.x - 68.0 * k - 12.0 * k * float(BUTTONS.size() - 1)) / float(BUTTONS.size())
-	return Rect2(p.position + Vector2(34.0 * k + (w + 12.0 * k) * float(i), 80.0 * k), Vector2(w, 46.0 * k))
+	var left := 34.0 * k + 130.0 * k
+	var w := (p.size.x - 68.0 * k - 130.0 * k - 190.0 * k - 10.0 * k * float(LEVELS.size() - 1)) / float(LEVELS.size())
+	return Rect2(p.position + Vector2(left + (w + 10.0 * k) * float(level), (76.0 + 50.0 * float(kind)) * k), Vector2(w, 42.0 * k))
+
+
+func _defaults_rect() -> Rect2:
+	var k := _k()
+	var p := _panel_rect()
+	return Rect2(Vector2(p.end.x - 34.0 * k - 176.0 * k, p.position.y + 76.0 * k), Vector2(176.0, 92.0) * k)
 
 
 # ------------------------------------------------------------------ input
@@ -333,15 +493,18 @@ func _on_gui_input(event: InputEvent) -> void:
 	if not mb.pressed:
 		_drag = -1
 		return
-	for i in BUTTONS.size():
-		if _button_rect(i).has_point(mb.position):
-			if BUTTONS[i] == "DEFAULTS":
-				values = _defaults.duplicate()
-			else:
-				values.merge(PRESETS[BUTTONS[i]], true)
-			apply()
-			_view.queue_redraw()
-			return
+	if _defaults_rect().has_point(mb.position):
+		values = _defaults.duplicate()
+		apply()
+		_view.queue_redraw()
+		return
+	for kind in KINDS.size():
+		for level in LEVELS.size():
+			if _preset_rect(kind, level).has_point(mb.position):
+				values.merge(preset(KINDS[kind], level), true)
+				apply()
+				_view.queue_redraw()
+				return
 	for i in ROWS.size():
 		if not _row_rect(i).has_point(mb.position):
 			continue
@@ -388,6 +551,14 @@ func _shown(row: Array) -> String:
 			return "%d m" % int(round(v))
 		"deg":
 			return "%d deg" % int(round(v))
+		"n":
+			return "%d" % int(round(v))
+		"m2":
+			return "%.2f m" % v
+		"pc":
+			return "%.1f%%" % (v * 100.0)
+		"reach":
+			return "ALWAYS" if v >= CliffRocks.ALL_REACH else "%d m" % int(v)
 	var names := String(row[6]).split(",")
 	return names[clampi(int(round(v)), 0, names.size() - 1)]
 
@@ -402,27 +573,42 @@ func _draw_view() -> void:
 	_box(p, PANEL, 26.0, EDGE, 1.5)
 	_label(p.position + Vector2(34.0, 52.0) * k, "GRAPHICS", 26.0, Color(INK.r, INK.g, INK.b, 0.92))
 	_label(Vector2(p.end.x - 34.0 * k, p.position.y + 50.0 * k), "O or F10 to close", 19.0, Color(INK.r, INK.g, INK.b, 0.45), 2)
-	for i in BUTTONS.size():
-		var b := _button_rect(i)
-		_box(b, Color(1, 1, 1, 0.07), 12.0, EDGE, 1.5)
-		_label(Vector2(b.get_center().x, b.position.y + 31.0 * k), BUTTONS[i], 20.0, INK, 1)
+	for kind in KINDS.size():
+		var first := _preset_rect(kind, 0)
+		_label(Vector2(p.position.x + 34.0 * k, first.position.y + 28.0 * k), KINDS[kind], 19.0, Color(INK.r, INK.g, INK.b, 0.6))
+		for level in LEVELS.size():
+			var b := _preset_rect(kind, level)
+			# (Lit when everything it sets is as it sets it.)
+			var on := true
+			var want := preset(KINDS[kind], level)
+			for key in want:
+				if typeof(values[key]) == TYPE_BOOL:
+					on = on and bool(values[key]) == bool(want[key])
+				else:
+					on = on and is_equal_approx(float(values[key]), float(want[key]))
+			_box(b, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.28) if on else Color(1, 1, 1, 0.07), 12.0,
+					ACCENT if on else EDGE, 1.5)
+			_label(Vector2(b.get_center().x, b.position.y + 28.0 * k), LEVELS[level], 19.0, INK, 1)
+	var db := _defaults_rect()
+	_box(db, Color(1, 1, 1, 0.07), 12.0, EDGE, 1.5)
+	_label(Vector2(db.get_center().x, db.get_center().y + 7.0 * k), "DEFAULTS", 19.0, INK, 1)
 	for i in ROWS.size():
 		var row: Array = ROWS[i]
 		var r := _row_rect(i)
 		if i % PER_COLUMN > 0:
 			_view.draw_rect(Rect2(r.position, Vector2(r.size.x, maxf(1.0, k))), Color(1, 1, 1, 0.06))
-		_label(r.position + Vector2(0.0, 33.0 * k), row[1], 21.0, Color(INK.r, INK.g, INK.b, 0.88))
+		_label(r.position + Vector2(0.0, 31.0 * k), row[1], 19.0, Color(INK.r, INK.g, INK.b, 0.88))
 		var c := _control_rect(i)
 		if row[2] == "tick":
 			var on := bool(values[row[0]])
 			_box(c, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.85) if on else Color(1, 1, 1, 0.1), 15.0, EDGE, 1.5)
 			var knob := Vector2(c.end.x - 15.0 * k if on else c.position.x + 15.0 * k, c.get_center().y)
 			_view.draw_circle(knob, 11.0 * k, Color(0.04, 0.05, 0.06) if on else Color(INK.r, INK.g, INK.b, 0.8))
-			_label(Vector2(r.end.x, r.position.y + 33.0 * k), "ON" if on else "OFF", 20.0, Color(INK.r, INK.g, INK.b, 0.7), 2)
+			_label(Vector2(r.end.x, r.position.y + 31.0 * k), "ON" if on else "OFF", 18.0, Color(INK.r, INK.g, INK.b, 0.7), 2)
 			continue
 		var t := inverse_lerp(float(row[3]), float(row[4]), float(values[row[0]]))
 		var track := Rect2(Vector2(c.position.x, c.get_center().y - 3.0 * k), Vector2(c.size.x, 6.0 * k))
 		_box(track, Color(1, 1, 1, 0.12), 3.0)
 		_box(Rect2(track.position, Vector2(track.size.x * t, track.size.y)), ACCENT, 3.0)
 		_view.draw_circle(Vector2(track.position.x + track.size.x * t, c.get_center().y), 11.0 * k, INK)
-		_label(Vector2(r.end.x, r.position.y + 33.0 * k), _shown(row), 20.0, Color(INK.r, INK.g, INK.b, 0.8), 2)
+		_label(Vector2(r.end.x, r.position.y + 31.0 * k), _shown(row), 18.0, Color(INK.r, INK.g, INK.b, 0.8), 2)

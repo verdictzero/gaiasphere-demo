@@ -2381,6 +2381,10 @@ class Hole extends RefCounted:
 ## ground a track crosses like any other, as the still rivers are. The cones they
 ## keep off either way.
 @export var flow_moving_blocks_trails := true
+## Do the trails keep off EVERY river, still ones too? Where the rivers are
+## water: a track laid across one runs down its bank, along its bed and out, and
+## the two fight over the ground there. On, a trail stops short of a river.
+@export var flow_rivers_block_trails := false
 ## Clear ground between the flows and a hole's or pad's reach, and past a ruin's
 ## footprint on its slide line, metres.
 @export var flow_zone_gap := 30.0

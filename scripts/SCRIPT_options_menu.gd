@@ -8,8 +8,9 @@ extends CanvasLayer
 #   Strata ...     the beds drawn on the sides of the cliff's rock: how strong,
 #                  how thick a bed, how far the lines wander, how much they dip
 #   Cliff edge wear / crevice dark   the baked wear and cracks on the cliff block
-#   Ambient occlusion ...   the screen-space shade in creases: off, or one of three
-#                  methods, and its dozen settings (SCRIPT_ambient_occlusion.gd)
+#
+# What counts as a graphics setting is in the graphics menu (O / F10): the ambient
+# occlusion, how the cliffs are drawn by distance, the far ground's short cuts.
 #
 # Nothing here is saved: each run starts from the defaults.
 
@@ -26,38 +27,11 @@ const ROWS := [
 	["strata_colour_bed", "Coloured bed thickness", "slide", 0.5, 20.0, 0.25, "m"],
 	["edge_wear", "Cliff edge wear", "slide", 0.0, 1.5, 0.05, "%"],
 	["crevice", "Cliff crevice dark", "slide", 0.0, 1.0, 0.05, "%"],
-	# The ground laid more cheaply far off (SHADERINC_ground_lay's normal_reach and
-	# stochastic_reach): each a tick, and how far off it begins.
-	["far_normals", "Far ground: no normal maps", "tick"],
-	["normal_reach", "... beyond", "slide", 20.0, 400.0, 5.0, "m"],
-	["far_single", "Far ground: no stochastic", "tick"],
-	["stochastic_reach", "... beyond", "slide", 10.0, 400.0, 5.0, "m"],
-	# How the cliff's rocks are drawn by distance (SCRIPT_cliff_rocks.gd's `view`).
-	["cliff_lod", "Cliff detail distance", "slide", 0.25, 4.0, 0.05, "x"],
-	["cliff_far", "Cliff merged past", "slide", 100.0, 2000.0, 25.0, "m"],
-	["cliff_reach", "Cliff drawn out to", "slide", 200.0, 6000.0, 50.0, "reach"],
-	["cliff_shadow", "Cliff shadows out to", "slide", 0.0, 800.0, 10.0, "m"],
-	["cliff_occlusion", "Cliff hidden by ground culled", "tick"],
-	# Ambient occlusion over the whole frame (SCRIPT_ambient_occlusion.gd): each
-	# "ao_" row is the setting of that name without the prefix.
-	["ao_method", "Ambient occlusion", "slide", 0.0, 3.0, 1.0, "ao"],
-	["ao_intensity", "AO intensity", "slide", 0.0, 4.0, 0.05, "%"],
-	["ao_radius", "AO radius", "slide", 0.1, 5.0, 0.05, "m2"],
-	["ao_radius_growth", "AO radius grows with distance", "slide", 0.0, 0.15, 0.005, "slope"],
-	["ao_power", "AO contrast", "slide", 0.25, 6.0, 0.05, "x"],
-	["ao_bias", "AO bias (self-shading)", "slide", 0.0, 0.2, 0.005, "m2"],
-	["ao_falloff", "AO depth falloff", "slide", 0.1, 4.0, 0.05, "x"],
-	["ao_max_distance", "AO reaches", "slide", 20.0, 600.0, 5.0, "m"],
-	["ao_floor_light", "AO darkest allowed", "slide", 0.0, 1.0, 0.05, "%"],
-	["ao_samples", "AO samples (Fast, SSAO)", "slide", 2.0, 32.0, 1.0, "n"],
-	["ao_directions", "HBAO directions", "slide", 2.0, 12.0, 1.0, "n"],
-	["ao_steps", "HBAO steps", "slide", 2.0, 10.0, 1.0, "n"],
 ]
 const PER_COLUMN := 17
 ## The rock's settings as the shaders have them to begin with.
 const ROCK := {"strata_strength": 0.85, "strata_bed": 1.9, "strata_warp": 1.6, "strata_dip": 0.035,
 	"strata_colour": 0.5, "strata_colour_bed": 5.5,
-	"normal_reach": 140.0, "stochastic_reach": 90.0,
 	"edge_wear": 1.1, "crevice": 0.7}
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.93)
@@ -70,7 +44,6 @@ static var menu_open := false
 
 var _defaults := {}
 var _rock := ROCK.duplicate()
-var _far := {"far_normals": true, "far_single": true}
 var _view: Control
 var _font: Font
 var _drag := -1
@@ -110,14 +83,6 @@ func _read(key: String) -> Variant:
 	match key:
 		"god":
 			return Vitals.debug
-	if _far.has(key):
-		return _far[key]
-	if key.begins_with("cliff_"):
-		var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
-		return cliffs.view[key.substr(6)] if cliffs != null else (true if key == "cliff_occlusion" else 1.0)
-	if key.begins_with("ao_"):
-		var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
-		return float(ao.values[key.substr(3)]) if ao != null else float(AmbientOcclusion.DEFAULTS[key.substr(3)])
 	return _rock.get(key, 0.0)
 
 
@@ -126,19 +91,7 @@ func _write(key: String, value: Variant) -> void:
 		"god":
 			Vitals.debug = bool(value)
 		_:
-			if _far.has(key):
-				_far[key] = bool(value)
-				_set_rock("normal_reach", float(_rock["normal_reach"]))
-				_set_rock("stochastic_reach", float(_rock["stochastic_reach"]))
-			elif key.begins_with("cliff_"):
-				var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
-				if cliffs != null:
-					cliffs.set_view(key.substr(6), value)
-			elif key.begins_with("ao_"):
-				var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
-				if ao != null:
-					ao.put(key.substr(3), float(value))
-			elif _rock.has(key):
+			if _rock.has(key):
 				_rock[key] = float(value)
 				_set_rock(key, float(value))
 
@@ -157,11 +110,6 @@ func _set_rock(key: String, value: float) -> void:
 	for m: ShaderMaterial in mats:
 		if key == "strata_dip":
 			m.set_shader_parameter(key, Vector2(value, value * 0.5))
-		elif key == "normal_reach":
-			# (0 is "never": the tick off.)
-			m.set_shader_parameter(key, value if bool(_far["far_normals"]) else 0.0)
-		elif key == "stochastic_reach":
-			m.set_shader_parameter(key, value if bool(_far["far_single"]) else 0.0)
 		else:
 			m.set_shader_parameter(key, value)
 
@@ -293,14 +241,6 @@ func _label(at: Vector2, text: String, px: float, color: Color, align := 0) -> v
 
 func _shown(row: Array) -> String:
 	var v := float(_read(row[0]))
-	if String(row[6]) == "ao":
-		return AmbientOcclusion.METHODS[clampi(int(round(v)), 0, AmbientOcclusion.METHODS.size() - 1)]
-	if String(row[6]) == "reach":
-		return "ALWAYS" if v >= CliffRocks.ALL_REACH else "%d m" % int(v)
-	if String(row[6]) == "n":
-		return "%d" % int(round(v))
-	if String(row[6]) == "m2":
-		return "%.2f m" % v
 	if String(row[6]) == "x":
 		return "%.1fx" % v
 	if String(row[6]) == "m":

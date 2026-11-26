@@ -40,12 +40,12 @@ func _process(_dt: float) -> bool:
 	match _step:
 		0:
 			_shot("0_default")
-			menu.values.merge(GraphicsMenu.PRESETS["LOW"], true)
+			menu.values.merge(GraphicsMenu.preset("DESKTOP", 0), true)
 			menu.apply()
 			_wait = 30
 		1:
 			_shot("1_low")
-			menu.values.merge(GraphicsMenu.PRESETS["ULTRA"], true)
+			menu.values.merge(GraphicsMenu.preset("DESKTOP", 5), true)
 			menu.apply()
 			_wait = 30
 		2:

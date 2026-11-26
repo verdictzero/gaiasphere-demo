@@ -237,6 +237,7 @@ flow_terrace_scale = 200.0
 flow_terrace_front = 0.7
 flow_terrace_floor = 0.45
 flow_moving_blocks_trails = false
+flow_rivers_block_trails = true
 flow_zone_gap = 30.0
 flow_ruin_gap = 30.0
 flow_cone_inland = 0.08

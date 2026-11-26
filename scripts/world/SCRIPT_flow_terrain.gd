@@ -141,6 +141,7 @@ var _toe_height := 5.0
 var _toe_length := 45.0
 var _cone_soil := true
 var _moving_blocks := true
+var _all_block := false
 var _splined := false
 var _spline_step := 4.0
 var _water := false
@@ -694,10 +695,11 @@ func blocks_trail(x: float, z: float, pad: float) -> bool:
 		for c: Cone in cones:
 			if Vector2(x, z).distance_to(c.center) < c.radius * 0.95 + pad:
 				return true
-	if not _moving_blocks or not _nearest(x, z):
+	if not (_moving_blocks or _all_block) or not _nearest(x, z):
 		return false
 	var si := _hseg
-	if not (rivers[_sriver[si]] as River).moving:
+	# (Every river, where `flow_rivers_block_trails`: a track is not led through water.)
+	if not _all_block and not (rivers[_sriver[si]] as River).moving:
 		return false
 	var w := maxf(_sw0[si], _sw1[si])
 	return absf(_hd) < w * 2.0 + pad
@@ -908,6 +910,7 @@ func _build(field: IslandField, isl, zones: Array) -> void:
 	_toe_length = field.flow_toe_length
 	_cone_soil = field.flow_cone_ground == 1
 	_moving_blocks = field.flow_moving_blocks_trails
+	_all_block = field.flow_rivers_block_trails
 	_splined = field.flow_river_spline
 	_spline_step = maxf(field.flow_spline_step, 1.0)
 	_water = field.flow_water_mesh
