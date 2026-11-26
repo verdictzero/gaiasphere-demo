@@ -43,7 +43,8 @@ func _place() -> void:
 func _process(_d: float) -> bool:
 	var ex: Node3D = _scene.get_node("Explorer")
 	if _n < 0:
-		if ex.arrived and not _scene.has_node("LoadingCover"):
+		var cliffs := _scene.get_node_or_null("CliffRocks")
+		if ex.arrived and not _scene.has_node("LoadingCover") and (cliffs == null or bool(cliffs.call(&"placed"))):
 			var enviro := _scene.get_node("Enviro")
 			enviro.advance = false
 			enviro.hour = 10.0

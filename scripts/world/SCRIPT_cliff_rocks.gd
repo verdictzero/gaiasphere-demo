@@ -33,17 +33,17 @@ extends Node3D
 @export var world_path: NodePath = ^"../GaiaSphere"
 @export var explorer_path: NodePath = ^"../Explorer"
 ## Metres between the points the walls are searched at.
-@export var search_step := 3.5
+@export var search_step := 5.0
 ## How steep (rise over run) the ground must be to count as a wall.
 @export var wall_slope := 1.05
 ## Shards to a place on the wall, (least, most).
-@export var cluster := Vector2i(3, 5)
+@export var cluster := Vector2i(2, 4)
 ## Height against the wall's: the back row's, and the front row's.
 @export var back_height := Vector2(0.95, 1.3)
 @export var front_height := Vector2(0.45, 0.8)
 ## A shard's width against its height (it is tall and thin).
 @export var aspect := Vector2(0.17, 0.28)
-@export var solid_reach := 60.0
+@export var solid_reach := 45.0
 ## The share of places on a wall that also get one of the old kit's masses.
 @export var kit_share := 0.2
 
@@ -64,7 +64,14 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 10
+const CACHE_VERSION := 11
+## Past this every rock in a square is drawn in ONE draw, as the simplest shard
+## (at this distance one broken column is as good as another): a draw a square,
+## not one for every kind of rock in it.
+const FAR_AT := 600.0
+## What a build ships (tests/BAKE_island.gd writes it), read before user://.
+const BAKED := "res://data/bake/cliff_rocks.bake"
+const CELL := 32.0
 
 var _field: IslandField
 var _meshes: Array = []    # shard -> [lod meshes]
@@ -79,6 +86,7 @@ var _result: Array = []
 var _solid: StaticBody3D
 var _solid_at := Vector3(1e9, 0, 0)
 var _explorer: Node3D
+var _cells := {}           # Vector2i (CELL metres) -> [indices into _rocks], for what is solid
 
 
 func _ready() -> void:
@@ -243,11 +251,16 @@ func _layout(field: IslandField) -> Array:
 	var reach := isl.radius * 1.15
 	var n := int(reach * 2.0 / search_step)
 	var keep := field.mesa_keep + field.mesa_keep_ease * 0.3
+	# (Inside the middle only the cows' meadow's own walls: FlowTerrain's meadow.)
+	var flows: FlowTerrain = field.flows_for(isl)
+	var meadow := Vector2.INF
+	if flows != null and flows.crash_site()[1] != Vector2.ZERO:
+		meadow = flows._meadow_c
 	for j in n:
 		for i in n:
 			var p := isl.center + Vector2(-reach + (float(i) + rng.randf()) * search_step,
 					-reach + (float(j) + rng.randf()) * search_step)
-			if p.distance_to(isl.center) < keep:
+			if p.distance_to(isl.center) < keep and p.distance_to(meadow) > FlowTerrain.MEADOW_R + 20.0:
 				continue
 			var m := field.mask_for(isl, p.x, p.y)
 			if m < field.mesa_shore * 1.5:
@@ -325,11 +338,31 @@ func _cache_path() -> String:
 
 
 func _read_cache() -> Array:
+	# What the build shipped, if it was made from this island as it is now.
+	var b := FileAccess.open(BAKED, FileAccess.READ)
+	if b != null:
+		var held: Variant = b.get_var()
+		if held is Dictionary and String(held.get("key", "")) == _cache_path() and held.get("rocks") is Array:
+			return held["rocks"]
 	var f := FileAccess.open(_cache_path(), FileAccess.READ)
 	if f == null:
 		return []
 	var v: Variant = f.get_var()
 	return v if v is Array else []
+
+
+## For the bake (tests/BAKE_island.gd): true once the rocks are placed, and the
+## layout written where a build will ship it.
+func placed() -> bool:
+	return _task < 0 and (not _rocks.is_empty() or _field == null or not _field.mesa_enabled)
+
+
+func save_bake() -> int:
+	var f := FileAccess.open(BAKED, FileAccess.WRITE)
+	if f == null:
+		return 0
+	f.store_var({"key": _cache_path(), "rocks": _rocks})
+	return _rocks.size()
 
 
 func _write_cache(rocks: Array) -> void:
@@ -341,8 +374,10 @@ func _write_cache(rocks: Array) -> void:
 # ------------------------------------------------------------------ drawn
 
 func _build() -> void:
-	var tiles := {}            # Vector2i -> {shard: [transforms]}
-	for rock in _rocks:
+	var tiles := {}            # Vector2i -> {kind: [transforms]}
+	_cells.clear()
+	for index in _rocks.size():
+		var rock: Array = _rocks[index]
 		var t: Transform3D = rock[1]
 		var key := Vector2i(int(floor(t.origin.x / TILE)), int(floor(t.origin.z / TILE)))
 		if not tiles.has(key):
@@ -351,14 +386,34 @@ func _build() -> void:
 		if not per.has(rock[0]):
 			per[rock[0]] = []
 		per[rock[0]].append(t)
+		var cell := Vector2i(int(floor(t.origin.x / CELL)), int(floor(t.origin.z / CELL)))
+		if not _cells.has(cell):
+			_cells[cell] = PackedInt32Array()
+		(_cells[cell] as PackedInt32Array).append(index)
 	var half_diag := TILE * 0.71
+	var far_mesh: Mesh = (_meshes[0] as Array).back()
+	var draws := 0
 	for key: Vector2i in tiles:
 		var origin := Vector3((float(key.x) + 0.5) * TILE, 0.0, (float(key.y) + 0.5) * TILE)
+		var far := PackedFloat32Array()        # every rock in the square, as the simplest shard
 		for k: int in tiles[key]:
 			var list: Array = tiles[key][k]
 			var lods: Array = _meshes[k]
 			var ends: Array = _lod_ends[k]
+			for t: Transform3D in list:
+				var b := t.basis
+				var o := t.origin - origin
+				if k >= SHARDS:
+					# One of the kit, which hangs from its top: the shard stood in its box.
+					var size: Vector3 = _kit_size[k - SHARDS]
+					o += b * Vector3(0.0, float(_kit_low[k - SHARDS]), 0.0)
+					b = b * Basis.from_scale(size * Vector3(1.3, 1.0, 1.3))
+				far.append_array([b.x.x, b.y.x, b.z.x, o.x, b.x.y, b.y.y, b.z.y, o.y, b.x.z, b.y.z, b.z.z, o.z])
 			for l in lods.size():
+				var lo := float(ends[l - 1]) if l > 0 else 0.0
+				if lo >= FAR_AT:
+					break
+				var hi := FAR_AT if l == lods.size() - 1 else minf(float(ends[l]), FAR_AT)
 				var mm := MultiMesh.new()
 				mm.transform_format = MultiMesh.TRANSFORM_3D
 				mm.mesh = lods[l]
@@ -370,24 +425,38 @@ func _build() -> void:
 				mmi.multimesh = mm
 				mmi.material_override = _material
 				mmi.position = origin
-				var last := l == lods.size() - 1
-				var lo := float(ends[l - 1]) if l > 0 else 0.0
-				var hi := 0.0 if last else float(ends[l])
-				# Each shard's own hand-over is the shader's dither, by its own
+				# Each rock's own hand-over is the shader's dither, by its own
 				# distance; the square as a whole is only drawn while any of it may
-				# need to be, and the last level always (0: no end).
+				# need to be.
 				mmi.set_instance_shader_parameter(&"lod_in", lo)
 				mmi.set_instance_shader_parameter(&"lod_out", hi)
 				mmi.visibility_range_begin = maxf(0.0, lo * (1.0 - LOD_BAND) - half_diag)
-				mmi.visibility_range_end = 0.0 if last else hi * (1.0 + LOD_BAND) + half_diag
-				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hi > 0.0 and hi < 250.0 \
+				mmi.visibility_range_end = hi * (1.0 + LOD_BAND) + half_diag
+				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hi < 250.0 \
 						else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				add_child(mmi)
+				draws += 1
+		# ROCKS NEVER GO: past FAR_AT the whole square in one draw, at any distance.
+		var fm := MultiMesh.new()
+		fm.transform_format = MultiMesh.TRANSFORM_3D
+		fm.mesh = far_mesh
+		fm.instance_count = far.size() / 12
+		fm.buffer = far
+		var fmi := MultiMeshInstance3D.new()
+		fmi.multimesh = fm
+		fmi.material_override = _material
+		fmi.position = origin
+		fmi.set_instance_shader_parameter(&"lod_in", FAR_AT)
+		fmi.set_instance_shader_parameter(&"lod_out", 0.0)
+		fmi.visibility_range_begin = maxf(0.0, FAR_AT * (1.0 - LOD_BAND) - half_diag)
+		fmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(fmi)
 	var kit := 0
 	for rock in _rocks:
 		if int(rock[0]) >= SHARDS:
 			kit += 1
-	print("[cliffs] %d shards of rock and %d of the old kit against the tablelands' walls" % [_rocks.size() - kit, kit])
+	print("[cliffs] %d shards of rock and %d of the old kit against the walls, in %d squares (%d near draws at most)" % [
+			_rocks.size() - kit, kit, tiles.size(), draws])
 
 
 ## The shards round `here` made solid: a hull each, out to `solid_reach`.
@@ -399,7 +468,14 @@ func _make_solid(here: Vector3) -> void:
 		add_child(_solid)
 	for c in _solid.get_children():
 		c.queue_free()
-	for rock in _rocks:
+	var near := PackedInt32Array()
+	var c0 := Vector2i(int(floor((here.x - solid_reach) / CELL)), int(floor((here.z - solid_reach) / CELL)))
+	var c1 := Vector2i(int(floor((here.x + solid_reach) / CELL)), int(floor((here.z + solid_reach) / CELL)))
+	for cz in range(c0.y, c1.y + 1):
+		for cx in range(c0.x, c1.x + 1):
+			near.append_array(_cells.get(Vector2i(cx, cz), PackedInt32Array()))
+	for index in near:
+		var rock: Array = _rocks[index]
 		var t: Transform3D = rock[1]
 		if Vector2(t.origin.x - here.x, t.origin.z - here.z).length() > solid_reach:
 			continue

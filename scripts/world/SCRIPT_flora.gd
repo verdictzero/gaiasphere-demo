@@ -723,8 +723,10 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 	# the ground is level but a wall rises close by, a heap of what came off it,
 	# mostly small, now and then one the size of a car, lying toward the wall.
 	if f.mesa_enabled:
-		var tg := 7.0
-		var tn := int(round(tile / tg))
+		# (A whole number of cells to the tile, so every rock lies in the tile that
+		# holds it: its colliders and its level of detail go by the tile.)
+		var tn := 5
+		var tg := tile / float(tn)
 		for iz in tn:
 			for ix in tn:
 				var cx := key.x * tn + ix

@@ -48,7 +48,9 @@ uniform float floor_size = 3.0;
 uniform float scree_size = 2.2;
 uniform float stony_size = 4.0;
 uniform vec3 meadow_tint : source_color = vec3(0.68, 0.95, 0.5);
-uniform vec3 dry_tint : source_color = vec3(0.95, 1.0, 0.8);
+// (The scan is a brown-olive that the ground's brightness turns orange: pulled
+// well toward green, a paler, yellower grass than the meadow's and no more.)
+uniform vec3 dry_tint : source_color = vec3(0.62, 0.95, 0.42);
 uniform vec3 floor_tint : source_color = vec3(0.6, 0.54, 0.46);
 uniform vec3 scree_tint : source_color = vec3(0.62, 0.6, 0.6);
 uniform vec3 stony_tint : source_color = vec3(0.85, 0.85, 0.82);
@@ -149,7 +151,9 @@ void lay(float layer, vec2 uv, vec2 dx, vec2 dy, out vec3 a, out vec3 n) {
 		n = textureGrad(ground_normal, vec3(uv, layer), dx, dy).xyz * 2.0 - 1.0;
 		return;
 	}
-	float l = texture(macro_noise, uv / stochastic_scale + layer * 0.137).r * 8.0;
+	// (An explicit level: this is called inside branches, where a sampler's own
+	// derivatives are undefined and would speckle the branch's edge.)
+	float l = textureLod(macro_noise, uv / stochastic_scale + layer * 0.137, 0.0).r * 8.0;
 	float ia = floor(l);
 	float f = fract(l);
 	vec2 oa = sin(vec2(3.0, 7.0) * ia);
@@ -185,20 +189,42 @@ void fragment() {
 	float litter_mix = clamp(forest * (0.25 + macro2 * 1.1) * smoothstep(0.25, 0.6, macro + macro2 * 0.5), 0.0, 1.0);
 	vec2 pdx = dFdx(p);
 	vec2 pdy = dFdy(p);
-	vec3 moss_a; vec3 moss_n;
-	lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, moss_a, moss_n);
-	vec3 soil_a; vec3 soil_n;
-	lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, soil_a, soil_n);
-	vec3 litter_a; vec3 litter_n;
-	lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, litter_a, litter_n);
-	vec3 trail_a; vec3 trail_n;
-	lay(L_TRAIL, p / trail_size, pdx / trail_size, pdy / trail_size, trail_a, trail_n);
-	vec3 sand_a; vec3 sand_n;
-	lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, sand_a, sand_n);
-	vec3 meadow_a; vec3 meadow_n;
-	lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, meadow_a, meadow_n);
-	vec3 dry_a; vec3 dry_n;
-	lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, dry_a, dry_n);
+	// ONLY WHAT CAN SHOW HERE IS SAMPLED. Each surface laid stochastically is four
+	// fetches, and seven of them at every pixel was three times what the ground
+	// cost before; a pixel of meadow needs the meadow, a pixel of wood the moss and
+	// the litter, and so on. (Safe in a branch: every fetch is given its derivatives.)
+	float wood = smoothstep(0.15, 0.6, forest);
+	float dryness = smoothstep(0.56, 0.8, macro + (macro2 - 0.5) * 0.5);
+	bool has_ground = w.r > 0.003;
+	bool has_earth = w.g > 0.003;
+	vec3 moss_a = vec3(0.2); vec3 moss_n = vec3(0.0, 0.0, 1.0);
+	vec3 soil_a = vec3(0.2); vec3 soil_n = vec3(0.0, 0.0, 1.0);
+	vec3 litter_a = vec3(0.2); vec3 litter_n = vec3(0.0, 0.0, 1.0);
+	vec3 trail_a = vec3(0.2); vec3 trail_n = vec3(0.0, 0.0, 1.0);
+	vec3 sand_a = vec3(0.2); vec3 sand_n = vec3(0.0, 0.0, 1.0);
+	vec3 meadow_a = vec3(0.2); vec3 meadow_n = vec3(0.0, 0.0, 1.0);
+	vec3 dry_a = vec3(0.2); vec3 dry_n = vec3(0.0, 0.0, 1.0);
+	if (has_ground && wood > 0.0) {
+		lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, moss_a, moss_n);
+	}
+	if (has_earth || river > 0.0) {
+		lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, soil_a, soil_n);
+	}
+	if (forest > 0.003 && (has_ground || has_earth)) {
+		lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, litter_a, litter_n);
+	}
+	if (trail > 0.003 && has_earth) {
+		lay(L_TRAIL, p / trail_size, pdx / trail_size, pdy / trail_size, trail_a, trail_n);
+	}
+	if (w.a > 0.003 || river > 0.0) {
+		lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, sand_a, sand_n);
+	}
+	if (has_ground && wood < 1.0 && dryness < 1.0) {
+		lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, meadow_a, meadow_n);
+	}
+	if (has_ground && wood < 1.0 && dryness > 0.0) {
+		lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, dry_a, dry_n);
+	}
 	moss_a *= moss_tint;
 	soil_a *= soil_tint;
 	litter_a *= litter_tint;
@@ -207,10 +233,8 @@ void fragment() {
 
 	// OPEN GROUND IS MEADOW: lush grass, giving way in broad patches to dry; under
 	// the trees, the wood's moss and its litter, as before.
-	float dryness = smoothstep(0.42, 0.72, macro + (macro2 - 0.5) * 0.5);
 	vec3 grass_a = mix(meadow_a * meadow_tint, dry_a * dry_tint, dryness);
 	vec3 grass_n = mix(meadow_n, dry_n, dryness);
-	float wood = smoothstep(0.15, 0.6, forest);
 	vec3 ground_a = mix(grass_a, mix(moss_a, litter_a, litter_mix * 0.8), wood);
 	vec3 ground_n = mix(grass_n, mix(moss_n, litter_n, litter_mix * 0.8), wood);
 	// CLEARINGS in the wood: leaf-strewn floor, in patches of their own.
@@ -282,7 +306,8 @@ void fragment() {
 	float roughness = 0.94 * w.r + 0.9 * w.g + 0.82 * w.b + 0.88 * w.a;
 	// SCREE: ground too steep for grass and not steep enough to be a wall, under
 	// the walls, is broken stone.
-	float scree = smoothstep(0.95, 0.82, geo_n.y) * (1.0 - w.b) * (1.0 - wood * 0.6);
+	// (From about 30 degrees: the ramps between the levels stay grass.)
+	float scree = smoothstep(0.87, 0.74, geo_n.y) * (1.0 - w.b) * (1.0 - wood * 0.6);
 	// THE HEIGHTS: up on the high plateaus, rocky ground shows through the grass.
 	float stony = smoothstep(stony_heights.x, stony_heights.y, world_pos.y)
 			* smoothstep(0.45, 0.6, macro2 + (macro - 0.5) * 0.6) * (1.0 - wood) * w.r;

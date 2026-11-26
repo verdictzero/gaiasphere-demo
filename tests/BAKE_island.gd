@@ -35,6 +35,10 @@ func _process(_delta: float) -> bool:
 	var flora := _scene.get_node_or_null("Flora")
 	if flora != null and not bool(flora.call(&"prefill_step")):
 		return false
+	# And the rock against the walls (CliffRocks): a minute's search, done here once.
+	var cliffs := _scene.get_node_or_null("CliffRocks")
+	if cliffs != null and not bool(cliffs.call(&"placed")):
+		return false
 	var bake := root.get_node("TerrainBake")
 	var world := _scene.get_node("GaiaSphere")
 	var sig := String(world.get("_bake_sig"))
@@ -52,6 +56,8 @@ func _process(_delta: float) -> bool:
 	var table := {}
 	for src in bake._SOURCES:
 		table[String(src)] = FileAccess.get_sha256(String(src))
+	if cliffs != null:
+		print("bake: %d rocks against the walls -> %s" % [int(cliffs.call(&"save_bake")), cliffs.BAKED])
 	if flora != null:
 		for src in flora.SOURCES:
 			table[String(src)] = FileAccess.get_sha256(String(src))
