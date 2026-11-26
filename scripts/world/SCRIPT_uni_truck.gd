@@ -85,11 +85,11 @@ extends Node3D
 @export_group("Boosters")
 ## Seconds of burn in the tank, and seconds of burn it gets back each second on
 ## the ground.
-@export var burn_time := 1.8
-@export var burn_refill := 0.9
+@export var burn_time := 1.1
+@export var burn_refill := 0.7
 ## The four jets' push together, as a multiple of the truck's weight: over 1 it
 ## climbs on them, and the more over the faster.
-@export var burn_lift := 1.9
+@export var burn_lift := 1.3
 
 @export_group("Gyros")
 ## Stiffness (1/s) of the upright hold.
