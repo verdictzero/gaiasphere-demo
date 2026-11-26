@@ -573,6 +573,48 @@ class Hole extends RefCounted:
 @export var micro_height := 0.6
 @export var micro_scale := 34.0
 
+@export_group("Tablelands")
+## PLATEAUS, CLIFFS AND CANYONS instead of rolling hills, everywhere outside the
+## middle (the user: "less hills and more like valleys and plateaus and like very
+## varied terrain ... a lot of flat plateaus and defined buildable areas on those
+## flat plateaus as a global rule"). The ground is a broad, warped noise, STEPPED
+## into `mesa_levels` levels: each level's top is flat, and the climb to the next
+## is crowded into a thin band (`mesa_riser`), so it stands as a wall. Here and
+## there (`mesa_ramps`) that band is stretched out into a slope you can walk up,
+## so the levels connect. CANYONS are cut down through all of it to the floor
+## along the zero lines of a second noise, their walls stepped by the same levels.
+## Off (`mesa_enabled`), the hills are as they were.
+@export var mesa_enabled := false
+## The highest level's height over the island's base, metres.
+@export var mesa_height := 110.0
+## How many levels the ground is stepped into above the floor.
+@export_range(1, 8) var mesa_levels := 3
+## The size of a tableland, metres (the noise's feature size).
+@export var mesa_scale := 520.0
+## How far the noise is warped, metres: what makes a plateau's outline wander
+## and lobe rather than read as a blob.
+@export var mesa_warp := 140.0
+## Fine warp along the edges, metres: the walls' outline jagged at a few metres.
+@export var mesa_jag := 7.0
+## The share of each level's band spent climbing to the next: small is a wall.
+@export_range(0.01, 0.5) var mesa_riser := 0.06
+## How much of the island's walls are stretched into ramps instead (0 none).
+@export_range(0.0, 1.0) var mesa_ramps := 0.35
+## Raises or lowers the ground overall (added to the noise's 0..1 before the
+## steps): more high plateau, or more low valley floor.
+@export_range(-0.5, 0.5) var mesa_bias := 0.08
+## Canyons: the size of their network, metres, and how wide (noise units).
+@export var canyon_scale := 760.0
+@export_range(0.0, 0.3) var canyon_width := 0.06
+## Within this many metres of the island's middle the ground is the wild ground
+## as before (the mere, its shores and the crash), easing into the tablelands over
+## `mesa_keep_ease` past it.
+@export var mesa_keep := 470.0
+@export var mesa_keep_ease := 170.0
+## The tablelands' own shore ramp, in mask units: narrow, so they run nearly to
+## the island's edge and break off there.
+@export_range(0.005, 1.0) var mesa_shore := 0.05
+
 @export_group("Golf zones")
 ## Carve labelled golf holes and build pads into every island. Turning this off
 ## restores the pre-zone world exactly: relief is never scaled away, sand is
@@ -2648,6 +2690,11 @@ var _cliff_noise: FastNoiseLite
 var _zone_noise: FastNoiseLite
 var _green_noise: FastNoiseLite
 var _forest_noise: FastNoiseLite
+var _mesa_noise: FastNoiseLite
+var _mesa_warp_noise: FastNoiseLite
+var _mesa_jag_noise: FastNoiseLite
+var _mesa_ramp_noise: FastNoiseLite
+var _canyon_noise: FastNoiseLite
 var _cells := {}    ## Vector2i cell -> Island or null (null = void cell).
 var _ready := false
 # The rock ramp `splat_weights` actually uses, resolved once in `prepare()`
@@ -2709,6 +2756,11 @@ func prepare() -> void:
 	# Two octaves, not three: a wood wants a broad, legible outline, and the
 	# third octave only frays it into scattered copses.
 	_forest_noise = _make_noise(0x9009, FastNoiseLite.TYPE_SIMPLEX, forest_scale, 2)
+	_mesa_noise = _make_noise(0xA00A, FastNoiseLite.TYPE_SIMPLEX, mesa_scale, 2)
+	_mesa_warp_noise = _make_noise(0xA10B, FastNoiseLite.TYPE_SIMPLEX, mesa_scale * 0.6, 2)
+	_mesa_jag_noise = _make_noise(0xA20C, FastNoiseLite.TYPE_SIMPLEX, 38.0, 2)
+	_mesa_ramp_noise = _make_noise(0xA30D, FastNoiseLite.TYPE_SIMPLEX, 230.0, 1)
+	_canyon_noise = _make_noise(0xA40E, FastNoiseLite.TYPE_SIMPLEX, canyon_scale, 1)
 	var band := rock_band()
 	_rock_lo = band.x
 	_rock_hi = band.y
@@ -4800,9 +4852,43 @@ func wild_ground(owner: Island, x: float, z: float, mask: float, micro := true) 
 	var ridges := (_ridge_noise.get_noise_2d(x, z) * 0.5 + 0.5) \
 			* lerpf(1.0, hills, ridge_on_hills)
 	var ground := owner.peak * (hill_height * hills + ridge_height * ridges)
+	var m := 0.0
 	if micro:
-		ground += micro_height * _micro_noise.get_noise_2d(x, z)
-	return shore * ground
+		m = _micro_noise.get_noise_2d(x, z)
+		ground += micro_height * m
+	return tableland(owner, x, z, mask, shore * ground, m)
+
+
+## THE TABLELANDS (`mesa_enabled`): the ground `wild` (metres over the base, after
+## the shore ramp) as plateaus, walls, ramps and canyons outside the middle; as it
+## is inside it. `micro` is the micro noise there, a trace of which the flat tops
+## keep. See the "Tablelands" exports.
+func tableland(owner: Island, x: float, z: float, mask: float, wild: float, micro := 0.0) -> float:
+	if not mesa_enabled or owner == null or _mesa_noise == null:
+		return wild
+	var away := Vector2(x, z).distance_to(owner.center)
+	var k := smoothstep(mesa_keep, mesa_keep + mesa_keep_ease, away)
+	if k <= 0.0:
+		return wild
+	var px := x + _mesa_warp_noise.get_noise_2d(x, z) * mesa_warp + _mesa_jag_noise.get_noise_2d(x, z) * mesa_jag
+	var pz := z + _mesa_warp_noise.get_noise_2d(x + 7919.0, z - 3571.0) * mesa_warp \
+			+ _mesa_jag_noise.get_noise_2d(x - 911.0, z + 433.0) * mesa_jag
+	var e := clampf(_mesa_noise.get_noise_2d(px, pz) * 0.8 + 0.5 + mesa_bias, 0.0, 1.0)
+	# Canyons down through it all, along the zero lines of their noise.
+	var c := absf(_canyon_noise.get_noise_2d(px, pz))
+	e *= smoothstep(canyon_width * 0.45, canyon_width, c) * k
+	# The steps: flat tops, and the climb to the next crowded into a wall, or
+	# stretched into a ramp where the ramp noise says.
+	var levels := float(maxi(mesa_levels, 1))
+	var f := e * levels
+	var lvl := minf(floorf(f), levels - 1.0)
+	var fr := f - lvl
+	var ramp := smoothstep(1.0 - mesa_ramps, 1.0, _mesa_ramp_noise.get_noise_2d(x, z) * 0.5 + 0.5) if mesa_ramps > 0.0 else 0.0
+	var riser := lerpf(mesa_riser, 0.65, ramp)
+	var stepped := (lvl + smoothstep(1.0 - riser, 1.0, fr)) / levels * mesa_height * owner.peak
+	var t := clampf(mask / maxf(mesa_shore, 0.001), 0.0, 1.0)
+	stepped = stepped * t * t * (3.0 - 2.0 * t) + micro_height * 0.3 * micro
+	return lerpf(wild, stepped, smoothstep(0.0, 0.35, k))
 
 
 func base_height(x: float, z: float, mask: float, owner: Island,
@@ -4839,7 +4925,7 @@ func base_height(x: float, z: float, mask: float, owner: Island,
 		# (they ease themselves out to the coast) and under the zone's shelf, so
 		# the course is the course and a trail crossing a still river crosses it
 		# at its own grade. See `FlowTerrain`.
-		var g := flows.relief(x, z, mask, shore * ground)
+		var g := flows.relief(x, z, mask, tableland(owner, x, z, mask, shore * ground, micro))
 		if f > 0.0:
 			var lshelf := zone_lift \
 					+ green_undulation * _green_noise.get_noise_2d(x, z) \
@@ -4863,7 +4949,7 @@ func base_height(x: float, z: float, mask: float, owner: Island,
 					+ green_undulation * _green_noise.get_noise_2d(x, z) \
 					+ micro_height * micro * green_micro
 			ground = lerpf(ground, shelf, f)
-		var gs := shore * ground
+		var gs := tableland(owner, x, z, mask, shore * ground, micro) if f <= 0.0 else shore * ground
 		if pad != null:
 			gs = _safe_padded(pad, x, z, gs)
 		h = owner.base_y + gs

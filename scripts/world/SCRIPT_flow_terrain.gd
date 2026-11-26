@@ -379,7 +379,7 @@ func lagoon(x: float, z: float, g: float) -> float:
 		return lerpf(_flat_h, carved, smoothstep(FLAT_RADIUS, FLAT_RADIUS + FLAT_EASE, from_middle))
 	var cw := causeway_weight(x, z)
 	if cw <= 0.0:
-		return crash(x, z, carved)
+		return crash(x, z, meadow(x, z, carved))
 	return lerpf(carved, maxf(carved, _lag_level + CAUSEWAY_RISE), cw)
 
 
@@ -409,6 +409,21 @@ const CRASH_BERM := 0.6           ## the dirt banked up either side of it
 ## starts there from nothing.
 const CRASH_TOUCH := 0.22
 
+## THE MEADOW ON ITS PLATEAU, up the shore where the shuttle touched down (the
+## cows' meadow, Flora's glade): a level top `MEADOW_RISE` metres over the ground
+## it stood on, `MEADOW_R` across the radius, walled on the sides away from the
+## mere and let down to it on the mere's side by a long ramp, which the skid runs
+## down. Its middle, `MEADOW_UP` metres back up the skid from the wreck, is
+## Flora's GLADE_UP_SHORE.
+const MEADOW_UP := 92.0
+const MEADOW_R := 58.0
+const MEADOW_RISE := 12.0
+## How far the walls run out (a cliff), and the ramp toward the mere, metres.
+const MEADOW_WALL := 8.0
+const MEADOW_RAMP := 75.0
+
+var _meadow_c := Vector2.ZERO
+var _meadow_h := 0.0
 var _crash_at := Vector2.ZERO
 var _crash_out := Vector2.ZERO    # from the wreck back up the shore: the way it came from, reversed
 
@@ -419,6 +434,35 @@ func _place_crash() -> void:
 	_crash_out = -_cw_dir
 	var shores := lagoon_shores(_crash_out.angle())
 	_crash_at = _lag_c + _crash_out * (shores.y - CRASH_IN)
+	_meadow_c = _crash_at + _crash_out * MEADOW_UP
+
+
+## The meadow's plateau's level, read off the ground it stands on (called once
+## the field can answer for the ground, during the build).
+func _place_meadow(field: IslandField, isl) -> void:
+	if _crash_out == Vector2.ZERO:
+		return
+	var m := field.mask_for(isl, _meadow_c.x, _meadow_c.y)
+	_meadow_h = field.base_height(_meadow_c.x, _meadow_c.y, m, isl, 0.0, 0.0, false) - isl.base_y + MEADOW_RISE
+
+
+## The ground `g` with the meadow's plateau in it: level on top, a wall round
+## it, the ramp down toward the mere. Its edge wanders, so it is no circle.
+func meadow(x: float, z: float, g: float) -> float:
+	if _crash_out == Vector2.ZERO:
+		return g
+	var d := Vector2(x, z) - _meadow_c
+	var r := d.length()
+	if r > MEADOW_R + MEADOW_RAMP + 10.0:
+		return g
+	var a := d.angle()
+	var edge := MEADOW_R + 4.0 * sin(3.0 * a + 0.7) + 2.5 * sin(7.0 * a + 2.1) + 1.5 * sin(13.0 * a)
+	# 1 on the side that faces the mere, where the wall becomes the ramp.
+	var lake := smoothstep(0.45, 0.85, (d / maxf(r, 0.001)).dot(-_crash_out)) if r > 0.001 else 0.0
+	var start := lerpf(edge, edge - 20.0, lake)
+	var run := lerpf(MEADOW_WALL, MEADOW_RAMP, lake)
+	var w := 1.0 - smoothstep(start, start + run, r)
+	return lerpf(g, _meadow_h, w)
 
 
 ## Where the wreck lies and the way back up its gouge, world metres; (0, 0) twice if there is none.
@@ -959,6 +1003,7 @@ func _place_lagoon(field: IslandField, isl, zones: Array) -> void:
 	_flat_h = field.base_height(_lag_c.x, _lag_c.y, mc, isl, zi[4], zi[1], false) - isl.base_y
 	_place_causeway()
 	_place_crash()
+	_place_meadow(field, isl)
 
 
 # Clear of every hole and pad by `gap` past its reach, and of every ruin line?
