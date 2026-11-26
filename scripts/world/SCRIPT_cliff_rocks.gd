@@ -69,7 +69,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 15   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 16   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -317,7 +317,10 @@ func _layout(field: IslandField) -> Array:
 			if tall < 3.0:
 				continue
 			# The ground at the wall's top, for the rocks' own tops to carry on.
-			var turf := _ground_at(field, p - out_dir * 7.0)
+			# (Read well back from the edge, on the level: at the lip itself the
+			# ground is steep, and steep ground is bare of wood and half rock, which
+			# is not what the plateau beside the rock is.)
+			var turf := _ground_at(field, p - out_dir * 12.0).lerp(_ground_at(field, p - out_dir * 20.0), 0.5)
 			# THE BLOCK, at every place: half in the wall, turned any way round, and
 			# scaled a lot (the user: "just randomize its rotation and scale a lot"),
 			# about as tall as the tier it stands against.
