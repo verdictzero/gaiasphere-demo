@@ -406,9 +406,9 @@ const CRASH_BOWL := 11.0          ## the divot's radius
 const CRASH_DEPTH := 1.5          ## and how deep its middle is dug
 const CRASH_RIM := 0.45           ## the lip thrown up round it
 const CRASH_GOUGE := 215.0        ## how far back up the shore and the hill the gouge runs
-const CRASH_WIDE := 5.0           ## its half-width at the wreck (it narrows going back)
-const CRASH_CUT := 1.7            ## and its depth there (it shallows going back)
-const CRASH_BERM := 0.6           ## the dirt banked up either side of it
+const CRASH_WIDE := 6.5           ## its half-width at the wreck (it narrows going back)
+const CRASH_CUT := 2.6            ## and its depth there (it shallows going back)
+const CRASH_BERM := 1.0           ## the dirt banked up either side of it
 ## The last share of the gouge, at its far end, where it first touched down: it
 ## starts there from nothing.
 const CRASH_TOUCH := 0.22
@@ -510,6 +510,23 @@ func _gouge_at(d: Vector2) -> Vector3:
 	# It wanders a little: nothing that weighs what a shuttle does slides straight.
 	var off := absf(d.dot(Vector2(-_crash_out.y, _crash_out.x)) - 1.2 * sin(along * 0.16) - 2.0 * sin(along * 0.037))
 	return Vector3(wide, deep, off)
+
+
+## How far a point is off the skid's middle, in the skid's own half-widths there
+## (under 1: in the trench; about 1.5: on a berm); huge beside its ends and where
+## there is no crash. And the wreck's bowl counts as trench. For what the hull
+## swept aside on its way down (Flora's weed).
+func crash_swath(x: float, z: float) -> float:
+	if _crash_out == Vector2.ZERO:
+		return 1e9
+	var d := Vector2(x, z) - _crash_at
+	var best := d.length() / CRASH_BOWL
+	var along := d.dot(_crash_out)
+	if along > -4.0 and along < CRASH_GOUGE:
+		var g := _gouge_at(d)
+		if g.y > 0.02:
+			best = minf(best, g.z / maxf(g.x, 0.1))
+	return best
 
 
 ## (how much of the divot, how much of the gouge) is at a point, each 0 to 1.

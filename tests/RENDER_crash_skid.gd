@@ -37,26 +37,31 @@ func _process(_d: float) -> bool:
 			_cam.far = 4000.0
 			_scene.add_child(_cam)
 			_cam.make_current()
-			var from := _wreck + Vector3(_up.x, 0.0, _up.y) * 120.0
-			from.y = _ground(from) + 32.0
-			_cam.global_position = from
-			_cam.look_at(_wreck + Vector3(_up.x, 0.0, _up.y) * 20.0)
 			ex.set("flying", true)
-			ex.global_position = from + Vector3.UP * 5.0
 			_n = 0
 		return false
-	_n += 1
-	if _n == 60:
-		root.get_viewport().get_texture().get_image().save_png("res://renders/crash_skid.png")
-		var side := Vector3(-_up.y, 0.0, _up.x)
-		var mid := _wreck + Vector3(_up.x, 0.0, _up.y) * 45.0
-		var from := mid + side * 18.0 + Vector3(_up.x, 0.0, _up.y) * 25.0
-		from.y = _ground(from) + 6.0
+	# [metres back up the skid, to one side, over the ground] the eye, then the same
+	# for what it looks at.
+	var views := [
+		["crash_skid", Vector3(105, 6, 30), Vector3(40, 0, 0)],          # over the shore, down into the water
+		["crash_skid_side", Vector3(70, -9, 2.2), Vector3(190, 0, 2)],   # on the skid, looking up it: the dust
+		["crash_skid_under", Vector3(34, 9, 2.5), Vector3(2, 0, 1.5)],   # under water, down the trench to the wreck
+	]
+	var side := Vector3(-_up.y, 0.0, _up.x)
+	var back := Vector3(_up.x, 0.0, _up.y)
+	var k := _n / 90
+	if _n % 90 == 0 and k < views.size():
+		var from: Vector3 = _wreck + back * views[k][1].x + side * views[k][1].y
+		from.y = _ground(from) + views[k][1].z
+		var to: Vector3 = _wreck + back * views[k][2].x + side * views[k][2].y
+		to.y = _ground(to) + views[k][2].z
 		_cam.global_position = from
-		ex.global_position = from + Vector3.UP * 5.0
-		_cam.look_at(Vector3(_wreck.x, _ground(_wreck) + 1.0, _wreck.z))
-	if _n == 120:
-		root.get_viewport().get_texture().get_image().save_png("res://renders/crash_skid_side.png")
-		quit(0)
-		return true
+		_cam.look_at(to)
+		ex.global_position = from
+	_n += 1
+	if _n % 90 == 0:
+		root.get_viewport().get_texture().get_image().save_png("res://renders/%s.png" % views[k][0])
+		if k + 1 >= views.size():
+			quit(0)
+			return true
 	return false

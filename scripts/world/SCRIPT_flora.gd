@@ -647,11 +647,22 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var inward := maxf(1.0 - c.x / c.y, 0.0) if c.y > 0.0 else 0.0
 			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * c.z * density + 0.07 * density:
 				continue
+			# THE SHUTTLE WENT THROUGH IT: none in its trench or on the berms, and
+			# out from there what is left is thin, short and torn, back to whole
+			# weed a few widths off.
+			var swept := 1.0
+			if _crash != null:
+				var off: float = _crash.crash_swath(x, z)
+				if off < 1.9:
+					continue
+				swept = smoothstep(1.9, 4.5, off)
+				if _hash(cx, cz, 121) > 0.15 + 0.85 * swept:
+					continue
 			var ground := f.height_at(x, z, 1e9)
 			var depth := _mere_level - ground
 			if depth < 1.1:
 				continue
-			var tall := (0.6 + 4.6 * inward * c.z) * (0.7 + 0.6 * _hash(cx, cz, 114))
+			var tall := (0.6 + 4.6 * inward * c.z) * (0.7 + 0.6 * _hash(cx, cz, 114)) * lerpf(0.3, 1.0, swept)
 			tall = minf(tall, depth * 0.92)
 			var wide := tall * (0.55 + 0.35 * _hash(cx, cz, 115)) * 2.0 * 0.5
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 116) * TAU)

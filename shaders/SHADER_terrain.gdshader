@@ -429,8 +429,8 @@ void fragment() {
 			vec3 mud = textureGrad(ground_albedo, vec3(mp, L_CHURN), dFdx(mp), dFdy(mp)).rgb * churned_tint;
 			// Clods outlast the edge: it breaks up into lumps, not a blur.
 			churn = smoothstep(0.35, 0.65, churn + (height_of(mud / churned_tint) - 0.5) * 0.8);
-			// Under the water it is the bed's: only the shallows show it.
-			churn *= smoothstep(mere_level - 2.5, mere_level + 0.2, world_pos.y);
+			// (It runs on under the water, down the shelf and over the bed to the
+			// wreck: the trench it ploughed there is the same turned earth.)
 			albedo = mix(albedo, mud, churn);
 			vec3 mn = textureGrad(ground_normal, vec3(mp, L_CHURN), dFdx(mp), dFdy(mp)).xyz * 2.0 - 1.0;
 			world_n = normalize(mix(world_n, normalize(geo_n + vec3(mn.x, 0.0, mn.y) * detail * 1.5), churn));
