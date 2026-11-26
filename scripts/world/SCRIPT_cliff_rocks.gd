@@ -78,6 +78,8 @@ const FAR_AT := 600.0
 const BAKED := "res://data/bake/cliff_rocks.bake"
 const CELL := 32.0
 const BLOCK := "res://assets/cliff_block/cliff_block.res"
+## Triangles in the block's second level of detail.
+const BLOCK_LOD1 := 700
 ## Of the places on a wall, the share that also get a few shards in front.
 const SHARD_SHARE := 0.25
 
@@ -126,7 +128,14 @@ func _ready() -> void:
 	# THE BLOCK (assets/cliff_block, tools/import_cliff_block.gd): the user's own
 	# chunk of cliff, the main thing the walls are built of. Numbered after the kit.
 	var block := load(BLOCK) as ArrayMesh
-	var chain: Array = MeshLods.chain(block, 24)
+	# ITS SECOND LEVEL IS 700 TRIANGLES (the user's figure), not the half the
+	# simplifier's chain would give next: the whole block only within 30 m, then
+	# straight to 700, then on down the chain from there.
+	var halves: Array = MeshLods.chain(block, 24)
+	var chain: Array = [block, MeshLods.reduced(block, BLOCK_LOD1)]
+	for m: ArrayMesh in halves:
+		if m.surface_get_array_index_len(0) / 3 < BLOCK_LOD1 * 0.8:
+			chain.append(m)
 	_meshes.append(chain)
 	var box := block.get_aabb()
 	_kit_size.append(box.size)

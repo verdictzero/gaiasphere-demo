@@ -42,6 +42,64 @@ static func chain(mesh: ArrayMesh, fewest := 20) -> Array:
 	return out
 
 
+## A mesh taken down to about `triangles` (never more), by the same simplifier.
+## Its vertices are welded by position first (their normals averaged): a mesh
+## with split vertices is all borders to the simplifier, which will not move one.
+static func reduced(mesh: ArrayMesh, triangles: int) -> ArrayMesh:
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var index: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var where := {}
+	var to := PackedInt32Array()
+	to.resize(verts.size())
+	var wv := PackedVector3Array()
+	var wn := PackedVector3Array()
+	for i in verts.size():
+		var key := verts[i].snappedf(0.0005)
+		if not where.has(key):
+			where[key] = wv.size()
+			wv.append(verts[i])
+			wn.append(Vector3.ZERO)
+		to[i] = where[key]
+		wn[to[i]] += normals[i] if i < normals.size() else Vector3.UP
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in wv.size():
+		st.set_normal(wn[i].normalized())
+		st.add_vertex(wv[i])
+	for t in range(0, index.size(), 3):
+		var a := to[index[t]]
+		var b := to[index[t + 1]]
+		var c := to[index[t + 2]]
+		if a != b and b != c and a != c:
+			st.add_index(a)
+			st.add_index(b)
+			st.add_index(c)
+	var idx := st.generate_lod(1e9, triangles * 3)
+	if idx.is_empty() or idx.size() >= index.size():
+		return mesh
+	# Only the vertices it still uses.
+	var slot := {}
+	var kv := PackedVector3Array()
+	var kn := PackedVector3Array()
+	var ki := PackedInt32Array()
+	for i in idx:
+		if not slot.has(i):
+			slot[i] = kv.size()
+			kv.append(wv[i])
+			kn.append(wn[i].normalized())
+		ki.append(slot[i])
+	var out := []
+	out.resize(Mesh.ARRAY_MAX)
+	out[Mesh.ARRAY_VERTEX] = kv
+	out[Mesh.ARRAY_NORMAL] = kn
+	out[Mesh.ARRAY_INDEX] = ki
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
+	return m
+
+
 ## Hand-over distances for a chain of `levels` meshes of a thing `size` metres
 ## across: each level held until the thing is about as many pixels across as
 ## its triangles can afford, stepping out by `step` times each time. `levels - 1`
