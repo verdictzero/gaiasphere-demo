@@ -147,5 +147,8 @@ void fragment() {
 	}
 	float ao = pow(clamp(1.0 - shut * intensity, 0.0, 1.0), power);
 	ao = max(mix(1.0, ao, far), floor_light);
-	ALBEDO = mix(tint, vec3(1.0), ao);
+	// (The Mobile renderer keeps its picture at half brightness, to have room over
+	// white, and halves whatever a shader writes: a multiplier of one has to be
+	// written as two, or the pass dims the whole frame by half.)
+	ALBEDO = mix(tint, vec3(1.0), ao) * 2.0;
 }
