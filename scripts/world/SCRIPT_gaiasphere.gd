@@ -230,6 +230,20 @@ const GROUP := &"island_world"
 ## scene leaves it at 4 today — drop it only for terrain meant to keep shedding
 ## triangles past the level where `chunk_cells >> n` reaches 4.
 @export var min_chunk_cells := 4
+## NEAR LEVELS: this many levels FINER than `chunk_cells`, for the ground about
+## the player, each twice the grid of the next (2: 256 and 128 cells to the
+## chunk, half a metre and a metre between vertices, where LOD 0 used to be 2 m),
+## so a cliff's face and a hill's brow are round close to and not faceted.
+##
+## THEY ARE STREAMED, NEVER KEPT. A 256-cell chunk is sixteen of the old LOD 0,
+## and every one of the island's would be gigabytes: so these are not prewarmed,
+## not baked and not cached. The few round the player are meshed on the workers
+## as they come into range (the level below shows until one lands) and freed
+## when they are left. `near_distances` is how far each reaches, finest first;
+## in `_ready` they go on the front of `lod_distances`, and `coast_lod` and
+## `terrain_shadow_lod` move up by as many, so those still name the grids they did.
+@export_range(0, 3) var near_levels := 2
+@export var near_distances := PackedFloat32Array([40.0, 96.0])
 ## Upper distance bound for each LOD level; beyond the last entry the coarsest
 ## level is used. Must be ascending.
 ##
@@ -500,6 +514,14 @@ func _ready() -> void:
 		# as the thing you assign when you want to tune it.
 		field = IslandField.new()
 	field.prepare()
+	near_levels = mini(near_levels, near_distances.size())
+	if near_levels > 0:
+		var ladder := near_distances.slice(near_distances.size() - near_levels)
+		ladder.append_array(lod_distances)
+		lod_distances = ladder
+		coast_lod += near_levels
+		if terrain_shadow_lod >= 0:
+			terrain_shadow_lod += near_levels
 	if bake_cache:
 		# Opened before anything can be meshed. `open_with_disk` adopts a store
 		# built from the same settings — from memory when the last scene left one
@@ -867,7 +889,7 @@ func _lod_for(dist: float, current: int) -> int:
 
 
 func _cells_for_lod(lod: int) -> int:
-	return maxi(maxi(min_chunk_cells, 1), chunk_cells >> lod)
+	return maxi(maxi(min_chunk_cells, 1), (chunk_cells << near_levels) >> lod)
 
 
 # Does a chunk at this LOD level carry a collision body?
@@ -982,7 +1004,7 @@ func _build_task(pk: String, cell: Vector2i, ck: Vector2i, lod: int, cells: int,
 	# worker's whole payload is the point; the answer is a yes/no because the
 	# resources themselves are only ever touched on the main thread.
 	var bkey := TerrainBake.key_for(cell, ck, cells, want_col)
-	var baked := _bake_sig != "" and TerrainBake.peek(bkey) != TerrainBake.MISS
+	var baked := _bake_sig != "" and cells <= chunk_cells and TerrainBake.peek(bkey) != TerrainBake.MISS
 	if not baked:
 		# The field is borrowed INSIDE the miss, not above it. A borrow from an
 		# empty pool is a `field.clone()`, and on a re-entry every one of these
@@ -1093,6 +1115,13 @@ func _install(entry: Dictionary) -> void:
 		# Out of the tree, NOT freed — the cache still owns it, and the point of
 		# holding it is that coming back to this level costs nothing.
 		(state["holder"] as Node3D).remove_child(old)
+		# A NEAR LEVEL is not kept: it is far too big to hold one for every chunk
+		# walked over. Freed, and meshed again if the player comes back.
+		var old_lod := int(chunks[ck]["lod"])
+		var old_cells := _cells_for_lod(old_lod) if old_lod >= 0 else 0
+		if old_cells > chunk_cells:
+			cache.erase(_cache_key(ck, old_cells))
+			(old as Node).queue_free()
 	chunks.erase(ck)
 
 	if node == null:
@@ -1129,7 +1158,7 @@ func _chunk_for(entry: Dictionary, res: Dictionary, cells: int) -> MeshInstance3
 		# "Meshes to nothing" is an answer in its own right and worth keeping —
 		# see `AUTOLOAD_terrain_bake.gd`. Not stored when the island was freed
 		# under this build, because `_install` has already returned by then.
-		if _bake_sig != "":
+		if _bake_sig != "" and cells <= chunk_cells:
 			TerrainBake.put_empty(bkey)
 		return null
 	# Built on the worker (`_build_task`); built here only for an entry that came
@@ -1141,7 +1170,8 @@ func _chunk_for(entry: Dictionary, res: Dictionary, cells: int) -> MeshInstance3
 	# `put_chunk` rather than `put` so the store can keep the arrays as well when
 	# it is being written to disk — see `TerrainBake.record_arrays`, which the game
 	# never sets.
-	if _bake_sig != "":
+	# (Not a near level: those are never kept, here or in the cache.)
+	if _bake_sig != "" and cells <= chunk_cells:
 		TerrainBake.put_chunk(bkey, built, res, TerrainBake.note_bytes(res))
 	return _node_from_built(built, lod)
 
@@ -1393,8 +1423,9 @@ func _pregen_jobs_for(state: Dictionary, isl: IslandField.Island) -> void:
 					"cells": maxi(pregen_cells, 1), "lod": -1, "install": true})
 			continue
 
-		var live_lod: int = coast_lod if coastal else _lod_for(dist, -1)
-		var levels: Array = [coast_lod] if coastal else range(lod_distances.size() + 1)
+		# (Never a near level: those the streamer makes, round the player, after.)
+		var live_lod: int = coast_lod if coastal else maxi(_lod_for(dist, -1), near_levels)
+		var levels: Array = [coast_lod] if coastal else range(near_levels, lod_distances.size() + 1)
 		# One entry per distinct CELL COUNT, not per level: the ladder floors at
 		# `min_chunk_cells`, so its coarsest levels collapse onto the same grid and
 		# meshing it once is enough.
@@ -1521,7 +1552,7 @@ func _pregen_lane() -> void:
 		# store already holds adds none, so refusing it on budget grounds would
 		# skip a chunk that was free and then charge the streamer to mesh it again.
 		var bkey := TerrainBake.key_for(cell, ck, cells, want_col)
-		var baked := _bake_sig != "" and TerrainBake.peek(bkey) != TerrainBake.MISS
+		var baked := _bake_sig != "" and cells <= chunk_cells and TerrainBake.peek(bkey) != TerrainBake.MISS
 		if baked:
 			pass
 		elif _pregen_take_budget(cells, install):
