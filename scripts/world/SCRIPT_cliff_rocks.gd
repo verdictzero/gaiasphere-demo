@@ -80,6 +80,8 @@ const CELL := 32.0
 const BLOCK := "res://assets/cliff_block/cliff_block.res"
 ## Triangles in the block's second level of detail.
 const BLOCK_LOD1 := 700
+## And in its first: the block as handed over is 6,724.
+const BLOCK_LOD0 := 1000
 ## Of the places on a wall, the share that also get a few shards in front.
 const SHARD_SHARE := 0.25
 
@@ -132,7 +134,8 @@ func _ready() -> void:
 	# simplifier's chain would give next: the whole block only within 30 m, then
 	# straight to 700, then on down the chain from there.
 	var halves: Array = MeshLods.chain(block, 24)
-	var chain: Array = [block, MeshLods.reduced(block, BLOCK_LOD1)]
+	# (And its first, the block itself, taken down to 1000: the user's figure too.)
+	var chain: Array = [MeshLods.reduced(block, BLOCK_LOD0), MeshLods.reduced(block, BLOCK_LOD1)]
 	for m: ArrayMesh in halves:
 		if m.surface_get_array_index_len(0) / 3 < BLOCK_LOD1 * 0.8:
 			chain.append(m)
