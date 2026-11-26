@@ -4883,6 +4883,14 @@ func tableland(owner: Island, x: float, z: float, mask: float, wild: float, micr
 	var k := smoothstep(mesa_keep, mesa_keep + mesa_keep_ease, away)
 	if k <= 0.0:
 		return wild
+	# THE ONE EXCEPTION: round the shuttle's path and the hill it came down, no
+	# tiers and no walls, only the open slope (FlowTerrain's `meadow`).
+	if away < mesa_keep + mesa_keep_ease + 260.0:
+		var fl := flows_for(owner) if flow_enabled else null
+		if fl != null:
+			k *= smoothstep(120.0, 230.0, fl.crash_clear(x, z))
+			if k <= 0.0:
+				return wild
 	var px := x + _mesa_warp_noise.get_noise_2d(x, z) * mesa_warp + _mesa_jag_noise.get_noise_2d(x, z) * mesa_jag
 	var pz := z + _mesa_warp_noise.get_noise_2d(x + 7919.0, z - 3571.0) * mesa_warp \
 			+ _mesa_jag_noise.get_noise_2d(x - 911.0, z + 433.0) * mesa_jag

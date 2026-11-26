@@ -409,11 +409,10 @@ const CRASH_BERM := 0.6           ## the dirt banked up either side of it
 ## starts there from nothing.
 const CRASH_TOUCH := 0.22
 
-## THE MEADOW ON ITS PLATEAU, up the shore where the shuttle touched down (the
+## THE MEADOW ON ITS HILL, up the shore where the shuttle touched down (the
 ## cows' meadow, Flora's glade): a level top `MEADOW_RISE` metres over the ground
-## it stood on, `MEADOW_R` across the radius, walled on the sides away from the
-## mere and let down to it on the mere's side by a long ramp, which the skid runs
-## down. Its middle, `MEADOW_UP` metres back up the skid from the wreck, is
+## it stood on, `MEADOW_R` across the radius, falling away gently all round over
+## `MEADOW_RAMP` (see `meadow`). Its middle, `MEADOW_UP` metres back up the skid from the wreck, is
 ## Flora's GLADE_UP_SHORE.
 const MEADOW_UP := 92.0
 const MEADOW_R := 58.0
@@ -446,23 +445,27 @@ func _place_meadow(field: IslandField, isl) -> void:
 	_meadow_h = field.base_height(_meadow_c.x, _meadow_c.y, m, isl, 0.0, 0.0, false) - isl.base_y + MEADOW_RISE
 
 
-## The ground `g` with the meadow's plateau in it: level on top, a wall round
-## it, the ramp down toward the mere. Its edge wanders, so it is no circle.
+## The ground `g` with the meadow's hill in it: A HILL, NOT A PLATEAU (the user:
+## "make sure the crash path of shuttle is a nice hill, cliff free, this can be an
+## exception to the rule"): level across its top where the cows are, and falling
+## away gently on every side, no wall anywhere, so the skid runs down an open
+## slope to the mere. (The tablelands keep off it: `crash_clear`.)
 func meadow(x: float, z: float, g: float) -> float:
 	if _crash_out == Vector2.ZERO:
 		return g
-	var d := Vector2(x, z) - _meadow_c
-	var r := d.length()
-	if r > MEADOW_R + MEADOW_RAMP + 10.0:
+	var r := Vector2(x, z).distance_to(_meadow_c)
+	if r > MEADOW_R + MEADOW_RAMP:
 		return g
-	var a := d.angle()
-	var edge := MEADOW_R + 4.0 * sin(3.0 * a + 0.7) + 2.5 * sin(7.0 * a + 2.1) + 1.5 * sin(13.0 * a)
-	# 1 on the side that faces the mere, where the wall becomes the ramp.
-	var lake := smoothstep(0.45, 0.85, (d / maxf(r, 0.001)).dot(-_crash_out)) if r > 0.001 else 0.0
-	var start := lerpf(edge, edge - 20.0, lake)
-	var run := lerpf(MEADOW_WALL, MEADOW_RAMP, lake)
-	var w := 1.0 - smoothstep(start, start + run, r)
-	return lerpf(g, _meadow_h, w)
+	return lerpf(g, _meadow_h, 1.0 - smoothstep(MEADOW_R * 0.45, MEADOW_R + MEADOW_RAMP, r))
+
+
+## How far a point is from the shuttle's path (the line from the wreck up over
+## the meadow's hill), metres; huge where there is no crash. The tablelands'
+## tiers and walls are kept this far off it (IslandField.tableland).
+func crash_clear(x: float, z: float) -> float:
+	if _crash_out == Vector2.ZERO:
+		return 1e9
+	return _seg_dist(Vector2(x, z), _crash_at, _meadow_c + _crash_out * MEADOW_R)
 
 
 ## Where the wreck lies and the way back up its gouge, world metres; (0, 0) twice if there is none.

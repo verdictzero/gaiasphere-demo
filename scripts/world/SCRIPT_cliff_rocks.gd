@@ -69,7 +69,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 14   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 15   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -292,7 +292,10 @@ func _layout(field: IslandField) -> Array:
 		for i in n:
 			var p := isl.center + Vector2(-reach + (float(i) + rng.randf()) * search_step,
 					-reach + (float(j) + rng.randf()) * search_step)
-			if p.distance_to(isl.center) < keep and p.distance_to(meadow) > FlowTerrain.MEADOW_R + 20.0:
+			if p.distance_to(isl.center) < keep:
+				continue
+			# (No rock on the shuttle's path and its hill: the exception to the rule.)
+			if flows != null and flows.crash_clear(p.x, p.y) < 130.0:
 				continue
 			var m := field.mask_for(isl, p.x, p.y)
 			if m < field.mesa_shore * 1.5:
