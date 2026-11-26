@@ -255,7 +255,7 @@ func _build_layers() -> void:
 		# (Three-quarters of the way to the green of the meadow ground it stands in,
 		# leafy_grass as the terrain draws it: the blades also take light through
 		# their leaves, which the ground does not.)
-		"tint": Color(1.12, 1.22, 1.08), "alpha_cut": 0.36, "roughness": 0.7,
+		"tint": Color(0.95, 1.08, 0.86), "alpha_cut": 0.36, "roughness": 0.7,
 		"wind_bend": 0.16, "wind_flutter": 0.04, "atlas_columns": 3.0, "push_bend": 0.3,
 		"backlight": Color(0.035, 0.05, 0.015), "specular": 0.04, "thin_start": reach * 0.2, "thin_end": reach * 0.7, "thin_keep": 0.3,
 		"fade_start": reach * 0.72, "fade_end": reach * 0.98})
