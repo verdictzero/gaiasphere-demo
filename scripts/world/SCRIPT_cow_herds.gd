@@ -355,7 +355,7 @@ func _rest(cow: Dictionary, herd: Dictionary) -> void:
 	var last := String(cow.get("did", ""))
 	var lots := {
 		"graze": (0.15 + 0.5 * hungry) * (0.35 if night else 1.0),
-		"nap": (0.03 + 0.14 * idle) * (5.0 if night else 1.0),
+		"nap": (0.015 + 0.07 * idle) * (10.0 if night else 1.0),
 		"look": 0.05 + 0.1 * restless,
 		"visit": (0.03 + 0.14 * friendly) if others else 0.0,
 		"stray": (0.02 + 0.12 * restless * (1.0 - friendly * 0.6)) * (0.2 if night else 1.0),
@@ -380,7 +380,7 @@ func _rest(cow: Dictionary, herd: Dictionary) -> void:
 		"nap":
 			cow["state"] = "nap"
 			cow["want_air"] = 0.02
-			cow["t"] = _rng.randf_range(12.0, 30.0) * (2.0 if night else 1.0)
+			cow["t"] = _rng.randf_range(8.0, 22.0) * (2.5 if night else 1.0)
 			_play(cow, "Idle_Breathe")
 			(cow["player"] as AnimationPlayer).speed_scale = 0.55
 		"look":
