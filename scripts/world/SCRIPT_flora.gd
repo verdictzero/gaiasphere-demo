@@ -472,7 +472,7 @@ static func _noise32(x: float, z: float, salt: int) -> float:
 ## arithmetic, so the bare ground is exactly where nothing grows.
 static func wood_zones(x: float, z: float) -> Vector2:
 	var fern := smoothstep(0.56, 0.68, _noise32(x / 38.0, z / 38.0, 81) * 0.7 + _noise32(x / 13.0, z / 13.0, 83) * 0.3)
-	var clear := smoothstep(0.64, 0.74, _noise32(x / 30.0, z / 30.0, 82) * 0.75 + _noise32(x / 9.0, z / 9.0, 84) * 0.25)
+	var clear := smoothstep(0.69, 0.77, _noise32(x / 30.0, z / 30.0, 82) * 0.75 + _noise32(x / 9.0, z / 9.0, 84) * 0.25)
 	return Vector2(fern * (1.0 - clear), clear)
 
 

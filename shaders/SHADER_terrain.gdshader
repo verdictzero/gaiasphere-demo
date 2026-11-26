@@ -51,7 +51,9 @@ uniform vec3 meadow_tint : source_color = vec3(0.68, 0.95, 0.5);
 // (The scan is a brown-olive that the ground's brightness turns orange: pulled
 // well toward green, a paler, yellower grass than the meadow's and no more.)
 uniform vec3 dry_tint : source_color = vec3(0.62, 0.95, 0.42);
-uniform vec3 floor_tint : source_color = vec3(0.6, 0.54, 0.46);
+// (The scan is strewn with orange leaves: taken most of the way to grey-brown,
+// and darkened, so a clearing is old leaf mould and not a carpet of autumn.)
+uniform vec3 floor_tint : source_color = vec3(0.4, 0.38, 0.33);
 uniform vec3 scree_tint : source_color = vec3(0.62, 0.6, 0.6);
 uniform vec3 stony_tint : source_color = vec3(0.85, 0.85, 0.82);
 // The high ground (metres over the island's base) where rocky ground shows
@@ -136,7 +138,7 @@ float noise32(vec2 q, int salt) {
 }
 
 float wood_clearing(vec2 p) {
-	return smoothstep(0.64, 0.74, noise32(p / 30.0, 82) * 0.75 + noise32(p / 9.0, 84) * 0.25);
+	return smoothstep(0.69, 0.77, noise32(p / 30.0, 82) * 0.75 + noise32(p / 9.0, 84) * 0.25);
 }
 
 // ONE SURFACE, LAID WITHOUT A REPEAT YOU CAN SEE (stochastic sampling, after
@@ -242,6 +244,7 @@ void fragment() {
 	if (clearing > 0.0) {
 		vec3 fl_a; vec3 fl_n;
 		lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, fl_a, fl_n);
+		fl_a = mix(vec3(dot(fl_a, vec3(0.3, 0.55, 0.15))), fl_a, 0.4);
 		ground_a = mix(ground_a, fl_a * floor_tint, clearing);
 		ground_n = mix(ground_n, fl_n, clearing);
 	}
