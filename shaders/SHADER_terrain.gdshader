@@ -11,20 +11,26 @@
 shader_type spatial;
 render_mode cull_disabled;
 
-uniform sampler2D moss_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D moss_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D soil_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D soil_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D litter_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D litter_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D trail_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D trail_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D sand_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D sand_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D bed_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D bed_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D rock_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D rock_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+// EVERY SURFACE IN TWO TEXTURE ARRAYS (tools/build_ground_arrays.py): colour and
+// normals, one layer per surface, numbered as the L_ constants below. Two
+// samplers for all of them: a sampler per picture had run past what a phone
+// allows a shader.
+uniform sampler2DArray ground_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2DArray ground_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+const float L_MEADOW = 0.0;
+const float L_DRY = 1.0;
+const float L_MOSS = 2.0;
+const float L_LITTER = 3.0;
+const float L_FLOOR = 4.0;
+const float L_SOIL = 5.0;
+const float L_TRAIL = 6.0;
+const float L_SAND = 7.0;
+const float L_BED = 8.0;
+const float L_ROCK = 9.0;
+const float L_SCREE = 10.0;
+const float L_STONY = 11.0;
+const float L_CHURN = 12.0;
+const float L_COBBLE = 13.0;
 // Large soft patches: breaks the tiling and varies how damp the ground looks.
 uniform sampler2D macro_noise : filter_linear_mipmap, repeat_enable;
 
@@ -36,6 +42,23 @@ uniform float trail_size = 3.0;
 uniform float sand_size = 2.4;
 uniform float bed_size = 2.2;
 uniform float rock_size = 5.0;
+uniform float meadow_size = 2.4;
+uniform float dry_size = 2.6;
+uniform float floor_size = 3.0;
+uniform float scree_size = 2.2;
+uniform float stony_size = 4.0;
+uniform vec3 meadow_tint : source_color = vec3(0.92, 0.98, 0.82);
+uniform vec3 dry_tint : source_color = vec3(1.05, 1.0, 0.9);
+uniform vec3 floor_tint : source_color = vec3(0.8, 0.76, 0.7);
+uniform vec3 scree_tint : source_color = vec3(0.62, 0.6, 0.6);
+uniform vec3 stony_tint : source_color = vec3(0.85, 0.85, 0.82);
+// The high ground (metres over the island's base) where rocky ground shows
+// through the grass in patches, from the first height to all of it by the second.
+uniform vec2 stony_heights = vec2(45.0, 95.0);
+// STOCHASTIC SAMPLING: how many tiles a variant runs across before the next
+// takes over (larger, slower), and on/off.
+uniform float stochastic_scale = 22.0;
+uniform bool stochastic = true;
 uniform vec3 moss_tint : source_color = vec3(0.5, 0.66, 0.3);
 uniform vec3 soil_tint : source_color = vec3(0.8, 0.78, 0.72);
 uniform vec3 litter_tint : source_color = vec3(0.85, 0.8, 0.72);
@@ -56,8 +79,6 @@ uniform float macro_strength : hint_range(0.0, 1.0) = 0.45;
 uniform float detail_distance = 140.0;
 
 // The causeway across the mere: a line (xz to xz) and half its cobbled width.
-uniform sampler2D cobble_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D cobble_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 causeway = vec4(0.0);
 uniform float causeway_half = 0.0;
 // How far from its middle line the causeway's banks reach, metres.
@@ -70,8 +91,6 @@ uniform vec3 cobble_tint : source_color = vec3(0.9, 0.9, 0.86);
 // crash_at: the wreck's xz; crash_out: the way back up the skid; crash_shape: the
 // divot's radius, the skid's length, its half-width at the wreck, and its
 // touch-down share (FlowTerrain's CRASH_BOWL, CRASH_GOUGE, CRASH_WIDE, CRASH_TOUCH).
-uniform sampler2D churned_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D churned_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec2 crash_at = vec2(0.0);
 uniform vec2 crash_out = vec2(0.0);
 uniform vec4 crash_shape = vec4(0.0);
@@ -94,8 +113,30 @@ float height_of(vec3 c) {
 	return clamp(dot(c, vec3(0.45, 0.45, 0.1)) * 2.2, 0.0, 1.0);
 }
 
-vec3 udn(sampler2D tex, vec2 uv) {
-	return texture(tex, uv).xyz * 2.0 - 1.0;
+// ONE SURFACE, LAID WITHOUT A REPEAT YOU CAN SEE (stochastic sampling, after
+// Inigo Quilez's "texture repetition"): a slow noise picks, tile by tile, which
+// of eight offset copies of the picture is laid, and two neighbouring copies are
+// cross-faded where it changes, the seam following the picture's own light and
+// dark. Colour into `a`, the unpacked normal into `n`. `dx`, `dy`: the uv's
+// screen derivatives, taken outside any branch.
+void lay(float layer, vec2 uv, vec2 dx, vec2 dy, out vec3 a, out vec3 n) {
+	if (!stochastic) {
+		a = textureGrad(ground_albedo, vec3(uv, layer), dx, dy).rgb;
+		n = textureGrad(ground_normal, vec3(uv, layer), dx, dy).xyz * 2.0 - 1.0;
+		return;
+	}
+	float l = texture(macro_noise, uv / stochastic_scale + layer * 0.137).r * 8.0;
+	float ia = floor(l);
+	float f = fract(l);
+	vec2 oa = sin(vec2(3.0, 7.0) * ia);
+	vec2 ob = sin(vec2(3.0, 7.0) * (ia + 1.0));
+	vec3 ca = textureGrad(ground_albedo, vec3(uv + oa, layer), dx, dy).rgb;
+	vec3 cb = textureGrad(ground_albedo, vec3(uv + ob, layer), dx, dy).rgb;
+	float b = smoothstep(0.2, 0.8, f - 0.1 * dot(ca - cb, vec3(1.0)));
+	a = mix(ca, cb, b);
+	vec3 na = textureGrad(ground_normal, vec3(uv + oa, layer), dx, dy).xyz;
+	vec3 nb = textureGrad(ground_normal, vec3(uv + ob, layer), dx, dy).xyz;
+	n = mix(na, nb, b) * 2.0 - 1.0;
 }
 
 void fragment() {
@@ -118,19 +159,44 @@ void fragment() {
 
 	// Moss under trees gives way to needle litter in ragged patches.
 	float litter_mix = clamp(forest * (0.25 + macro2 * 1.1) * smoothstep(0.25, 0.6, macro + macro2 * 0.5), 0.0, 1.0);
-	vec3 moss_a = texture(moss_albedo, p / moss_size).rgb * moss_tint;
-	vec3 soil_a = texture(soil_albedo, p / soil_size).rgb * soil_tint;
-	vec3 litter_a = texture(litter_albedo, p / litter_size).rgb * litter_tint;
-	vec3 trail_a = texture(trail_albedo, p / trail_size).rgb * trail_tint;
-	vec3 sand_a = texture(sand_albedo, p / sand_size).rgb * sand_tint;
-	vec3 moss_n = udn(moss_normal, p / moss_size);
-	vec3 soil_n = udn(soil_normal, p / soil_size);
-	vec3 litter_n = udn(litter_normal, p / litter_size);
-	vec3 trail_n = udn(trail_normal, p / trail_size);
-	vec3 sand_n = udn(sand_normal, p / sand_size);
+	vec2 pdx = dFdx(p);
+	vec2 pdy = dFdy(p);
+	vec3 moss_a; vec3 moss_n;
+	lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, moss_a, moss_n);
+	vec3 soil_a; vec3 soil_n;
+	lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, soil_a, soil_n);
+	vec3 litter_a; vec3 litter_n;
+	lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, litter_a, litter_n);
+	vec3 trail_a; vec3 trail_n;
+	lay(L_TRAIL, p / trail_size, pdx / trail_size, pdy / trail_size, trail_a, trail_n);
+	vec3 sand_a; vec3 sand_n;
+	lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, sand_a, sand_n);
+	vec3 meadow_a; vec3 meadow_n;
+	lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, meadow_a, meadow_n);
+	vec3 dry_a; vec3 dry_n;
+	lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, dry_a, dry_n);
+	moss_a *= moss_tint;
+	soil_a *= soil_tint;
+	litter_a *= litter_tint;
+	trail_a *= trail_tint;
+	sand_a *= sand_tint;
 
-	vec3 ground_a = mix(moss_a, litter_a, litter_mix * 0.8);
-	vec3 ground_n = mix(moss_n, litter_n, litter_mix * 0.8);
+	// OPEN GROUND IS MEADOW: lush grass, giving way in broad patches to dry; under
+	// the trees, the wood's moss and its litter, as before.
+	float dryness = smoothstep(0.42, 0.72, macro + (macro2 - 0.5) * 0.5);
+	vec3 grass_a = mix(meadow_a * meadow_tint, dry_a * dry_tint, dryness);
+	vec3 grass_n = mix(meadow_n, dry_n, dryness);
+	float wood = smoothstep(0.15, 0.6, forest);
+	vec3 ground_a = mix(grass_a, mix(moss_a, litter_a, litter_mix * 0.8), wood);
+	vec3 ground_n = mix(grass_n, mix(moss_n, litter_n, litter_mix * 0.8), wood);
+	// CLEARINGS in the wood: leaf-strewn floor, in patches of their own.
+	float clearing = smoothstep(0.66, 0.76, texture(macro_noise, p / 61.0 + 0.53).r) * wood;
+	if (clearing > 0.0) {
+		vec3 fl_a; vec3 fl_n;
+		lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, fl_a, fl_n);
+		ground_a = mix(ground_a, fl_a * floor_tint, clearing);
+		ground_n = mix(ground_n, fl_n, clearing);
+	}
 	vec3 earth_a = mix(mix(soil_a, litter_a, forest), trail_a, trail);
 	vec3 earth_n = mix(mix(soil_n, litter_n, forest), trail_n, trail);
 
@@ -164,12 +230,12 @@ void fragment() {
 	}
 	float rock_w = max(max(w.b, bank_w), cw_side);
 	if (rock_w > 0.003) {
-		rock_a = (textureGrad(rock_albedo, rp.zy, dzy_x, dzy_y).rgb * bw.x
-				+ textureGrad(rock_albedo, rp.xz, dxz_x, dxz_y).rgb * bw.y
-				+ textureGrad(rock_albedo, rp.xy, dxy_x, dxy_y).rgb * bw.z) * rock_tint;
-		vec3 tx = textureGrad(rock_normal, rp.zy, dzy_x, dzy_y).xyz * 2.0 - 1.0;
-		vec3 ty = textureGrad(rock_normal, rp.xz, dxz_x, dxz_y).xyz * 2.0 - 1.0;
-		vec3 tz = textureGrad(rock_normal, rp.xy, dxy_x, dxy_y).xyz * 2.0 - 1.0;
+		rock_a = (textureGrad(ground_albedo, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).rgb * bw.x
+				+ textureGrad(ground_albedo, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).rgb * bw.y
+				+ textureGrad(ground_albedo, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).rgb * bw.z) * rock_tint;
+		vec3 tx = textureGrad(ground_normal, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).xyz * 2.0 - 1.0;
+		vec3 ty = textureGrad(ground_normal, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).xyz * 2.0 - 1.0;
+		vec3 tz = textureGrad(ground_normal, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).xyz * 2.0 - 1.0;
 		vec3 nx = vec3(tx.xy * detail + geo_n.zy, abs(tx.z) * geo_n.x);
 		vec3 ny = vec3(ty.xy * detail + geo_n.xz, abs(ty.z) * geo_n.y);
 		vec3 nz = vec3(tz.xy * detail + geo_n.xy, abs(tz.z) * geo_n.z);
@@ -190,15 +256,34 @@ void fragment() {
 	vec3 albedo = ground_a * w.r + earth_a * w.g + rock_a * w.b + sand_a * w.a;
 	vec3 flat_n = ground_n * w.r + earth_n * w.g + sand_n * w.a;
 	float roughness = 0.94 * w.r + 0.9 * w.g + 0.82 * w.b + 0.88 * w.a;
+	// SCREE: ground too steep for grass and not steep enough to be a wall, under
+	// the walls, is broken stone.
+	float scree = smoothstep(0.95, 0.82, geo_n.y) * (1.0 - w.b) * (1.0 - wood * 0.6);
+	// THE HEIGHTS: up on the high plateaus, rocky ground shows through the grass.
+	float stony = smoothstep(stony_heights.x, stony_heights.y, world_pos.y)
+			* smoothstep(0.45, 0.6, macro2 + (macro - 0.5) * 0.6) * (1.0 - wood) * w.r;
+	if (scree + stony > 0.003) {
+		vec3 sc_a; vec3 sc_n;
+		lay(L_SCREE, p / scree_size, pdx / scree_size, pdy / scree_size, sc_a, sc_n);
+		vec3 st_a; vec3 st_n;
+		lay(L_STONY, p / stony_size, pdx / stony_size, pdy / stony_size, st_a, st_n);
+		scree = smoothstep(0.3, 0.7, scree + (height_of(sc_a) - 0.5) * 0.6);
+		albedo = mix(albedo, sc_a * scree_tint, scree);
+		flat_n = mix(flat_n, sc_n, scree);
+		stony = smoothstep(0.35, 0.65, stony + (height_of(st_a) - 0.5) * 0.8);
+		albedo = mix(albedo, st_a * stony_tint, stony);
+		flat_n = mix(flat_n, st_n, stony);
+		roughness = mix(roughness, 0.9, max(scree, stony));
+	}
 
 	// The river: pebbles on the bed, rock on the banks, silt above them.
 	float damp = 0.0;
 	vec3 caustic = vec3(0.0);
 	float detail_fade = 1.0 - smoothstep(detail_distance, detail_distance * 2.5, dist);
 	if (river > 0.0) {
-		vec2 bp = p / bed_size;
-		vec3 bed_a = textureGrad(bed_albedo, bp, dFdx(bp), dFdy(bp)).rgb * bed_tint;
-		vec3 bed_nn = textureGrad(bed_normal, bp, dFdx(bp), dFdy(bp)).xyz * 2.0 - 1.0;
+		vec3 bed_a; vec3 bed_nn;
+		lay(L_BED, p / bed_size, pdx / bed_size, pdy / bed_size, bed_a, bed_nn);
+		bed_a *= bed_tint;
 		// Under the mere's surface, by height: the causeway stands in the middle of
 		// the band and is dry.
 		float under = 1.0;
@@ -273,17 +358,17 @@ void fragment() {
 			vec2 across = vec2(-run.y, run.x);
 			vec2 rel = p - causeway.xy;
 			vec2 cp = vec2(dot(rel, across), dot(rel, run)) / cobble_size;
-			vec3 cob = textureGrad(cobble_albedo, cp, dFdx(cp), dFdy(cp)).rgb;
+			vec3 cob = textureGrad(ground_albedo, vec3(cp, L_COBBLE), dFdx(cp), dFdy(cp)).rgb;
 			// The stones outlast their joints: the path ends in whole stones, not a blur.
 			cw = smoothstep(0.42, 0.58, cw + (height_of(cob) - 0.5) * 0.7);
 			albedo = mix(albedo, cob * cobble_tint, cw);
-			vec3 cn = textureGrad(cobble_normal, cp, dFdx(cp), dFdy(cp)).xyz * 2.0 - 1.0;
+			vec3 cn = textureGrad(ground_normal, vec3(cp, L_COBBLE), dFdx(cp), dFdy(cp)).xyz * 2.0 - 1.0;
 			vec2 tilt = across * cn.x + run * cn.y;          // the normal map, turned with it
 			world_n = normalize(mix(world_n, normalize(geo_n + vec3(tilt.x, 0.0, tilt.y) * detail * 1.4), cw));
 			roughness = mix(roughness, 0.8, cw);
 		}
 	}
-	if (crash_shape.x > 0.0) {
+	if (crash_shape.x > 0.0 && crash_out != vec2(0.0)) {
 		// The same shapes FlowTerrain digs (crash_weight), reached out a little past
 		// the cut onto the berms, with a ragged edge.
 		vec2 d = p - crash_at;
@@ -300,13 +385,13 @@ void fragment() {
 		}
 		if (churn > 0.0) {
 			vec2 mp = p / churned_size;
-			vec3 mud = textureGrad(churned_albedo, mp, dFdx(mp), dFdy(mp)).rgb * churned_tint;
+			vec3 mud = textureGrad(ground_albedo, vec3(mp, L_CHURN), dFdx(mp), dFdy(mp)).rgb * churned_tint;
 			// Clods outlast the edge: it breaks up into lumps, not a blur.
 			churn = smoothstep(0.35, 0.65, churn + (height_of(mud / churned_tint) - 0.5) * 0.8);
 			// Under the water it is the bed's: only the shallows show it.
 			churn *= smoothstep(mere_level - 2.5, mere_level + 0.2, world_pos.y);
 			albedo = mix(albedo, mud, churn);
-			vec3 mn = textureGrad(churned_normal, mp, dFdx(mp), dFdy(mp)).xyz * 2.0 - 1.0;
+			vec3 mn = textureGrad(ground_normal, vec3(mp, L_CHURN), dFdx(mp), dFdy(mp)).xyz * 2.0 - 1.0;
 			world_n = normalize(mix(world_n, normalize(geo_n + vec3(mn.x, 0.0, mn.y) * detail * 1.5), churn));
 			roughness = mix(roughness, 0.92, churn);
 			damp = max(damp, churn * 0.25);

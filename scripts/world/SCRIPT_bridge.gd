@@ -31,8 +31,6 @@ func _ready() -> void:
 	start = Vector3(ends[1].x, field.height_at(ends[1].x, ends[1].y, 0.0), ends[1].y)
 	var ground := world.get(&"terrain_material") as ShaderMaterial
 	if ground != null:
-		ground.set_shader_parameter("cobble_albedo", load("res://textures/polyhaven/cobblestone_floor_04_basecolor.jpg"))
-		ground.set_shader_parameter("cobble_normal", load("res://textures/polyhaven/cobblestone_floor_04_normal.jpg"))
 		ground.set_shader_parameter("causeway", Vector4(ends[0].x, ends[0].y, ends[1].x, ends[1].y))
 		ground.set_shader_parameter("causeway_half", cobble_half_width)
 		# How far out its banks run: under the water their steep faces are cliff.
@@ -41,8 +39,6 @@ func _ready() -> void:
 		# The shuttle's skid and divot, churned earth (SHADER_terrain's crash_*).
 		var site: PackedVector2Array = flows.crash_site()
 		if site[1] != Vector2.ZERO:
-			ground.set_shader_parameter("churned_albedo", load("res://textures/polyhaven/brown_mud_03_basecolor.jpg"))
-			ground.set_shader_parameter("churned_normal", load("res://textures/polyhaven/brown_mud_03_normal.jpg"))
 			ground.set_shader_parameter("crash_at", site[0])
 			ground.set_shader_parameter("crash_out", site[1])
 			ground.set_shader_parameter("crash_shape", Vector4(FlowTerrain.CRASH_BOWL, FlowTerrain.CRASH_GOUGE,

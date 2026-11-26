@@ -11,8 +11,10 @@
 shader_type spatial;
 render_mode cull_back;
 
-uniform sampler2D rock_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D rock_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+// The terrain's own ground arrays, and the rock's layer in them.
+uniform sampler2DArray ground_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2DArray ground_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float rock_layer = 9.0;
 uniform sampler2D macro_noise : filter_linear_mipmap, repeat_enable;
 uniform float rock_size = 5.0;
 uniform vec3 rock_tint : source_color = vec3(0.85, 0.88, 0.86);
@@ -55,12 +57,12 @@ void fragment() {
 	vec2 dzy_x = dFdx(rp.zy); vec2 dzy_y = dFdy(rp.zy);
 	vec2 dxz_x = dFdx(rp.xz); vec2 dxz_y = dFdy(rp.xz);
 	vec2 dxy_x = dFdx(rp.xy); vec2 dxy_y = dFdy(rp.xy);
-	vec3 albedo = (textureGrad(rock_albedo, rp.zy, dzy_x, dzy_y).rgb * bw.x
-			+ textureGrad(rock_albedo, rp.xz, dxz_x, dxz_y).rgb * bw.y
-			+ textureGrad(rock_albedo, rp.xy, dxy_x, dxy_y).rgb * bw.z) * rock_tint;
-	vec3 tx = textureGrad(rock_normal, rp.zy, dzy_x, dzy_y).xyz * 2.0 - 1.0;
-	vec3 ty = textureGrad(rock_normal, rp.xz, dxz_x, dxz_y).xyz * 2.0 - 1.0;
-	vec3 tz = textureGrad(rock_normal, rp.xy, dxy_x, dxy_y).xyz * 2.0 - 1.0;
+	vec3 albedo = (textureGrad(ground_albedo, vec3(rp.zy, rock_layer), dzy_x, dzy_y).rgb * bw.x
+			+ textureGrad(ground_albedo, vec3(rp.xz, rock_layer), dxz_x, dxz_y).rgb * bw.y
+			+ textureGrad(ground_albedo, vec3(rp.xy, rock_layer), dxy_x, dxy_y).rgb * bw.z) * rock_tint;
+	vec3 tx = textureGrad(ground_normal, vec3(rp.zy, rock_layer), dzy_x, dzy_y).xyz * 2.0 - 1.0;
+	vec3 ty = textureGrad(ground_normal, vec3(rp.xz, rock_layer), dxz_x, dxz_y).xyz * 2.0 - 1.0;
+	vec3 tz = textureGrad(ground_normal, vec3(rp.xy, rock_layer), dxy_x, dxy_y).xyz * 2.0 - 1.0;
 	vec3 nx = vec3(tx.xy * detail + geo_n.zy, abs(tx.z) * geo_n.x);
 	vec3 ny = vec3(ty.xy * detail + geo_n.xz, abs(ty.z) * geo_n.y);
 	vec3 nz = vec3(tz.xy * detail + geo_n.xy, abs(tz.z) * geo_n.z);

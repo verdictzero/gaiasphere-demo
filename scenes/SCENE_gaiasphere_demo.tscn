@@ -33,6 +33,7 @@
 [ext_resource type="Material" path="res://materials/MAT_cliff_wall.tres" id="cliff_mat"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_uni_truck.gd" id="unitruck"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_options_menu.gd" id="optmenu"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_rocks.gd" id="cliffrocks"]
 [ext_resource type="Material" path="res://materials/MAT_cloud_sea.tres" id="cloud_mat"]
 [ext_resource type="Material" path="res://materials/MAT_water.tres" id="water_mat"]
 [ext_resource type="Material" path="res://materials/MAT_underwater_003_r2.tres" id="uw_mat"]
@@ -54,6 +55,9 @@ prewarm = true
 [node name="Flora" type="Node3D" parent="."]
 script = ExtResource("flora")
 world_path = NodePath("../GaiaSphere")
+
+[node name="CliffRocks" type="Node3D" parent="."]
+script = ExtResource("cliffrocks")
 
 [node name="FogPatches" type="Node3D" parent="."]
 script = ExtResource("fogp")
