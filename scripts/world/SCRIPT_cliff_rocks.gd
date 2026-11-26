@@ -44,9 +44,11 @@ extends Node3D
 ## ON THE HILLS (the tablelands off: the island as it was, smooth and rolling) the
 ## rock is PEPPERED over the steep faces, not built along walls: ground at least
 ## this steep takes a rock at this share of the places searched, each sized to
-## the face it stands in, between these heights (metres).
-@export var hill_slope := 0.5
-@export_range(0.0, 1.0) var pepper := 0.2
+## the face it stands in, between these heights (metres). (The slope is past
+## where the terrain's shader has the face all rock, `cliff_face`: a model
+## always stands in rock of its own kind, never in grass.)
+@export var hill_slope := 0.7
+@export_range(0.0, 1.0) var pepper := 0.4
 @export var hill_height := Vector2(3.0, 11.0)
 @export var enabled := true
 ## Shards to a place on the wall, (least, most).

@@ -45,6 +45,8 @@ uniform float rock_size = 5.0;
 uniform float meadow_size = 2.4;
 uniform float dry_size = 2.6;
 uniform float floor_size = 3.0;
+// (0.88: a slope of 0.54, 28 degrees; 0.8: of 0.75, 37 degrees.)
+uniform vec2 cliff_face = vec2(0.88, 0.8);
 uniform float scree_size = 2.2;
 uniform float stony_size = 4.0;
 uniform vec3 meadow_tint : source_color = vec3(0.68, 0.95, 0.5);
@@ -229,6 +231,12 @@ void fragment() {
 		cw_side = (1.0 - smoothstep(0.55, 0.86, geo_n.y)) * (1.0 - smoothstep(causeway_reach, causeway_reach + 2.5, coff))
 				* smoothstep(mere_level + 0.5, mere_level - 0.1, world_pos.y);
 	}
+	// A CLIFF BY ITS ANGLE: whatever the splat says, a face this steep is rock, the
+	// cliff models' own rock with its beds (they stand in it and carry on from it).
+	// Per pixel, from the face's own normal: `cliff_face` is the normal's height
+	// where the rock starts and where the face is all rock.
+	float face = 1.0 - smoothstep(cliff_face.y, cliff_face.x, geo_n.y);
+	w = mix(w, vec4(0.0, 0.0, 1.0, 0.0), face);
 	float rock_w = max(max(w.b, bank_w), cw_side);
 	if (rock_w > 0.003) {
 		rock_a = (textureGrad(ground_albedo, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).rgb * bw.x
