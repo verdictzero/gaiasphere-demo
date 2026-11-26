@@ -118,7 +118,7 @@ void fragment() {
 
 	// THE BEDS IT IS LAID DOWN IN, on its sides (SHADERINC_ground_lay's strata).
 	vec2 beds = strata_at(w_pos, geo_n, dist);
-	albedo *= beds.x;
+	albedo = strata_coloured(albedo, w_pos, geo_n) * beds.x;
 	world_n = normalize(world_n + vec3(0.0, beds.y, 0.0));
 
 	// WEAR ON THE EDGES, DARK IN THE CRACKS (the bake, over the texture).

@@ -156,7 +156,9 @@ func _ready() -> void:
 				"stochastic", "stochastic_scale", "moss_size", "soil_size", "litter_size", "sand_size",
 				"meadow_size", "dry_size", "floor_size", "moss_tint", "soil_tint", "litter_tint", "sand_tint",
 				"meadow_tint", "dry_tint", "floor_tint",
-				"strata_strength", "strata_bed", "strata_warp", "strata_dip"]:
+				"strata_strength", "strata_bed", "strata_warp", "strata_dip",
+				"strata_colour", "strata_colour_bed", "strata_colour_a", "strata_colour_b", "strata_colour_c",
+				"strata_colour_d", "strata_colour_e"]:
 			var v: Variant = terrain.get_shader_parameter(p)
 			if v != null:
 				_material.set_shader_parameter(p, v)

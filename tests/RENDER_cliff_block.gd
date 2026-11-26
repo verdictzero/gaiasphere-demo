@@ -27,6 +27,7 @@ func _initialize() -> void:
 			mat.set_shader_parameter("edge_wear", 0.0)
 			mat.set_shader_parameter("crevice", 0.0)
 			mat.set_shader_parameter("strata_strength", 0.0)
+			mat.set_shader_parameter("strata_colour", 0.0)
 		for i in meshes.size():
 			var mi := MeshInstance3D.new()
 			mi.mesh = meshes[i]

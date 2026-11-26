@@ -95,3 +95,47 @@ vec2 strata_at(vec3 wp, vec3 n, float dist) {
 	float k = side * strata_strength;
 	return vec2(mix(1.0, tone * (1.0 - parting * 0.55), k), (f < 0.5 ? 1.0 : -1.0) * parting * k * 0.8);
 }
+
+
+// COLOURED STRATA: a second set of beds, apart from the lines above and with a
+// thickness of its own, that COLOUR the rock's sides: bands of rust, ochre,
+// cream, plum and umber by height in the world, as in painted cliffs. Global
+// and sides only, like the others, and following the same dip and wander, so
+// the two sets lie parallel. The rock keeps its own light and dark; only its
+// hue is taken toward the band's (`strata_colour` is how far).
+uniform float strata_colour : hint_range(0.0, 1.0) = 0.5;
+uniform float strata_colour_bed = 5.5;
+uniform vec3 strata_colour_a : source_color = vec3(0.62, 0.27, 0.16);
+uniform vec3 strata_colour_b : source_color = vec3(0.76, 0.56, 0.26);
+uniform vec3 strata_colour_c : source_color = vec3(0.85, 0.78, 0.62);
+uniform vec3 strata_colour_d : source_color = vec3(0.45, 0.36, 0.42);
+uniform vec3 strata_colour_e : source_color = vec3(0.33, 0.22, 0.16);
+
+vec3 strata_band(float id) {
+	float h = fract(sin(id * 78.233 + 4.1) * 43758.5453) * 5.0;
+	if (h < 1.0) { return strata_colour_a; }
+	if (h < 2.0) { return strata_colour_b; }
+	if (h < 3.0) { return strata_colour_c; }
+	if (h < 4.0) { return strata_colour_d; }
+	return strata_colour_e;
+}
+
+// The rock's colour `rock` with the coloured beds laid into it.
+vec3 strata_coloured(vec3 rock, vec3 wp, vec3 n) {
+	float side = 1.0 - smoothstep(0.45, 0.8, abs(n.y));
+	if (side <= 0.0 || strata_colour <= 0.0) {
+		return rock;
+	}
+	vec2 sw = n.xz * n.xz;
+	sw /= sw.x + sw.y + 1e-4;
+	float warp = textureLod(macro_noise, wp.zy / 41.0, 0.0).r * sw.x + textureLod(macro_noise, wp.xy / 41.0, 0.0).r * sw.y;
+	// (Beds of uneven thickness: the height itself is bent a little as it climbs.)
+	float y = (wp.y + (warp - 0.5) * strata_warp * 1.5 + dot(wp.xz, strata_dip)) / strata_colour_bed;
+	y += 0.35 * sin(y * 1.7) + 0.2 * sin(y * 4.3 + 1.0);
+	float id = floor(y);
+	float f = fract(y);
+	// One band into the next over a short, soft join.
+	vec3 band = mix(strata_band(id), strata_band(id + 1.0), smoothstep(0.82, 1.0, f));
+	float light = dot(rock, vec3(0.3, 0.55, 0.15));
+	return mix(rock, band * light * 2.4, side * strata_colour);
+}

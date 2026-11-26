@@ -29,6 +29,8 @@ const ROWS := [
 	["strata_bed", "Strata bed thickness", "slide", 0.3, 6.0, 0.1, "m"],
 	["strata_warp", "Strata wander", "slide", 0.0, 6.0, 0.1, "m"],
 	["strata_dip", "Strata dip", "slide", 0.0, 0.3, 0.005, "slope"],
+	["strata_colour", "Coloured strata", "slide", 0.0, 1.0, 0.05, "%"],
+	["strata_colour_bed", "Coloured bed thickness", "slide", 0.5, 20.0, 0.25, "m"],
 	["edge_wear", "Cliff edge wear", "slide", 0.0, 1.5, 0.05, "%"],
 	["crevice", "Cliff crevice dark", "slide", 0.0, 1.0, 0.05, "%"],
 	# Ambient occlusion over the whole frame (SCRIPT_ambient_occlusion.gd): each
@@ -46,9 +48,10 @@ const ROWS := [
 	["ao_directions", "HBAO directions", "slide", 2.0, 12.0, 1.0, "n"],
 	["ao_steps", "HBAO steps", "slide", 2.0, 10.0, 1.0, "n"],
 ]
-const PER_COLUMN := 11
+const PER_COLUMN := 12
 ## The rock's settings as the shaders have them to begin with.
 const ROCK := {"strata_strength": 0.85, "strata_bed": 1.9, "strata_warp": 1.6, "strata_dip": 0.035,
+	"strata_colour": 0.5, "strata_colour_bed": 5.5,
 	"edge_wear": 1.1, "crevice": 0.7}
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.93)
