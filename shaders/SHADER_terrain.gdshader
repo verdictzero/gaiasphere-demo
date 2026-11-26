@@ -45,8 +45,9 @@ uniform float rock_size = 5.0;
 uniform float meadow_size = 2.4;
 uniform float dry_size = 2.6;
 uniform float floor_size = 3.0;
-// (0.88: a slope of 0.54, 28 degrees; 0.8: of 0.75, 37 degrees.)
-uniform vec2 cliff_face = vec2(0.88, 0.8);
+// (0.91: a slope of 0.46, 25 degrees; 0.86: of 0.6, 31 degrees. The hills have
+// little ground steeper: 1200 places in 20 m2 over the whole island at 0.6.)
+uniform vec2 cliff_face = vec2(0.91, 0.86);
 uniform float scree_size = 2.2;
 uniform float stony_size = 4.0;
 uniform vec3 meadow_tint : source_color = vec3(0.68, 0.95, 0.5);

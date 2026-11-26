@@ -47,8 +47,8 @@ extends Node3D
 ## the face it stands in, between these heights (metres). (The slope is past
 ## where the terrain's shader has the face all rock, `cliff_face`: a model
 ## always stands in rock of its own kind, never in grass.)
-@export var hill_slope := 0.7
-@export_range(0.0, 1.0) var pepper := 0.4
+@export var hill_slope := 0.58
+@export_range(0.0, 1.0) var pepper := 0.5
 @export var hill_height := Vector2(3.0, 11.0)
 @export var enabled := true
 ## Shards to a place on the wall, (least, most).
