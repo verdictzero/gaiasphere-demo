@@ -399,13 +399,13 @@ func lagoon(x: float, z: float, g: float) -> float:
 # The place is fixed by the mere's own shape: straight across from the causeway,
 # CRASH_IN metres in from the outer shore, facing the middle.
 
-## (40: past the shelf, on the mere's flat bed under its full depth of water, so
+## (55: past the shelf, on the mere's flat bed under its full depth of water, so
 ## the whole hull is under: at 19 it lay up the shelf with its tail in the air.)
-const CRASH_IN := 40.0            ## metres in from the outer shore the wreck lies
+const CRASH_IN := 55.0            ## metres in from the outer shore the wreck lies
 const CRASH_BOWL := 11.0          ## the divot's radius
 const CRASH_DEPTH := 1.5          ## and how deep its middle is dug
 const CRASH_RIM := 0.45           ## the lip thrown up round it
-const CRASH_GOUGE := 200.0        ## how far back up the shore and the hill the gouge runs
+const CRASH_GOUGE := 215.0        ## how far back up the shore and the hill the gouge runs
 const CRASH_WIDE := 5.0           ## its half-width at the wreck (it narrows going back)
 const CRASH_CUT := 1.7            ## and its depth there (it shallows going back)
 const CRASH_BERM := 0.6           ## the dirt banked up either side of it
@@ -418,7 +418,7 @@ const CRASH_TOUCH := 0.22
 ## it stood on, `MEADOW_R` across the radius, falling away gently all round over
 ## `MEADOW_RAMP` (see `meadow`). Its middle, `MEADOW_UP` metres back up the skid from the wreck, is
 ## Flora's GLADE_UP_SHORE.
-const MEADOW_UP := 140.0
+const MEADOW_UP := 155.0
 const MEADOW_R := 58.0
 const MEADOW_RISE := 8.0
 ## How far the walls run out (a cliff), and the ramp toward the mere, metres.
