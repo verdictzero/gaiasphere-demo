@@ -74,6 +74,7 @@ uniform vec3 sand_tint : source_color = vec3(0.7, 0.68, 0.62);
 uniform vec3 bed_tint : source_color = vec3(0.6, 0.62, 0.58);
 // Dry sand on the mere's beaches, as a multiple of the (damp, dark) sand scan.
 uniform vec3 beach_tint : source_color = vec3(1.3, 1.2, 1.0);
+uniform float beach_top = 1.8;
 uniform vec3 rock_tint : source_color = vec3(0.85, 0.88, 0.86);
 // The scans are dark; this lifts the whole ground.
 uniform float brightness = 1.7;
@@ -330,6 +331,9 @@ void fragment() {
 			// THE MERE'S SHORES ARE SAND: pale and dry up the beach, darkening to wet
 			// at the water's edge, with a ragged upper edge where the turf begins.
 			float beach = smoothstep(0.0, 0.3, river + (macro2 - 0.5) * 0.12);
+			// (NO HIGHER THAN THE WATER REACHES: a beach is the strand by the water,
+			// `beach_top` metres over it at most, and the bank above is the land's.)
+			beach *= 1.0 - smoothstep(mere_level + beach_top * 0.6, mere_level + beach_top + (macro - 0.5) * 0.6, world_pos.y);
 			float wet_line = smoothstep(mere_level + 0.7, mere_level + 0.05, world_pos.y);
 			albedo = mix(albedo, sand_a * beach_tint * mix(1.0, 0.55, wet_line), beach);
 			flat_n = mix(flat_n, sand_n, beach);

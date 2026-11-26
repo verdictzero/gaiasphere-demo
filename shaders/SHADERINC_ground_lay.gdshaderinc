@@ -116,12 +116,22 @@ vec2 strata_at(vec3 wp, vec3 n, float dist, float side) {
 	vec2 sw = n.xz * n.xz;
 	sw /= sw.x + sw.y + 1e-4;
 	float warp = textureLod(macro_noise, wp.zy / 41.0, 0.0).r * sw.x + textureLod(macro_noise, wp.xy / 41.0, 0.0).r * sw.y;
-	float y = (wp.y + (warp - 0.5) * strata_warp + dot(wp.xz, strata_dip)) / strata_bed;
+	// (A finer wander on the broad one, so no line runs level for long.)
+	float warp2 = textureLod(macro_noise, wp.zy / 9.0 + 0.37, 0.0).r * sw.x + textureLod(macro_noise, wp.xy / 9.0 + 0.37, 0.0).r * sw.y;
+	float y = (wp.y + (warp - 0.5) * strata_warp + (warp2 - 0.5) * strata_warp * 0.3 + dot(wp.xz, strata_dip)) / strata_bed;
+	// NOT RULED: the beds are of unequal thickness (the stack is stretched and
+	// squeezed up its height), only some of them part from the next with a line
+	// at all, and a line comes and goes along its length. Evenly spaced, every
+	// one drawn and unbroken, they made a grid of the face.
+	y += 0.42 * sin(y * 1.3 + 0.7) + 0.23 * sin(y * 3.1 + 2.0);
 	float id = floor(y);
 	float f = fract(y);
 	float h = fract(sin(id * 12.9898) * 43758.5453);
 	float fine = 1.0 - smoothstep(60.0, 220.0, dist);
-	float parting = (1.0 - smoothstep(0.0, 0.05 + 0.09 * h, min(f, 1.0 - f))) * fine;
+	float nearer = f < 0.5 ? id : id + 1.0;
+	float drawn = step(0.45, fract(sin(nearer * 91.7 + 2.3) * 43758.5453));
+	float along = smoothstep(0.3, 0.55, warp2 + (fract(sin(nearer * 37.1) * 43758.5453) - 0.5) * 0.5);
+	float parting = (1.0 - smoothstep(0.0, 0.05 + 0.09 * h, min(f, 1.0 - f))) * fine * drawn * along;
 	float laminae = 0.5 + 0.5 * sin(y * 6.2832 * (5.0 + 4.0 * h) + h * 6.0);
 	float tone = mix(0.78, 1.16, h) * mix(1.0, 0.9 + 0.1 * laminae, fine);
 	float k = side * strata_strength;
