@@ -38,7 +38,7 @@ uniform float detail_distance = 140.0;
 // 1 - wear (the block's proud edges and corners), COLOR.g the sky a point sees
 // (toward 0 down a crack). A mesh with no baked colour is white: nothing added.
 // The rock's own grain breaks the worn edge up, so it is chipped, not airbrushed.
-uniform float edge_wear : hint_range(0.0, 1.5) = 0.75;      // how much paler and smoother a worn edge is
+uniform float edge_wear : hint_range(0.0, 1.5) = 1.1;      // how much paler and smoother a worn edge is
 uniform vec3 wear_tint : source_color = vec3(1.0, 0.97, 0.9);
 uniform float crevice : hint_range(0.0, 1.0) = 0.7;         // how dark the bottom of a crack
 uniform float top_start : hint_range(0.0, 1.0) = 0.62;   // how upward a face must look (normal.y) to begin to be ground
