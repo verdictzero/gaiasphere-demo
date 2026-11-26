@@ -100,6 +100,11 @@ var _result: Array = []
 var _solid: StaticBody3D
 var _solid_at := Vector3(1e9, 0, 0)
 var _explorer: Node3D
+## How the rocks are drawn by distance: see `_apply_view`.
+const ALL_REACH := 6000.0
+var view := {"lod": 1.0, "far": FAR_AT, "reach": ALL_REACH, "shadow": 250.0, "occlusion": true}
+var _near: Array = []      # every near MultiMeshInstance3D (meta: its own lo and hi)
+var _far: Array = []       # every square's far one
 var _cells := {}           # Vector2i (CELL metres) -> [indices into _rocks], for what is solid
 
 
@@ -491,9 +496,7 @@ func _build() -> void:
 						turf.r, turf.g, turf.b, turf.a])
 			for l in lods.size():
 				var lo := float(ends[l - 1]) if l > 0 else 0.0
-				if lo >= FAR_AT:
-					break
-				var hi := FAR_AT if l == lods.size() - 1 else minf(float(ends[l]), FAR_AT)
+				var hi := 1e9 if l == lods.size() - 1 else float(ends[l])
 				var mm := MultiMesh.new()
 				mm.transform_format = MultiMesh.TRANSFORM_3D
 				mm.use_custom_data = true
@@ -507,16 +510,11 @@ func _build() -> void:
 				mmi.multimesh = mm
 				mmi.material_override = _material
 				mmi.position = origin
-				# Each rock's own hand-over is the shader's dither, by its own
-				# distance; the square as a whole is only drawn while any of it may
-				# need to be.
-				mmi.set_instance_shader_parameter(&"lod_in", lo)
-				mmi.set_instance_shader_parameter(&"lod_out", hi)
-				mmi.visibility_range_begin = maxf(0.0, lo * (1.0 - LOD_BAND) - half_diag)
-				mmi.visibility_range_end = hi * (1.0 + LOD_BAND) + half_diag
-				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hi < 250.0 \
-						else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				# (Where it is drawn from and to is `_apply_view`'s, from these.)
+				mmi.set_meta(&"lo", lo)
+				mmi.set_meta(&"hi", hi)
 				add_child(mmi)
+				_near.append(mmi)
 				draws += 1
 		# ROCKS NEVER GO: past FAR_AT the whole square in one draw, at any distance.
 		var fm := MultiMesh.new()
@@ -529,17 +527,55 @@ func _build() -> void:
 		fmi.multimesh = fm
 		fmi.material_override = _material
 		fmi.position = origin
-		fmi.set_instance_shader_parameter(&"lod_in", FAR_AT)
-		fmi.set_instance_shader_parameter(&"lod_out", 0.0)
-		fmi.visibility_range_begin = maxf(0.0, FAR_AT * (1.0 - LOD_BAND) - half_diag)
 		fmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(fmi)
+		_far.append(fmi)
+	_apply_view()
 	var count := [0, 0, 0]
 	for rock in _rocks:
 		var k := int(rock[0])
 		count[0 if k < SHARDS else (1 if k < SHARDS + KIT.size() else 2)] += 1
 	print("[cliffs] %d blocks, %d shards and %d of the old kit against the walls, in %d squares (%d near draws at most)" % [
 			count[2], count[0], count[1], tiles.size(), draws])
+
+
+## HOW FAR EACH LEVEL IS DRAWN, from `view` (the options panel's sliders): every
+## hand-over distance times `lod`; past `far` a square's rocks in one draw; past
+## `reach` nothing (ALL_REACH or more: never, "rocks never go"); shadows cast by
+## the levels that end within `shadow`; `occlusion` whether what the ground hides
+## is left undrawn. Each rock's own hand-over is the shader's dither, by its own
+## distance; a square as a whole is only drawn while any of it may need to be.
+func _apply_view() -> void:
+	var half_diag := TILE * 0.71
+	var lod := float(view["lod"])
+	var reach := float(view["reach"])
+	var endless := reach >= ALL_REACH
+	var far := float(view["far"]) if endless else minf(float(view["far"]), reach)
+	var hide := not bool(view["occlusion"])
+	for mmi: MultiMeshInstance3D in _near:
+		var lo := float(mmi.get_meta(&"lo")) * lod
+		var hi := minf(float(mmi.get_meta(&"hi")) * lod, far)
+		mmi.visible = lo < far
+		mmi.ignore_occlusion_culling = hide
+		mmi.set_instance_shader_parameter(&"lod_in", lo)
+		mmi.set_instance_shader_parameter(&"lod_out", hi)
+		mmi.visibility_range_begin = maxf(0.0, lo * (1.0 - LOD_BAND) - half_diag)
+		mmi.visibility_range_end = hi * (1.0 + LOD_BAND) + half_diag
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hi <= float(view["shadow"]) \
+				else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for fmi: MultiMeshInstance3D in _far:
+		fmi.visible = endless or reach > far
+		fmi.ignore_occlusion_culling = hide
+		fmi.set_instance_shader_parameter(&"lod_in", far)
+		fmi.set_instance_shader_parameter(&"lod_out", 0.0 if endless else reach)
+		fmi.visibility_range_begin = maxf(0.0, far * (1.0 - LOD_BAND) - half_diag)
+		fmi.visibility_range_end = 0.0 if endless else reach * (1.0 + LOD_BAND) + half_diag
+
+
+## One of `view`'s settings, from the options panel.
+func set_view(key: String, value: Variant) -> void:
+	view[key] = value
+	_apply_view()
 
 
 ## The shards round `here` made solid: a hull each, out to `solid_reach`.

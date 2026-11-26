@@ -33,6 +33,12 @@ const ROWS := [
 	["strata_colour_bed", "Coloured bed thickness", "slide", 0.5, 20.0, 0.25, "m"],
 	["edge_wear", "Cliff edge wear", "slide", 0.0, 1.5, 0.05, "%"],
 	["crevice", "Cliff crevice dark", "slide", 0.0, 1.0, 0.05, "%"],
+	# How the cliff's rocks are drawn by distance (SCRIPT_cliff_rocks.gd's `view`).
+	["cliff_lod", "Cliff detail distance", "slide", 0.25, 4.0, 0.05, "x"],
+	["cliff_far", "Cliff merged past", "slide", 100.0, 2000.0, 25.0, "m"],
+	["cliff_reach", "Cliff drawn out to", "slide", 200.0, 6000.0, 50.0, "reach"],
+	["cliff_shadow", "Cliff shadows out to", "slide", 0.0, 800.0, 10.0, "m"],
+	["cliff_occlusion", "Cliff hidden by ground culled", "tick"],
 	# Ambient occlusion over the whole frame (SCRIPT_ambient_occlusion.gd): each
 	# "ao_" row is the setting of that name without the prefix.
 	["ao_method", "Ambient occlusion", "slide", 0.0, 3.0, 1.0, "ao"],
@@ -48,7 +54,7 @@ const ROWS := [
 	["ao_directions", "HBAO directions", "slide", 2.0, 12.0, 1.0, "n"],
 	["ao_steps", "HBAO steps", "slide", 2.0, 10.0, 1.0, "n"],
 ]
-const PER_COLUMN := 12
+const PER_COLUMN := 15
 ## The rock's settings as the shaders have them to begin with.
 const ROCK := {"strata_strength": 0.85, "strata_bed": 1.9, "strata_warp": 1.6, "strata_dip": 0.035,
 	"strata_colour": 0.5, "strata_colour_bed": 5.5,
@@ -109,6 +115,9 @@ func _read(key: String) -> Variant:
 			return DetailLayer.depth
 		"grime":
 			return DetailLayer.grime
+	if key.begins_with("cliff_"):
+		var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
+		return cliffs.view[key.substr(6)] if cliffs != null else (true if key == "cliff_occlusion" else 1.0)
 	if key.begins_with("ao_"):
 		var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
 		return float(ao.values[key.substr(3)]) if ao != null else float(AmbientOcclusion.DEFAULTS[key.substr(3)])
@@ -126,7 +135,11 @@ func _write(key: String, value: Variant) -> void:
 		"grime":
 			DetailLayer.set_look(DetailLayer.grain, DetailLayer.depth, float(value))
 		_:
-			if key.begins_with("ao_"):
+			if key.begins_with("cliff_"):
+				var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
+				if cliffs != null:
+					cliffs.set_view(key.substr(6), value)
+			elif key.begins_with("ao_"):
 				var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
 				if ao != null:
 					ao.put(key.substr(3), float(value))
@@ -191,23 +204,23 @@ func _k() -> float:
 func _panel_rect() -> Rect2:
 	var k := _k()
 	var columns := ceili(float(ROWS.size()) / float(PER_COLUMN))
-	var size := Vector2(48.0 + 786.0 * float(columns), 210.0 + 56.0 * float(mini(ROWS.size(), PER_COLUMN))) * k
+	var size := Vector2(48.0 + 786.0 * float(columns), 200.0 + 46.0 * float(mini(ROWS.size(), PER_COLUMN))) * k
 	return Rect2((_view.size - size) * 0.5, size)
 
 
 func _row_rect(i: int) -> Rect2:
 	var k := _k()
 	var p := _panel_rect()
-	return Rect2(p.position + Vector2((34.0 + 786.0 * float(i / PER_COLUMN)) * k, (100.0 + 56.0 * float(i % PER_COLUMN)) * k),
-			Vector2(752.0 * k, 56.0 * k))
+	return Rect2(p.position + Vector2((34.0 + 786.0 * float(i / PER_COLUMN)) * k, (96.0 + 46.0 * float(i % PER_COLUMN)) * k),
+			Vector2(752.0 * k, 46.0 * k))
 
 
 func _control_rect(i: int) -> Rect2:
 	var k := _k()
 	var r := _row_rect(i)
 	if ROWS[i][2] == "tick":
-		return Rect2(Vector2(r.end.x - 122.0 * k, r.position.y + 13.0 * k), Vector2(56.0, 30.0) * k)
-	return Rect2(Vector2(r.position.x + 330.0 * k, r.position.y + 13.0 * k), Vector2(290.0, 30.0) * k)
+		return Rect2(Vector2(r.end.x - 122.0 * k, r.position.y + 8.0 * k), Vector2(56.0, 30.0) * k)
+	return Rect2(Vector2(r.position.x + 330.0 * k, r.position.y + 8.0 * k), Vector2(290.0, 30.0) * k)
 
 
 func _defaults_rect() -> Rect2:
@@ -282,6 +295,8 @@ func _shown(row: Array) -> String:
 	var v := float(_read(row[0]))
 	if String(row[6]) == "ao":
 		return AmbientOcclusion.METHODS[clampi(int(round(v)), 0, AmbientOcclusion.METHODS.size() - 1)]
+	if String(row[6]) == "reach":
+		return "ALWAYS" if v >= CliffRocks.ALL_REACH else "%d m" % int(v)
 	if String(row[6]) == "n":
 		return "%d" % int(round(v))
 	if String(row[6]) == "m2":
@@ -309,21 +324,21 @@ func _draw_view() -> void:
 		var r := _row_rect(i)
 		if i % PER_COLUMN > 0:
 			_view.draw_rect(Rect2(r.position, Vector2(r.size.x, maxf(1.0, k))), Color(1, 1, 1, 0.06))
-		_label(r.position + Vector2(0.0, 36.0 * k), row[1], 21.0, Color(INK.r, INK.g, INK.b, 0.88))
+		_label(r.position + Vector2(0.0, 31.0 * k), row[1], 21.0, Color(INK.r, INK.g, INK.b, 0.88))
 		var c := _control_rect(i)
 		if row[2] == "tick":
 			var on := bool(_read(row[0]))
 			_box(c, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.85) if on else Color(1, 1, 1, 0.1), 15.0, EDGE, 1.5)
 			var knob := Vector2(c.end.x - 15.0 * k if on else c.position.x + 15.0 * k, c.get_center().y)
 			_view.draw_circle(knob, 11.0 * k, Color(0.04, 0.05, 0.06) if on else Color(INK.r, INK.g, INK.b, 0.8))
-			_label(Vector2(r.end.x, r.position.y + 36.0 * k), "ON" if on else "OFF", 20.0, Color(INK.r, INK.g, INK.b, 0.7), 2)
+			_label(Vector2(r.end.x, r.position.y + 31.0 * k), "ON" if on else "OFF", 20.0, Color(INK.r, INK.g, INK.b, 0.7), 2)
 			continue
 		var t := clampf(inverse_lerp(float(row[3]), float(row[4]), float(_read(row[0]))), 0.0, 1.0)
 		var track := Rect2(Vector2(c.position.x, c.get_center().y - 3.0 * k), Vector2(c.size.x, 6.0 * k))
 		_box(track, Color(1, 1, 1, 0.12), 3.0)
 		_box(Rect2(track.position, Vector2(track.size.x * t, track.size.y)), ACCENT, 3.0)
 		_view.draw_circle(Vector2(track.position.x + track.size.x * t, c.get_center().y), 11.0 * k, INK)
-		_label(Vector2(r.end.x, r.position.y + 36.0 * k), _shown(row), 20.0, Color(INK.r, INK.g, INK.b, 0.8), 2)
+		_label(Vector2(r.end.x, r.position.y + 31.0 * k), _shown(row), 20.0, Color(INK.r, INK.g, INK.b, 0.8), 2)
 	var d := _defaults_rect()
 	_box(d, Color(1, 1, 1, 0.07), 12.0, EDGE, 1.5)
 	_label(Vector2(d.get_center().x, d.position.y + 32.0 * k), "DEFAULTS", 20.0, INK, 1)

@@ -50,6 +50,12 @@ void vertex() {
 	POSITION = vec4(VERTEX.xy, 1.0, 1.0);
 }
 
+// 1 on the screen, 0 off it: a tap past the edge reads the edge's depth, which is
+// no evidence of anything, and must not count.
+float on_screen(vec2 uv) {
+	return step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+}
+
 vec3 view_at(vec2 uv, mat4 inv_proj) {
 	float d = textureLod(depth_tex, uv, 0.0).r;
 	vec4 v = inv_proj * vec4(uv * 2.0 - 1.0, d, 1.0);
@@ -89,9 +95,9 @@ void fragment() {
 			float t = (float(i) + 0.5) / float(samples);
 			vec2 o = vec2(cos(a), sin(a)) * sqrt(t) * ruv;
 			float nearer = dist + view_at(uv + o, INV_PROJECTION_MATRIX).z - lean;
-			shut += clamp(nearer / r, 0.0, 1.0) * (1.0 - smoothstep(r, r * (1.0 + 2.0 / falloff), nearer));
+			shut += clamp(nearer / r, 0.0, 1.0) * (1.0 - smoothstep(r, r * (1.0 + 2.0 / falloff), nearer)) * on_screen(uv + o);
 		}
-		shut = shut / float(samples) * 2.2;
+		shut = shut / float(samples) * 1.7;
 	} else {
 		// The surface's normal, from the depth round it: the shorter step each way,
 		// so an edge does not smear the far side's slope into the near.
@@ -120,7 +126,7 @@ void fragment() {
 				vec2 suv = c.xy / c.w * 0.5 + 0.5;
 				float scene = view_at(suv, INV_PROJECTION_MATRIX).z;
 				float range = smoothstep(0.0, 1.0, r * falloff / max(abs(p.z - scene), 0.0001));
-				shut += step(s.z + bias * dist + 0.01, scene) * range;
+				shut += step(s.z + bias * dist + 0.01, scene) * range * on_screen(suv);
 			}
 			shut = shut / float(samples) * 1.6;
 		} else {
@@ -131,7 +137,11 @@ void fragment() {
 				float top = horizon_bias;
 				float seen = 0.0;
 				for (int k = 1; k <= steps; k++) {
-					vec3 h = view_at(uv + along * (float(k) - 0.5 + fract(spin * 3.7) * 0.5), INV_PROJECTION_MATRIX) - p;
+					vec2 huv = uv + along * (float(k) - 0.5 + fract(spin * 3.7) * 0.5);
+					if (on_screen(huv) < 0.5) {
+						break;
+					}
+					vec3 h = view_at(huv, INV_PROJECTION_MATRIX) - p;
 					float len = length(h);
 					float rise = dot(h, n) / max(len, 0.0001);
 					if (rise > top) {
