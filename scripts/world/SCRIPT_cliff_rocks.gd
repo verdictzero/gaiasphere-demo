@@ -1,8 +1,13 @@
 class_name CliffRocks
 extends Node3D
 
-# SHARDS OF ROCK CROWDED AGAINST THE WALLS OF THE TABLELANDS (IslandField's
-# mesa_*). A wall in a height field is a smooth sheet stretched between two
+# ROCK AGAINST THE WALLS OF THE TABLELANDS (IslandField's mesa_*): mostly THE
+# BLOCK (the user's own chunk of cliff, assets/cliff_block: one at every place
+# along every wall, half in it, turned any way round and scaled a lot, so the
+# tiers are built of stacked blocks as in the example it came from), with
+# clusters of shards and now and then one of the old kit among them.
+#
+# (Of the shards, as first written:) SHARDS OF ROCK CROWDED AGAINST THE WALLS. A wall in a height field is a smooth sheet stretched between two
 # levels; from any distance it reads as a ramp painted grey. So the walls are
 # lined with rock, the way a real escarpment is: TALL, JAGGED SHARDS (the user:
 # "more jagged, layered, almost no gaps, they can overlap, think tall aspect
@@ -33,7 +38,7 @@ extends Node3D
 @export var world_path: NodePath = ^"../GaiaSphere"
 @export var explorer_path: NodePath = ^"../Explorer"
 ## Metres between the points the walls are searched at.
-@export var search_step := 5.0
+@export var search_step := 4.5
 ## How steep (rise over run) the ground must be to count as a wall.
 @export var wall_slope := 1.05
 ## Shards to a place on the wall, (least, most).
@@ -45,7 +50,7 @@ extends Node3D
 @export var aspect := Vector2(0.17, 0.28)
 @export var solid_reach := 45.0
 ## The share of places on a wall that also get one of the old kit's masses.
-@export var kit_share := 0.2
+@export var kit_share := 0.06
 
 ## How many different shards are made.
 const SHARDS := 12
@@ -64,7 +69,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 11
+const CACHE_VERSION := 12
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -72,6 +77,9 @@ const FAR_AT := 600.0
 ## What a build ships (tests/BAKE_island.gd writes it), read before user://.
 const BAKED := "res://data/bake/cliff_rocks.bake"
 const CELL := 32.0
+const BLOCK := "res://assets/cliff_block/cliff_block.res"
+## Of the places on a wall, the share that also get a few shards in front.
+const SHARD_SHARE := 0.25
 
 var _field: IslandField
 var _meshes: Array = []    # shard -> [lod meshes]
@@ -115,6 +123,15 @@ func _ready() -> void:
 		_kit_size.append(size)
 		_kit_low.append((lods[0] as Mesh).get_aabb().position.y)
 		_lod_ends.append(MeshLods.distances(lods.size(), maxf(size.x, size.y) * 1.2))
+	# THE BLOCK (assets/cliff_block, tools/import_cliff_block.gd): the user's own
+	# chunk of cliff, the main thing the walls are built of. Numbered after the kit.
+	var block := load(BLOCK) as ArrayMesh
+	var chain: Array = MeshLods.chain(block, 24)
+	_meshes.append(chain)
+	var box := block.get_aabb()
+	_kit_size.append(box.size)
+	_kit_low.append(box.position.y)
+	_lod_ends.append(MeshLods.distances(chain.size(), 10.0, 1.7))
 	_material = ShaderMaterial.new()
 	_material.shader = load("res://shaders/SHADER_cliff_rock.gdshader")
 	var terrain := world.get(&"terrain_material") as ShaderMaterial
@@ -278,6 +295,18 @@ func _layout(field: IslandField) -> Array:
 			var tall := top - foot
 			if tall < 3.0:
 				continue
+			# THE BLOCK, at every place: half in the wall, turned any way round, and
+			# scaled a lot (the user: "just randomize its rotation and scale a lot"),
+			# about as tall as the tier it stands against.
+			var bsize: Vector3 = _kit_size[KIT.size()]
+			var by := tall * rng.randf_range(0.85, 1.35) / bsize.y
+			var bscale := Vector3(by * rng.randf_range(0.7, 1.9), by, by * rng.randf_range(0.7, 1.9))
+			var bturn := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.14, 0.14)) \
+					* Basis(Vector3.BACK, rng.randf_range(-0.14, 0.14))
+			var bat := p - out_dir * rng.randf_range(0.0, 1.5) + along * rng.randf_range(-1.5, 1.5)
+			# (Its middle a little under the wall's: its foot in the ground below.)
+			var bmid := (foot + top) * 0.5 - (float(_kit_low[KIT.size()]) + bsize.y * 0.5) * by - rng.randf_range(0.3, 1.2)
+			out.append([SHARDS + KIT.size(), Transform3D(bturn.scaled_local(bscale), Vector3(bat.x, bmid, bat.y))])
 			# Now and then one of the old kit's masses, in the wall, faced out of it.
 			if rng.randf() < kit_share:
 				var kit := _kit_for(rng, tall)
@@ -293,8 +322,10 @@ func _layout(field: IslandField) -> Array:
 					# (Stood on its underside: the kit hangs from its top.)
 					var ky := foot - rng.randf_range(0.8, 2.5) - float(_kit_low[kit]) * ks
 					out.append([SHARDS + kit, Transform3D(kb.scaled_local(Vector3(kx, ks, kz)), Vector3(kat.x, ky, kat.y))])
-			# A cluster, a few deep: the back of it in the wall and over its top,
-			# the front shorter and leaning out, every one overlapping the next.
+			# And at some, a cluster of shards in front: the back of it in the wall and
+			# over its top, the front shorter and leaning out, overlapping.
+			if rng.randf() > SHARD_SHARE:
+				continue
 			for c in rng.randi_range(cluster.x, cluster.y):
 				var row := rng.randf()                  # 0 at the wall, 1 at the front
 				var hr := lerpf(rng.randf_range(back_height.x, back_height.y),
@@ -404,7 +435,7 @@ func _build() -> void:
 				var b := t.basis
 				var o := t.origin - origin
 				if k >= SHARDS:
-					# One of the kit, which hangs from its top: the shard stood in its box.
+					# One of the kit or the block: the shard stood in its box.
 					var size: Vector3 = _kit_size[k - SHARDS]
 					o += b * Vector3(0.0, float(_kit_low[k - SHARDS]), 0.0)
 					b = b * Basis.from_scale(size * Vector3(1.3, 1.0, 1.3))
@@ -451,12 +482,12 @@ func _build() -> void:
 		fmi.visibility_range_begin = maxf(0.0, FAR_AT * (1.0 - LOD_BAND) - half_diag)
 		fmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(fmi)
-	var kit := 0
+	var count := [0, 0, 0]
 	for rock in _rocks:
-		if int(rock[0]) >= SHARDS:
-			kit += 1
-	print("[cliffs] %d shards of rock and %d of the old kit against the walls, in %d squares (%d near draws at most)" % [
-			_rocks.size() - kit, kit, tiles.size(), draws])
+		var k := int(rock[0])
+		count[0 if k < SHARDS else (1 if k < SHARDS + KIT.size() else 2)] += 1
+	print("[cliffs] %d blocks, %d shards and %d of the old kit against the walls, in %d squares (%d near draws at most)" % [
+			count[2], count[0], count[1], tiles.size(), draws])
 
 
 ## The shards round `here` made solid: a hull each, out to `solid_reach`.

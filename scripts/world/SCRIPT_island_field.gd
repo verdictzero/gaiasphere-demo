@@ -588,7 +588,7 @@ class Hole extends RefCounted:
 ## The highest level's height over the island's base, metres.
 @export var mesa_height := 110.0
 ## How many levels the ground is stepped into above the floor.
-@export_range(1, 8) var mesa_levels := 3
+@export_range(1, 24) var mesa_levels := 3
 ## The size of a tableland, metres (the noise's feature size).
 @export var mesa_scale := 520.0
 ## How far the noise is warped, metres: what makes a plateau's outline wander
@@ -600,12 +600,23 @@ class Hole extends RefCounted:
 @export_range(0.01, 0.5) var mesa_riser := 0.06
 ## How much of the island's walls are stretched into ramps instead (0 none).
 @export_range(0.0, 1.0) var mesa_ramps := 0.35
+## The ways up: how wide (in their noise's units; 0.06 is about 15 m) and the
+## size of their network's grain, metres. 0 for none.
+@export_range(0.0, 0.3) var mesa_paths := 0.0
+@export var mesa_path_scale := 240.0
+## Ways laid for certain, from the middle out to the rim like spokes. 0 for none.
+@export_range(0, 24) var mesa_spokes := 0
+## The size of a ramp's patch, metres: small enough that every stretch of wall
+## meets one (tests/MAP_island_relief.gd counts the land that can be walked to).
+@export var mesa_ramp_scale := 230.0
 ## Raises or lowers the ground overall (added to the noise's 0..1 before the
 ## steps): more high plateau, or more low valley floor.
 @export_range(-0.5, 0.5) var mesa_bias := 0.08
 ## Canyons: the size of their network, metres, and how wide (noise units).
 @export var canyon_scale := 760.0
 @export_range(0.0, 0.3) var canyon_width := 0.06
+## How deep a valley is cut, as a share of `mesa_height`.
+@export_range(0.0, 1.0) var canyon_depth := 1.0
 ## Within this many metres of the island's middle the ground is the wild ground
 ## as before (the mere, its shores and the crash), easing into the tablelands over
 ## `mesa_keep_ease` past it.
@@ -2695,6 +2706,7 @@ var _mesa_warp_noise: FastNoiseLite
 var _mesa_jag_noise: FastNoiseLite
 var _mesa_ramp_noise: FastNoiseLite
 var _canyon_noise: FastNoiseLite
+var _mesa_way_noise: FastNoiseLite
 var _cells := {}    ## Vector2i cell -> Island or null (null = void cell).
 var _ready := false
 # The rock ramp `splat_weights` actually uses, resolved once in `prepare()`
@@ -2759,7 +2771,8 @@ func prepare() -> void:
 	_mesa_noise = _make_noise(0xA00A, FastNoiseLite.TYPE_SIMPLEX, mesa_scale, 2)
 	_mesa_warp_noise = _make_noise(0xA10B, FastNoiseLite.TYPE_SIMPLEX, mesa_scale * 0.6, 2)
 	_mesa_jag_noise = _make_noise(0xA20C, FastNoiseLite.TYPE_SIMPLEX, 38.0, 2)
-	_mesa_ramp_noise = _make_noise(0xA30D, FastNoiseLite.TYPE_SIMPLEX, 230.0, 1)
+	_mesa_ramp_noise = _make_noise(0xA30D, FastNoiseLite.TYPE_SIMPLEX, mesa_ramp_scale, 1)
+	_mesa_way_noise = _make_noise(0xA50F, FastNoiseLite.TYPE_SIMPLEX, mesa_path_scale, 1)
 	_canyon_noise = _make_noise(0xA40E, FastNoiseLite.TYPE_SIMPLEX, canyon_scale, 1)
 	var band := rock_band()
 	_rock_lo = band.x
@@ -4876,7 +4889,10 @@ func tableland(owner: Island, x: float, z: float, mask: float, wild: float, micr
 	var e := clampf(_mesa_noise.get_noise_2d(px, pz) * 0.8 + 0.5 + mesa_bias, 0.0, 1.0)
 	# Canyons down through it all, along the zero lines of their noise.
 	var c := absf(_canyon_noise.get_noise_2d(px, pz))
-	e *= smoothstep(canyon_width * 0.45, canyon_width, c) * k
+	# (VALLEYS, not slots: at most `canyon_depth` of the height comes off, and the
+	# sides run out over the valley's whole width, so the ways up can climb them.)
+	e -= minf(e, canyon_depth) * (1.0 - smoothstep(canyon_width * 0.15, canyon_width, c))
+	e *= k
 	# The steps: flat tops, and the climb to the next crowded into a wall, or
 	# stretched into a ramp where the ramp noise says.
 	var levels := float(maxi(mesa_levels, 1))
@@ -4884,7 +4900,23 @@ func tableland(owner: Island, x: float, z: float, mask: float, wild: float, micr
 	var lvl := minf(floorf(f), levels - 1.0)
 	var fr := f - lvl
 	var ramp := smoothstep(1.0 - mesa_ramps, 1.0, _mesa_ramp_noise.get_noise_2d(x, z) * 0.5 + 0.5) if mesa_ramps > 0.0 else 0.0
-	var riser := lerpf(mesa_riser, 0.65, ramp)
+	# AND THE WAYS UP (`mesa_paths`): along the zero lines of a noise of their own,
+	# which wander across every level they meet, the steps are smoothed right out,
+	# so each is a path a dozen metres wide climbing gently from tier to tier.
+	# Every plateau bigger than that noise's grain is crossed by one.
+	var way := 0.0
+	if mesa_paths > 0.0:
+		way = 1.0 - smoothstep(mesa_paths * 0.55, mesa_paths, absf(_mesa_way_noise.get_noise_2d(x, z)))
+	# AND THE ROADS OUT (`mesa_spokes`): so many of the ways are laid for certain,
+	# running out from the middle to the rim like spokes, each wandering as it
+	# goes: whatever the noise does, the middle is joined to every level a spoke
+	# crosses, right out to the edge.
+	if mesa_spokes > 0:
+		var rel := Vector2(x, z) - owner.center
+		var turn := rel.angle() * float(mesa_spokes) / TAU + 0.35 * sin(away / 95.0) + 0.2 * sin(away / 37.0 + 1.7)
+		var off := absf(turn - roundf(turn)) * TAU / float(mesa_spokes) * away
+		way = maxf(way, 1.0 - smoothstep(7.0, 13.0, off))
+	var riser := maxf(lerpf(mesa_riser, 0.9, ramp), lerpf(mesa_riser, 1.0, way))
 	var stepped := (lvl + smoothstep(1.0 - riser, 1.0, fr)) / levels * mesa_height * owner.peak
 	var t := clampf(mask / maxf(mesa_shore, 0.001), 0.0, 1.0)
 	stepped = stepped * t * t * (3.0 - 2.0 * t) + micro_height * 0.3 * micro

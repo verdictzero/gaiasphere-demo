@@ -64,6 +64,44 @@ func _initialize() -> void:
 			if y < water:
 				tint = Color(0.2, 0.35, 0.6)
 			img.set_pixel(i, j, tint * (0.35 + 0.75 * shade))
+	# CAN IT ALL BE WALKED TO? From the mere's shore outward, stepping between
+	# neighbouring samples wherever the ground between them is no steeper than a
+	# body can climb (0.8: about 39 degrees; the explorer's limit is 50). Land that
+	# is never reached is painted magenta.
+	var seen := PackedByteArray()
+	seen.resize(n * n)
+	var start_i := int((isl.center.x + field.flow_lagoon_radius + 60.0 - (isl.center.x - reach)) / step)
+	var queue := PackedInt32Array([int(n / 2) * n + start_i])
+	seen[queue[0]] = 1
+	var head := 0
+	var climb := (1.1 if OS.get_environment("STEEP") == "1" else 0.8) * step
+	while head < queue.size():
+		var at := queue[head]
+		head += 1
+		var ai := at % n
+		var aj := at / n
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var bi: int = ai + d.x
+			var bj: int = aj + d.y
+			if bi < 0 or bj < 0 or bi >= n or bj >= n:
+				continue
+			var to := bj * n + bi
+			if seen[to] == 1 or h[to] < -150.0 or absf(h[to] - h[at]) > climb:
+				continue
+			seen[to] = 1
+			queue.append(to)
+	var cut := 0
+	for j in n:
+		for i in n:
+			if h[j * n + i] > -150.0 and seen[j * n + i] == 0:
+				# (Not the rim's own lip, which is the island's edge falling away.)
+				var px := isl.center.x - reach + (float(i) + 0.5) * step
+				var pz := isl.center.y - reach + (float(j) + 0.5) * step
+				if field.mask_for(isl, px, pz) < 0.035:
+					continue
+				cut += 1
+				img.set_pixel(i, j, Color(1.0, 0.1, 0.9))
+	print("map: %.2f%% of the land cannot be walked to (magenta)" % (100.0 * cut / land))
 	img.save_png("res://renders/map_relief.png")
 	print("map: of the land, %.0f%% flat (slope < 0.08), %.0f%% cliff (slope > 1)" % [100.0 * flat / land, 100.0 * steep / land])
 	quit(0)
