@@ -205,7 +205,16 @@ void fragment() {
 	vec3 earth_n = mix(mix(soil_n, litter_n, forest), trail_n, trail);
 
 	// Rock, from three sides, with the planes' gradients taken outside the branch.
-	vec3 bw = pow(abs(geo_n), vec3(triplanar_sharpness));
+	// WHICH SIDES, by the face's TRUE normal (the triangle's own, from the
+	// position's slope across the screen), not the smoothed one: the smoothed
+	// normal of a wall leans back toward its top and foot, the rock was then laid
+	// partly from above onto a face standing nearly upright, and laid from above
+	// a wall's every crack is drawn out into a line from top to bottom.
+	vec3 tri_n = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
+	if (dot(tri_n, geo_n) < 0.0) {
+		tri_n = -tri_n;
+	}
+	vec3 bw = pow(abs(tri_n), vec3(triplanar_sharpness));
 	bw /= bw.x + bw.y + bw.z;
 	vec3 rp = world_pos / rock_size;
 	vec3 rock_a = vec3(0.0);

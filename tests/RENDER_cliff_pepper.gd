@@ -54,7 +54,11 @@ func _process(_d: float) -> bool:
 			for r in rocks:
 				if int(r[0]) == CliffRocks.SHARDS + CliffRocks.KIT.size():
 					blocks.append((r[1] as Transform3D).origin)
-			for share in [0.2, 0.5, 0.8]:
+			# (ONLY=n in the environment: that one place alone.)
+			var shares: Array = [0.2, 0.5, 0.8]
+			if OS.has_environment("ONLY"):
+				shares = [shares[int(OS.get_environment("ONLY"))]]
+			for share in shares:
 				var at: Vector3 = blocks[int(blocks.size() * share)]
 				var best := Vector3.ZERO
 				for a in 16:
