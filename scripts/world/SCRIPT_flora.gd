@@ -496,7 +496,7 @@ static func meadow(x: float, z: float) -> float:
 ## THE MEADOW BY THE WRECK: the first open ground you come to up the shore from
 ## where the shuttle went in, so there are cows to be found at once. (x, z, its
 ## reach in metres); a reach of 0 when there is none.
-const GLADE_UP_SHORE := 92.0
+const GLADE_UP_SHORE := FlowTerrain.MEADOW_UP
 const GLADE_REACH := 60.0
 static var _glade := Vector3.ZERO
 
