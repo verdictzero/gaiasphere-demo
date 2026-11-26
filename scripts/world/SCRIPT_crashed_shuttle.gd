@@ -305,9 +305,9 @@ func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 	# water): soft brown puffs drawn as a screen of dots, thick over the trench.
 	var silt := StandardMaterial3D.new()
 	silt.albedo_texture = load("res://assets/fx/puff_soft_03.webp")
-	silt.albedo_color = Color(0.5, 0.4, 0.28, 0.5)
+	silt.albedo_color = Color(0.66, 0.56, 0.4, 0.6)
 	silt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
-	silt.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
+	silt.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	silt.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	silt.billboard_keep_scale = true
 	silt.vertex_color_use_as_albedo = true
@@ -323,7 +323,7 @@ func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 		if ground < _level - 1.2:
 			var room := minf(_level - ground - 0.6, 5.0)
 			var p := GPUParticles3D.new()
-			p.amount = 16
+			p.amount = 26
 			p.lifetime = 11.0
 			p.preprocess = 11.0
 			p.randomness = 1.0
@@ -361,11 +361,11 @@ func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 			# IN THE AIR: a low haze of dust lying along the skid, lifting off it and
 			# thinning, and the finer stuff higher up.
 			for layer in [
-				{"texture": "puff_soft_03", "amount": 7, "lifetime": 12.0, "play": "pick", "size": 7.0, "grow": 1.7,
-					"color": [0.62, 0.52, 0.4, 0.13], "fade": "in_out", "line": seg, "spread": FlowTerrain.CRASH_WIDE,
+				{"texture": "puff_soft_03", "amount": 12, "lifetime": 12.0, "play": "pick", "size": 7.0, "grow": 1.7,
+					"color": [0.66, 0.56, 0.43, 0.24], "fade": "in_out", "line": seg, "spread": FlowTerrain.CRASH_WIDE,
 					"rise": 0.3, "drift": 0.25, "lit": true, "turn": 5.0, "world": true, "lift": 1.2},
 				{"texture": "dust_bits_01", "amount": 10, "lifetime": 9.0, "play": "pick", "size": 1.6, "grow": 1.3,
-					"color": [0.7, 0.6, 0.46, 0.35], "fade": "in_out", "line": seg, "spread": FlowTerrain.CRASH_WIDE * 1.3,
+					"color": [0.74, 0.64, 0.5, 0.5], "fade": "in_out", "line": seg, "spread": FlowTerrain.CRASH_WIDE * 1.3,
 					"rise": 0.5, "drift": 0.5, "lit": true, "turn": 20.0, "world": true, "lift": 2.5},
 			]:
 				var haze := Fx._particles(layer, true)
