@@ -180,11 +180,6 @@ void fragment() {
 	float detail = (1.0 - smoothstep(detail_distance * 0.5, detail_distance, dist)) * normal_strength;
 
 	vec4 w = max(COLOR, vec4(0.0));
-	// ROCK BY THE ANGLE OF THE GROUND ITSELF, pixel by pixel, over what the mesher
-	// painted into the vertices: anything steeper than about 40 degrees is the
-	// cliff's rock (the same rock, laid the same way, as the cliff blocks stood
-	// against it: SHADER_cliff_rock.gdshader), however coarse the mesh is there.
-	w.b = max(w.b, (1.0 - smoothstep(0.66, 0.8, geo_n.y)) * 3.0);
 	w /= max(w.r + w.g + w.b + w.a, 1e-4);
 	float forest = clamp(UV2.x, 0.0, 1.0);
 	float trail = clamp(UV2.y, 0.0, 1.0);
