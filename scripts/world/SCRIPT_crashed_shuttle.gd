@@ -96,8 +96,6 @@ func _ready() -> void:
 	global_transform = Transform3D(basis.scaled(Vector3.ONE * size), Vector3(at.x, ground, at.y) + up * (1.3 * size - sunk))
 	var model: Node3D = (load(MODEL) as PackedScene).instantiate()
 	add_child(model)
-	# Wear laid over its paint, close to (SCRIPT_detail_layer.gd).
-	DetailLayer.apply(model, 0.5)
 	make_solid(self, model)
 	# Its lights are still on: red, and not steady.
 	for z in [-2.6, 0.4]:

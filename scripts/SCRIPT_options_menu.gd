@@ -5,10 +5,6 @@ extends CanvasLayer
 # how the game looks on a given machine. F9 or K (the OPT touch button) opens it.
 #
 #   God mode       nothing hurts, building is free (Vitals.debug; F3 too)
-#   Detail grain   how much finer the detail layer's bumps are laid than its
-#                  grime, on the truck and the shuttle (SCRIPT_detail_layer.gd)
-#   Detail depth   how deep those bumps are
-#   Detail grime   how strongly its grime and wear darken the paint
 #   Strata ...     the beds drawn on the sides of the cliff's rock: how strong,
 #                  how thick a bed, how far the lines wander, how much they dip
 #   Cliff edge wear / crevice dark   the baked wear and cracks on the cliff block
@@ -20,9 +16,6 @@ extends CanvasLayer
 # key, label, kind ("slide" | "tick"), low, high, step, how it is shown
 const ROWS := [
 	["god", "God mode", "tick"],
-	["grain", "Detail grain", "slide", 1.0, 16.0, 0.5, "x"],
-	["depth", "Detail depth", "slide", 0.0, 2.0, 0.05, "%"],
-	["grime", "Detail grime", "slide", 0.0, 1.5, 0.05, "%"],
 	# The cliff's rock (SHADER_cliff_rock.gdshader, and the terrain's own rock for
 	# the strata): each is a shader setting of the same name.
 	["strata_strength", "Strata strength", "slide", 0.0, 1.5, 0.05, "%"],
@@ -117,12 +110,6 @@ func _read(key: String) -> Variant:
 	match key:
 		"god":
 			return Vitals.debug
-		"grain":
-			return DetailLayer.grain
-		"depth":
-			return DetailLayer.depth
-		"grime":
-			return DetailLayer.grime
 	if _far.has(key):
 		return _far[key]
 	if key.begins_with("cliff_"):
@@ -138,12 +125,6 @@ func _write(key: String, value: Variant) -> void:
 	match key:
 		"god":
 			Vitals.debug = bool(value)
-		"grain":
-			DetailLayer.set_look(float(value), DetailLayer.depth, DetailLayer.grime)
-		"depth":
-			DetailLayer.set_look(DetailLayer.grain, float(value), DetailLayer.grime)
-		"grime":
-			DetailLayer.set_look(DetailLayer.grain, DetailLayer.depth, float(value))
 		_:
 			if _far.has(key):
 				_far[key] = bool(value)
