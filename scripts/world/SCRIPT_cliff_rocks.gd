@@ -79,7 +79,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 17   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 18   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -319,6 +319,10 @@ func _layout(field: IslandField) -> Array:
 	var meadow := Vector2.INF
 	if flows != null and flows.crash_site()[1] != Vector2.ZERO:
 		meadow = flows._meadow_c
+	var mere := -1e9
+	if flows != null:
+		mere = float(isl.base_y) + float(flows.lagoon_level())
+	var stats := [0, 0, 0, 0, 0, 0, 0, 0]
 	for j in n:
 		for i in n:
 			var p := isl.center + Vector2(-reach + (float(i) + rng.randf()) * search_step,
@@ -335,6 +339,14 @@ func _layout(field: IslandField) -> Array:
 			var hx := field.height_at(p.x + 2.0, p.y, h)
 			var hz := field.height_at(p.x, p.y + 2.0, h)
 			var grad := Vector2(hx - h, hz - h) / 2.0
+			# (Not under the mere: its banks are the steepest ground there is, and a
+			# cliff nobody sees is no cliff.)
+			if hills and h < mere + 1.2:
+				continue
+			if hills and OS.has_environment("CLIFF_STATS"):
+				for t in 8:
+					if grad.length() >= 0.3 + 0.1 * t:
+						stats[t] += 1
 			if grad.length() < steep:
 				continue
 			if hills and rng.randf() > pepper:
@@ -408,6 +420,8 @@ func _layout(field: IslandField) -> Array:
 				out.append([rng.randi_range(0, SHARDS - 1),
 						Transform3D(basis.scaled_local(Vector3(width, height, depth)),
 						Vector3(at.x, ground - rng.randf_range(0.3, 1.5), at.y)), turf])
+	if OS.has_environment("CLIFF_STATS"):
+		print("[cliffs] places above the water at least 0.3, 0.4 ... 1.0 steep: ", stats)
 	return out
 
 
