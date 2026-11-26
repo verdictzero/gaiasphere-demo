@@ -552,7 +552,7 @@ func _place_trees(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			elif surface == "rock" or surface == "sand" or float(s.get("flatten", 0.0)) > 0.3 \
 					or float(s.get("flow_weight", 0.0)) > 0.3:
 				continue
-			if float(s.get("slope", 0.0)) > 0.4:
+			if float(s.get("slope", 0.0)) > 0.4 or CliffRocks.covers(x, z, 1.5):
 				continue
 			# Meadows are open: the wood thins at their edge and stops inside.
 			if from_stone >= _islet_radius and _hash(cx, cz, 8) < meadow(x, z) * 1.15:
@@ -600,7 +600,9 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var surface := String(s.get("surface", ""))
 			if surface == "rock" or surface == "sand":
 				continue
-			if float(s.get("slope", 0.0)) > 0.6 or float(s.get("flow_weight", 0.0)) > 0.4 \
+			# (None on a cliff's face, ROCK_FACE, nor in a cliff's rock.)
+			if float(s.get("slope", 0.0)) > ROCK_FACE or CliffRocks.covers(x, z, 0.4) \
+					or float(s.get("flow_weight", 0.0)) > 0.4 \
 					or float(s.get("flatten", 0.0)) > 0.25:
 				continue
 			if _hash(cx, cz, 28) > 0.3 + 0.7 * float(s.get("forest", 0.0)):
@@ -837,6 +839,15 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var x := x0 + (float(ix) + _hash(cx, cz, 53)) * grid
 			var z := z0 + (float(iz) + _hash(cx, cz, 54)) * grid
 			var y := f.height_at(x, z, float(s["height"]))
+			# NONE ON ROCK: not on a cliff's face (the blade's own ground, looked at
+			# only where the ground about is steep at all), nor in a cliff's rock.
+			if float(s.get("slope", 0.0)) > ROCK_FACE * 0.5:
+				var gx := f.height_at(x + 1.0, z, y) - y
+				var gz := f.height_at(x, z + 1.0, y) - y
+				if gx * gx + gz * gz > ROCK_FACE * ROCK_FACE:
+					continue
+			if CliffRocks.covers(x, z, 0.3):
+				continue
 			var variant := float(int(_hash(cx, cz, 55) * 3.0) % 3)
 			var tall := 0.45 + 0.55 * _hash(cx, cz, 56)
 			var wide := tall * (1.0 if variant < 0.5 else (1.2 if variant < 1.5 else 1.45))
@@ -917,7 +928,10 @@ func prefill_covered() -> void:
 ## and only places whatever the file does not hold. No file, or one whose
 ## signature no longer matches, and it is all worked out here as before.
 const BAKE_STORE := "flora"
-const BAKE_VERSION := 1
+const BAKE_VERSION := 2
+## Ground steeper than this (rise over run) is a cliff's face and bare: where the
+## terrain's shader begins to draw it as rock (`cliff_face` there: 0.46).
+const ROCK_FACE := 0.44
 const SOURCES := [
 	"res://scripts/world/SCRIPT_flora.gd",
 	"res://scripts/world/SCRIPT_island_field.gd",
@@ -937,6 +951,7 @@ func bake_signature() -> String:
 	return BakeStore.signature_for(BAKE_VERSION, [_field, {
 		"density": density, "seed": world_seed,
 		"code": BakeStore.source_digest(SOURCES),
+		"cliffs": CliffRocks.layout_key,
 	}])
 
 
@@ -968,6 +983,9 @@ func _read_bake(path: String) -> void:
 func prefill_step() -> bool:
 	if _prefilled or _layers.is_empty():
 		return true
+	# (Nothing is planted until the cliffs' rocks are down: plants keep off them.)
+	if not CliffRocks.laid_out:
+		return false
 	if not _bake_tried:
 		_bake_tried = true
 		var path := BakeStore.find_bake(BAKE_STORE, bake_signature())
@@ -1066,7 +1084,7 @@ func _drain(limit: int) -> void:
 
 func _process(_dt: float) -> void:
 	var cam := get_viewport().get_camera_3d()
-	if cam == null or _layers.is_empty():
+	if cam == null or _layers.is_empty() or not CliffRocks.laid_out:
 		return
 	_drain(24)
 	var at := cam.global_position

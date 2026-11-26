@@ -123,8 +123,9 @@ void fragment() {
 	float roughness = 0.82;
 
 	// THE BEDS IT IS LAID DOWN IN, on its sides (SHADERINC_ground_lay's strata).
-	vec2 beds = strata_at(w_pos, geo_n, dist);
-	albedo = strata_coloured(albedo, w_pos, geo_n) * beds.x;
+	float side = strata_side(geo_n);
+	vec2 beds = strata_at(w_pos, geo_n, dist, side);
+	albedo = strata_coloured(albedo, w_pos, geo_n, side) * beds.x;
 	world_n = normalize(world_n + vec3(0.0, beds.y, 0.0));
 
 	// WEAR ON THE EDGES, DARK IN THE CRACKS (the bake, over the texture).

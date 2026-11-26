@@ -32,12 +32,13 @@ func _process(_delta: float) -> bool:
 		return false
 	# The planting next: every plant on the island, placed once and written out
 	# beside the terrain (see Flora.save_bake).
-	var flora := _scene.get_node_or_null("Flora")
-	if flora != null and not bool(flora.call(&"prefill_step")):
-		return false
-	# And the rock against the walls (CliffRocks): a minute's search, done here once.
+	# The rock on the steep faces first (CliffRocks): a few minutes' search, done
+	# here once, and the plants keep off it.
 	var cliffs := _scene.get_node_or_null("CliffRocks")
 	if cliffs != null and not bool(cliffs.call(&"placed")):
+		return false
+	var flora := _scene.get_node_or_null("Flora")
+	if flora != null and not bool(flora.call(&"prefill_step")):
 		return false
 	var bake := root.get_node("TerrainBake")
 	var world := _scene.get_node("GaiaSphere")

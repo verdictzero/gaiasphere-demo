@@ -102,8 +102,14 @@ uniform vec2 strata_dip = vec2(0.035, 0.018);
 
 // x: what to multiply the rock's colour by; y: how far to tip its normal up (+)
 // or down (-) for the parting's groove.
-vec2 strata_at(vec3 wp, vec3 n, float dist) {
-	float side = 1.0 - smoothstep(0.45, 0.8, abs(n.y));
+// (`side`: how much of a cliff's side this is, 0 to 1. A rock model's is its
+// own steepness, `strata_side`; the terrain's is that or its cliff face, which
+// on a hill is far from upright and still wants its beds.)
+float strata_side(vec3 n) {
+	return 1.0 - smoothstep(0.45, 0.8, abs(n.y));
+}
+
+vec2 strata_at(vec3 wp, vec3 n, float dist, float side) {
 	if (side <= 0.0 || strata_strength <= 0.0) {
 		return vec2(1.0, 0.0);
 	}
@@ -147,8 +153,7 @@ vec3 strata_band(float id) {
 }
 
 // The rock's colour `rock` with the coloured beds laid into it.
-vec3 strata_coloured(vec3 rock, vec3 wp, vec3 n) {
-	float side = 1.0 - smoothstep(0.45, 0.8, abs(n.y));
+vec3 strata_coloured(vec3 rock, vec3 wp, vec3 n, float side) {
 	if (side <= 0.0 || strata_colour <= 0.0) {
 		return rock;
 	}

@@ -257,8 +257,11 @@ void fragment() {
 		vec3 nz = vec3(tz.xy * detail + geo_n.xy, abs(tz.z) * geo_n.z);
 		rock_world_n = normalize(nx.zyx * bw.x + ny.xzy * bw.y + nz.xyz * bw.z);
 		// (The same beds as the cliff's rocks, so they run on across the ground's.)
-		vec2 beds = strata_at(world_pos, geo_n, dist);
-		rock_a = strata_coloured(rock_a, world_pos, geo_n) * beds.x;
+		// (On a cliff face by its angle they show in full, however far from upright
+		// a hill's face is: the models' beds at the same heights, run on.)
+		float side = max(strata_side(geo_n), face);
+		vec2 beds = strata_at(world_pos, geo_n, dist, side);
+		rock_a = strata_coloured(rock_a, world_pos, geo_n, side) * beds.x;
 		rock_world_n = normalize(rock_world_n + vec3(0.0, beds.y, 0.0));
 	}
 

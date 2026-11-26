@@ -127,6 +127,8 @@ func _ready() -> void:
 	if world == null or not world.has_method(&"get_field"):
 		return
 	_field = world.call(&"get_field")
+	_feet = {}
+	layout_key = ""
 	if _field == null or not enabled:
 		set_process(false)
 		return
@@ -180,6 +182,8 @@ func _ready() -> void:
 			var v: Variant = terrain.get_shader_parameter(p)
 			if v != null:
 				_material.set_shader_parameter(p, v)
+	laid_out = false
+	layout_key = _cache_path()
 	var cached := _read_cache()
 	if not cached.is_empty():
 		_rocks = cached
@@ -489,7 +493,48 @@ func _write_cache(rocks: Array) -> void:
 
 # ------------------------------------------------------------------ drawn
 
+## WHERE THE ROCKS STAND, for whatever must keep off them (Flora's trees, ferns
+## and grass): true if (x, z) is under one, or within `spare` metres of it. Each
+## is taken as a disc about its middle. Read from any thread once `laid_out`.
+static var laid_out := true
+## What the layout was made from (the cache's name): Flora's bake goes by it too.
+static var layout_key := ""
+static var _feet := {}        # Vector2i (FOOT m cells) -> [Vector3(x, z, radius)]
+const FOOT := 16.0
+
+
+static func covers(x: float, z: float, spare := 0.0) -> bool:
+	var got: Variant = _feet.get(Vector2i(int(floor(x / FOOT)), int(floor(z / FOOT))))
+	if got == null:
+		return false
+	for d: Vector3 in got:
+		var r := d.z + spare
+		if (x - d.x) * (x - d.x) + (z - d.y) * (z - d.y) < r * r:
+			return true
+	return false
+
+
+func _footprints() -> void:
+	var feet := {}
+	for rock: Array in _rocks:
+		var t: Transform3D = rock[1]
+		var box: AABB = (_meshes[int(rock[0])][0] as Mesh).get_aabb()
+		var mid := t * box.get_center()
+		var r := 0.42 * maxf(box.size.x * t.basis.x.length(), box.size.z * t.basis.z.length())
+		var lo := Vector2i(int(floor((mid.x - r - 2.0) / FOOT)), int(floor((mid.z - r - 2.0) / FOOT)))
+		var hi := Vector2i(int(floor((mid.x + r + 2.0) / FOOT)), int(floor((mid.z + r + 2.0) / FOOT)))
+		for cz in range(lo.y, hi.y + 1):
+			for cx in range(lo.x, hi.x + 1):
+				var c := Vector2i(cx, cz)
+				if not feet.has(c):
+					feet[c] = []
+				feet[c].append(Vector3(mid.x, mid.z, r))
+	_feet = feet
+	laid_out = true
+
+
 func _build() -> void:
+	_footprints()
 	var tiles := {}            # Vector2i -> {kind: [transforms]}
 	_cells.clear()
 	for index in _rocks.size():
