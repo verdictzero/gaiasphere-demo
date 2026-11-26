@@ -15,7 +15,30 @@ extends Node3D
 #   Chew, Chomp    working on the mouthful, back upright
 #   Moo            mooing (`mooed` is sent, and `moo_sound` played if there is one)
 #
-# COWS TAKE NO NOTICE OF YOU until one of their herd is cut down
+# NO TWO COWS ARE ALIKE, AND NONE DOES THE SAME THING TWICE RUNNING. Each has a
+# nature of its own, drawn when it is made (`_nature`): how hungry, how restless,
+# how nosy, how fond of company, how idle, how quick on its feet, how deep its
+# voice. What it does next is drawn by lot with those as the weights (`_rest`),
+# so a greedy one mostly eats and a restless one mostly does not stay put:
+#
+#   graze    as above, for as many mouthfuls as it is hungry
+#   nap      settles right down onto the grass and breathes, slowly, for a good
+#            while (mostly the idle ones, and all of them more at night)
+#   look     rises well up off the ground and turns about for a look round
+#   visit    drifts over to another of the herd, faces it and moos; the other
+#            turns and answers
+#   stray    wanders off some way on its own to graze there, and comes back
+#   romp     tears about in a few quick dashes; a restless neighbour may join in
+#   watch    turns to keep its face on you when you come by (the nosy ones from
+#            further off), and a really nosy one drifts up for a closer look
+#   moo, and hanging there one way or the other
+#
+# THE HERD DOES NOT MOVE AS ONE: when it drifts on, each cow leaves when it gets
+# round to it, the idle ones last, and now and then one stays behind eating and
+# has to hurry to catch up. A herd settles down together at night.
+# A truck driven at them makes them scatter, whatever else they think of you.
+#
+# COWS TAKE NO NOTICE OF YOU (beyond that) until one of their herd is cut down
 # (SCRIPT_cow_slicing.gd). Then the rest run: away from you, wherever that is,
 # out of the meadow and into the wood if need be, and again whenever you come
 # near, for a minute and a half. Let alone, they always come back to the herd
@@ -63,6 +86,7 @@ var _placed := false
 var _hour_was := -1.0
 var _islet := Vector2.ZERO
 var _islet_reach := 0.0
+var _truck := Vector3.INF     # where a truck being driven fast is, or INF
 
 
 func _ready() -> void:
@@ -232,11 +256,63 @@ func _add_cow(herd: Dictionary, at: Vector2, about: float) -> void:
 	var cow := {"node": holder, "player": player, "half": model.scale.x, "state": "", "t": 0.0,
 		"target": Vector2.ZERO, "yaw": _rng.randf() * TAU, "ground": ground, "ground_t": _rng.randf() * 0.2,
 		"air": hover, "want_air": hover, "bites": 0, "now": ""}
+	cow.merge(_nature())
 	holder.position = Vector3(at.x, ground + hover + float(cow["half"]), at.y)
 	holder.rotation.y = float(cow["yaw"])
-	_rest(cow)
+	_rest(cow, herd)
 	(cow["player"] as AnimationPlayer).seek(_rng.randf() * 3.0, true)       # not all in step
 	(herd["cows"] as Array).append(cow)
+
+
+## A cow's nature: drawn once, and what its choices are weighted by ever after.
+func _nature() -> Dictionary:
+	return {
+		"hungry": _rng.randf_range(0.2, 1.0), "restless": _rng.randf(), "nosy": _rng.randf(),
+		"friendly": _rng.randf(), "idle": _rng.randf(), "quick": _rng.randf_range(0.75, 1.3),
+		"voice": _rng.randf_range(0.82, 1.18), "seen_t": _rng.randf_range(0.0, 15.0),
+	}
+
+
+## One of `lots` (name -> weight), by lot.
+func _draw(lots: Dictionary) -> String:
+	var sum := 0.0
+	for k in lots:
+		sum += maxf(float(lots[k]), 0.0)
+	var at := _rng.randf() * sum
+	for k in lots:
+		at -= maxf(float(lots[k]), 0.0)
+		if at <= 0.0:
+			return String(k)
+	return String(lots.keys()[0])
+
+
+## Is it night (the herd settles)?
+func _night() -> bool:
+	return _hour_was >= 0.0 and (_hour_was > 21.0 or _hour_was < 5.0)
+
+
+func _moo(cow: Dictionary) -> void:
+	cow["state"] = "moo"
+	cow["t"] = 2.6
+	cow["want_air"] = hover
+	_play(cow, "Moo")
+	mooed.emit(cow["node"])
+	if moo_sound != null:
+		var voice := AudioStreamPlayer3D.new()
+		voice.stream = moo_sound
+		voice.unit_size = 12.0
+		voice.pitch_scale = float(cow["voice"]) * _rng.randf_range(0.96, 1.04)
+		(cow["node"] as Node3D).add_child(voice)
+		voice.play()
+		voice.finished.connect(voice.queue_free)
+
+
+## Turn to face a point (from where it hangs), over the next moments.
+func _face(cow: Dictionary, to: Vector2) -> void:
+	var node: Node3D = cow["node"]
+	var gap := to - Vector2(node.position.x, node.position.z)
+	if gap.length() > 0.05:
+		cow["face"] = atan2(gap.x, gap.y)
 
 
 func _count() -> int:
@@ -253,37 +329,120 @@ func _play(cow: Dictionary, anim: String) -> void:
 	(cow["player"] as AnimationPlayer).play(anim, 0.35)
 
 
-## Arrived, or done with what it was doing: what next.
-func _rest(cow: Dictionary) -> void:
-	var pick := _rng.randf()
+## Arrived, or done with what it was doing: what next. By lot, weighted by the
+## cow's own nature, the hour, and where it has got to.
+func _rest(cow: Dictionary, herd: Dictionary) -> void:
+	var node: Node3D = cow["node"]
+	var at := Vector2(node.position.x, node.position.z)
+	var centre: Vector2 = herd.get("centre", at)
 	cow["want_air"] = hover
-	if pick < 0.36:
-		cow["state"] = "graze"
-		cow["want_air"] = graze_hover
-		cow["bites"] = _rng.randi_range(1, 3)
-		cow["t"] = 0.7                       # sinking to the grass
-		_play(cow, "Idle_Float")
-	elif pick < 0.45:
-		cow["state"] = "moo"
-		cow["t"] = 2.6
-		_play(cow, "Moo")
-		mooed.emit(cow["node"])
-		if moo_sound != null:
-			var voice := AudioStreamPlayer3D.new()
-			voice.stream = moo_sound
-			voice.unit_size = 12.0
-			voice.pitch_scale = _rng.randf_range(0.9, 1.1)
-			(cow["node"] as Node3D).add_child(voice)
-			voice.play()
-			voice.finished.connect(voice.queue_free)
-	elif pick < 0.7:
-		cow["state"] = "idle"
-		cow["t"] = _rng.randf_range(4.0, 8.0)
-		_play(cow, "Idle_Breathe")
-	else:
-		cow["state"] = "idle"
-		cow["t"] = _rng.randf_range(4.0, 9.0)
-		_play(cow, "Idle_Float")
+	cow["pace"] = 1.0
+	cow["spin"] = 0.0
+	cow.erase("face")
+	cow.erase("face_me")
+	cow.erase("then")
+	(cow["player"] as AnimationPlayer).speed_scale = 1.0
+	# (Off on its own for long enough: mostly it thinks of the others.)
+	if at.distance_to(centre) > 13.0 and _rng.randf() < 0.6:
+		_home(cow, herd)
+		return
+	var night := _night()
+	var hungry := float(cow["hungry"])
+	var restless := float(cow["restless"])
+	var idle := float(cow["idle"])
+	var friendly := float(cow["friendly"])
+	var others := (herd["cows"] as Array).size() > 1
+	var last := String(cow.get("did", ""))
+	var lots := {
+		"graze": (0.15 + 0.5 * hungry) * (0.35 if night else 1.0),
+		"nap": (0.03 + 0.14 * idle) * (5.0 if night else 1.0),
+		"look": 0.05 + 0.1 * restless,
+		"visit": (0.03 + 0.14 * friendly) if others else 0.0,
+		"stray": (0.02 + 0.12 * restless * (1.0 - friendly * 0.6)) * (0.2 if night else 1.0),
+		"romp": 0.0 if night else 0.01 + 0.07 * restless * (1.0 - idle),
+		"moo": 0.04 + 0.07 * friendly,
+		"wander": 0.08 + 0.18 * restless,
+		"breathe": 0.14 + 0.1 * idle,
+		"float": 0.14,
+	}
+	# (Not the same thing twice running, as a rule.)
+	if lots.has(last):
+		lots[last] = float(lots[last]) * 0.25
+	var pick := _draw(lots)
+	cow["did"] = pick
+	match pick:
+		"graze":
+			cow["state"] = "graze"
+			cow["want_air"] = graze_hover
+			cow["bites"] = _rng.randi_range(1, 2 + int(round(hungry * 3.0)))
+			cow["t"] = 0.7                       # sinking to the grass
+			_play(cow, "Idle_Float")
+		"nap":
+			cow["state"] = "nap"
+			cow["want_air"] = 0.02
+			cow["t"] = _rng.randf_range(12.0, 30.0) * (2.0 if night else 1.0)
+			_play(cow, "Idle_Breathe")
+			(cow["player"] as AnimationPlayer).speed_scale = 0.55
+		"look":
+			cow["state"] = "look"
+			cow["want_air"] = hover * _rng.randf_range(2.2, 3.6)
+			cow["t"] = _rng.randf_range(3.5, 7.0)
+			cow["spin"] = _rng.randf_range(0.35, 0.8) * (1.0 if _rng.randf() < 0.5 else -1.0)
+			_play(cow, "Idle_Float")
+		"visit":
+			var cows: Array = herd["cows"]
+			var mate: Dictionary = cows[_rng.randi_range(0, cows.size() - 1)]
+			if is_same(mate, cow):
+				for other: Dictionary in cows:
+					if not is_same(other, cow):
+						mate = other
+						break
+			var mp: Vector3 = (mate["node"] as Node3D).position
+			var from := (at - Vector2(mp.x, mp.z))
+			from = from.normalized() if from.length() > 0.1 else Vector2(1, 0)
+			_go(cow, Vector2(mp.x, mp.z) + from * (float(cow["half"]) + float(mate["half"])) * 1.7)
+			cow["then"] = "greet"
+			cow["mate"] = mate["node"]
+		"stray":
+			var a := _rng.randf() * TAU
+			_go(cow, centre + Vector2(cos(a), sin(a)) * _rng.randf_range(12.0, 26.0))
+			cow["pace"] = 0.7
+			cow["then"] = "graze"
+		"romp":
+			_romp(cow, _rng.randi_range(3, 5))
+			# One that cannot keep still either may go with it.
+			for other: Dictionary in herd["cows"]:
+				if not is_same(other, cow) and String(other["state"]) in ["idle", "look"] \
+						and _rng.randf() < 0.45 * float(other["restless"]):
+					_romp(other, _rng.randi_range(2, 4))
+		"moo":
+			_moo(cow)
+		"wander":
+			var a := _rng.randf() * TAU
+			_go(cow, centre + Vector2(cos(a), sin(a)) * _rng.randf_range(2.0, 9.0))
+			cow["pace"] = _rng.randf_range(0.6, 1.0)
+		"breathe":
+			cow["state"] = "idle"
+			cow["t"] = _rng.randf_range(3.0, 9.0)
+			_play(cow, "Idle_Breathe")
+		_:
+			cow["state"] = "idle"
+			cow["t"] = _rng.randf_range(3.0, 10.0)
+			cow["want_air"] = hover * _rng.randf_range(0.8, 1.5)
+			_play(cow, "Idle_Float")
+
+
+## A dash to somewhere near, at speed, with `legs` more to come after it.
+func _romp(cow: Dictionary, legs: int) -> void:
+	var node: Node3D = cow["node"]
+	var at := Vector2(node.position.x, node.position.z)
+	var a := _rng.randf() * TAU
+	_go(cow, at + Vector2(cos(a), sin(a)) * _rng.randf_range(5.0, 11.0))
+	cow["pace"] = 2.3
+	cow["legs"] = legs - 1
+	cow["then"] = "romp"
+	cow["want_air"] = hover * 1.6
+	(cow["player"] as AnimationPlayer).speed_scale = 1.7
 
 
 func _go(cow: Dictionary, to: Vector2) -> void:
@@ -314,6 +473,10 @@ func _flee(cow: Dictionary, from: Vector2) -> void:
 			to = tried
 			break
 	cow["state"] = "flee"
+	cow["spin"] = 0.0
+	cow.erase("face")
+	cow.erase("face_me")
+	cow.erase("then")
 	cow["target"] = to
 	cow["want_air"] = hover
 	_play(cow, "Move_Float")
@@ -344,6 +507,13 @@ func _process(delta: float) -> void:
 	delta = minf(delta, 0.1)
 	_overnight()
 	var me := _explorer.global_position
+	# A truck coming at them at any speed (SCRIPT_uni_truck.gd).
+	_truck = Vector3.INF
+	var truck := get_node_or_null(^"../UniTruck")
+	if truck != null and truck.get("body") != null:
+		var body := truck.get("body") as RigidBody3D
+		if body != null and not body.freeze and body.linear_velocity.length() > 4.0:
+			_truck = body.global_position
 	for herd in _herds:
 		var centre: Vector2 = herd["centre"]
 		var shown := Vector2(me.x, me.z).distance_to(centre) < view_range
@@ -366,7 +536,13 @@ func _process(delta: float) -> void:
 				var cows: Array = herd["cows"]
 				for i in cows.size():
 					var a := TAU * float(i) / float(cows.size()) + _rng.randf_range(-0.5, 0.5)
-					_go(cows[i], to + Vector2(cos(a), sin(a)) * _rng.randf_range(2.5, 8.5))
+					# Each in its own time: the idle ones last, and now and then one
+					# stays behind and has to hurry after the rest.
+					var cow: Dictionary = cows[i]
+					var late := _rng.randf() < 0.12
+					cow["leave_to"] = to + Vector2(cos(a), sin(a)) * _rng.randf_range(2.5, 8.5)
+					cow["leave_in"] = _rng.randf_range(11.0, 20.0) if late else _rng.randf_range(0.0, 3.0 + 6.0 * float(cow["idle"]))
+					cow["leave_pace"] = 1.9 if late else _rng.randf_range(0.85, 1.1)
 		for cow in herd["cows"]:
 			_cow_step(cow, herd, delta, me)
 
@@ -380,6 +556,28 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 	# that herd you come near runs (and further off than before: they are watching).
 	var wary := float(herd.get("wary", 0.0)) > 0.0
 	var near_me := wary and (at - Vector2(me.x, me.z)).length() < 5.5 + float(cow["half"]) and absf(me.y - node.position.y) < 3.5
+	var me2 := Vector2(me.x, me.z)
+	var threat := me2
+	# A truck bearing down on it: it gets out of the way, wary or not.
+	if _truck != Vector3.INF and (at - Vector2(_truck.x, _truck.z)).length() < 11.0:
+		near_me = true
+		threat = Vector2(_truck.x, _truck.z)
+	cow["seen_t"] = float(cow["seen_t"]) - delta
+	# The herd is drifting on, and this one's time to go has come.
+	if cow.has("leave_to"):
+		cow["leave_in"] = float(cow["leave_in"]) - delta
+		if float(cow["leave_in"]) <= 0.0 and state != "flee":
+			var to_go: Vector2 = cow["leave_to"]
+			var hurry := float(cow["leave_pace"])
+			cow.erase("leave_to")
+			cow["spin"] = 0.0
+			cow.erase("face")
+			cow.erase("face_me")
+			cow.erase("then")
+			_go(cow, to_go)
+			cow["pace"] = hurry
+			(cow["player"] as AnimationPlayer).speed_scale = 1.5 if hurry > 1.5 else 1.0
+			state = "move"
 	if state == "move" or state == "flee":
 		var to: Vector2 = cow["target"]
 		var gap := to - at
@@ -390,31 +588,95 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 		var there := gap.length() < 0.9 or (float(cow["going"]) > 14.0 and not running)
 		if near_me and not running:
 			cow["going"] = 0.0
-			_flee(cow, Vector2(me.x, me.z))
+			_flee(cow, threat)
 		elif there:
 			cow["going"] = 0.0
 			(cow["player"] as AnimationPlayer).speed_scale = 1.0
-			if running and (at - Vector2(me.x, me.z)).length() < 7.0:
-				_flee(cow, Vector2(me.x, me.z))          # still being chased
+			var then := String(cow.get("then", ""))
+			cow.erase("then")
+			if running and (at - threat).length() < 7.0 and near_me:
+				_flee(cow, threat)                        # still being chased
+			elif running and (at - me2).length() < 7.0 and wary:
+				_flee(cow, me2)
 			elif Flora.meadow(at.x, at.y) < 0.6 or at.distance_to(herd["centre"]) > roam * 0.5:
 				_home(cow, herd)                          # let alone: back to the meadow and the herd
+			elif then == "romp" and int(cow.get("legs", 0)) > 0:
+				_romp(cow, int(cow["legs"]))              # and off again
+			elif then == "greet" and is_instance_valid(cow.get("mate")):
+				# Face to face with the one it came over to: a moo, and an answer.
+				var mate := {}
+				for other: Dictionary in herd["cows"]:
+					if other["node"] == cow["mate"]:
+						mate = other
+				cow.erase("mate")
+				_moo(cow)
+				if mate.is_empty():
+					return
+				var mp: Vector3 = (mate["node"] as Node3D).position
+				_face(cow, Vector2(mp.x, mp.z))
+				if String(mate["state"]) in ["idle", "look", "graze", "nap"]:
+					mate["state"] = "answer"
+					mate["t"] = _rng.randf_range(1.0, 2.2)
+					mate["want_air"] = hover
+					mate["spin"] = 0.0
+					(mate["player"] as AnimationPlayer).speed_scale = 1.0
+					_play(mate, "Idle_Float")
+					_face(mate, at)
+			elif then == "graze":
+				cow["state"] = "graze"
+				cow["want_air"] = graze_hover
+				cow["bites"] = _rng.randi_range(2, 5)
+				cow["t"] = 0.7
+				_play(cow, "Idle_Float")
+			elif then == "watch":
+				cow["state"] = "watch"
+				cow["t"] = _rng.randf_range(4.0, 9.0)
+				cow["face_me"] = true
+				_play(cow, "Idle_Breathe")
 			else:
-				_rest(cow)
+				_rest(cow, herd)
 		else:
 			# It turns to face the way it is going (its face is its +z) and goes that way.
 			var want := atan2(gap.x, gap.y)
 			cow["yaw"] = lerp_angle(float(cow["yaw"]), want, minf(delta * (4.5 if running else 2.2), 1.0))
 			var facing := Vector2(sin(float(cow["yaw"])), cos(float(cow["yaw"])))
-			var pace := speed * (2.4 if running else 1.0) * clampf(facing.dot(gap.normalized()), 0.15, 1.0) \
+			var pace := speed * (2.4 if running else float(cow.get("pace", 1.0)) * float(cow["quick"])) * clampf(facing.dot(gap.normalized()), 0.15, 1.0) \
 					* minf(gap.length() / 1.5 + 0.25, 1.0)
 			at += facing * pace * delta
 	else:
 		cow["t"] = float(cow["t"]) - delta
+		# Turning on the spot: for a look round, to face another, to keep its face on you.
+		if bool(cow.get("face_me", false)):
+			_face(cow, me2)
+		if cow.has("face"):
+			cow["yaw"] = lerp_angle(float(cow["yaw"]), float(cow["face"]), minf(delta * 2.4, 1.0))
+		elif float(cow.get("spin", 0.0)) != 0.0:
+			cow["yaw"] = float(cow["yaw"]) + float(cow["spin"]) * delta
+		var away_me := (at - me2).length()
 		# Someone is right on top of it: it runs.
 		if near_me:
-			_flee(cow, Vector2(me.x, me.z))
+			(cow["player"] as AnimationPlayer).speed_scale = 1.0
+			_flee(cow, threat)
+		elif not wary and state in ["idle", "look", "graze"] and float(cow["seen_t"]) <= 0.0 \
+				and away_me < 5.0 + 11.0 * float(cow["nosy"]) and away_me > 2.5 and absf(me.y - node.position.y) < 4.0:
+			# YOU HAVE COME BY, and it has noticed: it stops what it is at and
+			# watches you, and the nosiest come over for a closer look first.
+			cow["seen_t"] = _rng.randf_range(18.0, 50.0)
+			cow["spin"] = 0.0
+			cow["want_air"] = hover * _rng.randf_range(1.0, 1.7)
+			if float(cow["nosy"]) > 0.65 and away_me > 6.0 and _rng.randf() < 0.7:
+				_go(cow, me2 + (at - me2).normalized() * _rng.randf_range(3.2, 4.5))
+				cow["pace"] = 0.75
+				cow["then"] = "watch"
+			else:
+				cow["state"] = "watch"
+				cow["t"] = _rng.randf_range(3.0, 8.0)
+				cow["face_me"] = true
+				_play(cow, "Idle_Breathe" if _rng.randf() < 0.5 else "Idle_Float")
 		elif float(cow["t"]) <= 0.0:
 			match state:
+				"answer":
+					_moo(cow)
 				"graze":
 					# Down at the grass: a mouthful, then the working of it, then
 					# another or enough.
@@ -428,7 +690,7 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 						"working":
 							cow["bites"] = int(cow["bites"]) - 1
 							if int(cow["bites"]) <= 0:
-								_rest(cow)
+								_rest(cow, herd)
 							else:
 								cow["want_air"] = graze_hover
 								cow["t"] = 0.7
@@ -437,15 +699,10 @@ func _cow_step(cow: Dictionary, herd: Dictionary, delta: float, me: Vector3) -> 
 							_play(cow, "Eat")
 							cow["t"] = 2.4
 				_:
-					# Now and then a cow wanders a few steps on its own within the herd.
-					if _rng.randf() < 0.3:
-						var a := _rng.randf() * TAU
-						_go(cow, (herd["centre"] as Vector2) + Vector2(cos(a), sin(a)) * _rng.randf_range(2.0, 9.0))
-					else:
-						_rest(cow)
+					_rest(cow, herd)
 	# Not through each other.
 	for other in herd["cows"]:
-		if other == cow:
+		if is_same(other, cow):
 			continue
 		var op: Vector3 = (other["node"] as Node3D).position
 		var apart := at - Vector2(op.x, op.z)
