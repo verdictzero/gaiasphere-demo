@@ -305,11 +305,12 @@ func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 	# water): soft brown puffs drawn as a screen of dots, thick over the trench.
 	var silt := StandardMaterial3D.new()
 	silt.albedo_texture = load("res://assets/fx/puff_soft_03.webp")
-	silt.albedo_color = Color(0.66, 0.56, 0.4, 0.6)
+	silt.albedo_color = Color(0.7, 0.6, 0.42, 1.0)
 	silt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
 	silt.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	silt.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	silt.billboard_keep_scale = true
+	silt.alpha_hash_scale = 1.6
 	silt.vertex_color_use_as_albedo = true
 	silt.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var cloud := QuadMesh.new()
