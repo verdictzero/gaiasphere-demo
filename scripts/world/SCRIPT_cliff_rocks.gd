@@ -44,17 +44,34 @@ extends Node3D
 ## A shard's width against its height (it is tall and thin).
 @export var aspect := Vector2(0.17, 0.28)
 @export var solid_reach := 60.0
+## The share of places on a wall that also get one of the old kit's masses.
+@export var kit_share := 0.2
 
 ## How many different shards are made.
 const SHARDS := 12
+## AND THE OLD KIT, mixed in (the user: "keep the old kit though and mix it in as
+## necessary"): buttresses, slabs and pillars from assets/cliff, made to hang from
+## an island's rim, so their origin is at their top. Where a wall is tall enough,
+## one place in `kit_share` gets one, faced out of the wall, with the shards
+## wedged in round and in front of it. Numbered after the shards.
+## name, (min, max) of the wall heights it suits, metres
+const KIT := [
+	["cliff_buttress_a", 8.0, 90.0],
+	["cliff_buttress_b", 8.0, 90.0],
+	["cliff_slab_a", 4.0, 45.0],
+	["cliff_pillar_a", 14.0, 90.0],
+	["cliff_pillar_b", 14.0, 90.0],
+]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 9
+const CACHE_VERSION := 10
 
 var _field: IslandField
 var _meshes: Array = []    # shard -> [lod meshes]
 var _lod_ends: Array = []  # shard -> [distances]
 var _hulls := {}           # shard -> hull points of a coarse level
+var _kit_size: Array = []  # kit -> size in metres, as made
+var _kit_low: Array = []   # kit -> how far below its origin it reaches, as made
 var _material: ShaderMaterial
 var _rocks: Array = []     # [shard, Transform3D]
 var _task := -1
@@ -79,6 +96,17 @@ func _ready() -> void:
 		_meshes.append(lods)
 		# A shard of the usual size, 25 m by 5: its finest level held to 25 m or so.
 		_lod_ends.append(MeshLods.distances(lods.size(), 9.0, 1.7))
+	var sizes := {}
+	for entry in JSON.parse_string(FileAccess.get_file_as_string("res://assets/cliff/manifest.json")):
+		var sz: Array = entry["size_m"]
+		sizes[entry["name"]] = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
+	for kind in KIT:
+		var lods: Array = MeshLods.chain(Flora._mesh_of("res://assets/cliff/%s/%s_lod0.gltf" % [kind[0], kind[0]]) as ArrayMesh)
+		_meshes.append(lods)
+		var size: Vector3 = sizes.get(kind[0], Vector3(16, 26, 11))
+		_kit_size.append(size)
+		_kit_low.append((lods[0] as Mesh).get_aabb().position.y)
+		_lod_ends.append(MeshLods.distances(lods.size(), maxf(size.x, size.y) * 1.2))
 	_material = ShaderMaterial.new()
 	_material.shader = load("res://shaders/SHADER_cliff_rock.gdshader")
 	var terrain := world.get(&"terrain_material") as ShaderMaterial
@@ -237,6 +265,21 @@ func _layout(field: IslandField) -> Array:
 			var tall := top - foot
 			if tall < 3.0:
 				continue
+			# Now and then one of the old kit's masses, in the wall, faced out of it.
+			if rng.randf() < kit_share:
+				var kit := _kit_for(rng, tall)
+				if kit >= 0:
+					var size: Vector3 = _kit_size[kit]
+					var ks := tall * rng.randf_range(0.7, 1.15) / size.y
+					var kx := ks * rng.randf_range(0.8, 1.2)
+					var kz := ks * rng.randf_range(0.8, 1.15)
+					var half := size.z * kz * 0.5
+					var kat := p + out_dir * (half * (1.0 - 2.0 * 0.45))
+					var kb := Basis(Vector3.UP, atan2(out_dir.x, out_dir.y) + rng.randf_range(-0.35, 0.35)) \
+							* Basis(Vector3.RIGHT, rng.randf_range(-0.1, 0.1)) * Basis(Vector3.BACK, rng.randf_range(-0.12, 0.12))
+					# (Stood on its underside: the kit hangs from its top.)
+					var ky := foot - rng.randf_range(0.8, 2.5) - float(_kit_low[kit]) * ks
+					out.append([SHARDS + kit, Transform3D(kb.scaled_local(Vector3(kx, ks, kz)), Vector3(kat.x, ky, kat.y))])
 			# A cluster, a few deep: the back of it in the wall and over its top,
 			# the front shorter and leaning out, every one overlapping the next.
 			for c in rng.randi_range(cluster.x, cluster.y):
@@ -262,12 +305,22 @@ func _layout(field: IslandField) -> Array:
 	return out
 
 
+## One of the kit that suits a wall this tall, or -1.
+func _kit_for(rng: RandomNumberGenerator, tall: float) -> int:
+	var fits: Array = []
+	for i in KIT.size():
+		if tall >= float(KIT[i][1]) and tall <= float(KIT[i][2]):
+			fits.append(i)
+	return -1 if fits.is_empty() else int(fits[rng.randi_range(0, fits.size() - 1)])
+
+
 # ------------------------------------------------------------------ kept
 
 func _cache_path() -> String:
-	var key := "%d|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s" % [CACHE_VERSION, _field.world_seed, _field.mesa_height,
+	var key := "%d|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s" % [CACHE_VERSION, _field.world_seed, _field.mesa_height,
 			_field.mesa_levels, _field.mesa_scale, _field.mesa_warp, _field.mesa_riser, _field.mesa_ramps,
-			_field.canyon_width, SHARDS, search_step, wall_slope, cluster, back_height, front_height, aspect]
+			_field.canyon_width, SHARDS * 100 + KIT.size(), search_step, wall_slope, cluster, back_height, front_height, aspect,
+			kit_share]
 	return "user://cliff_rocks_%s.bin" % key.md5_text().substr(0, 12)
 
 
@@ -330,7 +383,11 @@ func _build() -> void:
 				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hi > 0.0 and hi < 250.0 \
 						else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				add_child(mmi)
-	print("[cliffs] %d shards of rock against the tablelands' walls" % _rocks.size())
+	var kit := 0
+	for rock in _rocks:
+		if int(rock[0]) >= SHARDS:
+			kit += 1
+	print("[cliffs] %d shards of rock and %d of the old kit against the tablelands' walls" % [_rocks.size() - kit, kit])
 
 
 ## The shards round `here` made solid: a hull each, out to `solid_reach`.
