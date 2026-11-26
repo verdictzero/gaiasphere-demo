@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bw4i3nrx17iqu"
+uid="uid://dlhermdy05aiw"
 path.s3tc="res://.godot/imported/uni_truck_suspension_fp_basecolor.jpg-c52f247fb5f0e9441fc8d1feb73c4893.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_suspension_fp_basecolor.jpg-c52f247fb5f0e9441fc8d1feb73c4893.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "2ee6acbf4fb089e052be0c05e0dae3c5"
+"md5": "1d4ecb716468934923cee4a46f087bd0"
 }
 
 [deps]

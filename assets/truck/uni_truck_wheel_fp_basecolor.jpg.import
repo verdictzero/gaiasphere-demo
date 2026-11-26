@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3fc57qd1b0u8"
+uid="uid://i2nc2x6dil0w"
 path.s3tc="res://.godot/imported/uni_truck_wheel_fp_basecolor.jpg-7d51c4cbbbfadc127d6a06570832db0e.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_wheel_fp_basecolor.jpg-7d51c4cbbbfadc127d6a06570832db0e.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "af33429c527d865a348b4f2ba02ae211"
+"md5": "24d661087dcbf77f24f052cb5436e81f"
 }
 
 [deps]

@@ -35,7 +35,13 @@ extends Node3D
 # GETTING IN: look at it within a few metres and USE (E / click / the big
 # button). Driving: forward and back to drive and brake (and reverse), left and
 # right to steer, JUMP (Space / A) to kick the strut and jump, RUN (Shift) for
-# more power, the light key for the headlights, USE to get out. The view is from
+# more power, the light key for the headlights, USE to get out. JUMP HELD burns
+# the four JET BOOSTERS under the corners of the bed (the model's `booster`): the
+# jump goes off with them lit, they carry it up for as long as the button is held
+# and there is burn in the tank (`burn_time`; it fills again on the ground), and
+# they can be lit again in the air to hold a fall off or clear a gap. Each jet
+# is a blue-white core in an orange plume, with a light under the truck, and
+# near the ground they throw up a ring and dust. The view is from
 # behind and above, swung round with the mouse or the right stick, and drifts
 # back behind the truck once it is moving and left alone.
 #
@@ -76,6 +82,15 @@ extends Node3D
 ## How hard the jump kicks, metres a second straight up.
 @export var jump_speed := 7.5
 
+@export_group("Boosters")
+## Seconds of burn in the tank, and seconds of burn it gets back each second on
+## the ground.
+@export var burn_time := 1.8
+@export var burn_refill := 0.9
+## The four jets' push together, as a multiple of the truck's weight: over 1 it
+## climbs on them, and the more over the faster.
+@export var burn_lift := 1.9
+
 @export_group("Gyros")
 ## Stiffness (1/s) of the upright hold.
 @export var gyro_rate := 6.5
@@ -100,6 +115,8 @@ const WHEEL_R := 2.5226                 # tyre radius
 const SEAT := Vector3(-1.4, 3.6, -4.6)  # the driver's eye, in the cab
 const COM := Vector3(0.0, 1.2, 0.0)     # where the weight is: over the wheel
 const GYRO_Z := 4.065                   # the two flywheels, fore and aft of the middle
+const NOZZLE := Vector3(1.975, -0.61, 6.3)  # a booster's mouth: one at each (+-x, y, +-z)
+const GLOW := "res://assets/fx/glow_soft_01.webp"
 
 var body: RigidBody3D
 
@@ -148,6 +165,12 @@ var _spin := 0.0                  # the tyre's turn, radians
 var _spin_rate := 0.0
 var _gimbal := 0.0
 var _jump_wait := 0.0
+var _burn := 0.0                  # seconds of burn left in the tank
+var _burning := false
+var _jets: Array[GPUParticles3D] = []
+var _jet_light: OmniLight3D
+var _jet_dust := 0.0
+var _tank: ProgressBar
 var _still := 0.0
 var _under := 0.0
 var _g := 9.8
@@ -229,6 +252,8 @@ func _build(at: Transform3D) -> void:
 		lamp.visible = false
 		body.add_child(lamp)
 		_lights.append(lamp)
+	_make_jets(body, s)
+	_burn = burn_time
 	_cast.shape = _sphere
 	_sphere.radius = WHEEL_R * s
 	_cast.collision_mask = 1
@@ -561,13 +586,35 @@ func _physics_process(delta: float) -> void:
 	_gyros(throttle, steer, delta)
 	if _driver:
 		_jump_wait = maxf(_jump_wait - delta, 0.0)
-		if Input.is_action_just_pressed(&"wv_up") and _grounded and _jump_wait <= 0.0 and not _menus():
+		var pressed := Input.is_action_just_pressed(&"wv_up") and not _menus()
+		var lit := false
+		if pressed and _grounded and _jump_wait <= 0.0:
 			_jump_wait = 0.6
 			var kick := (body.global_basis.y + _normal).normalized()
 			body.apply_central_impulse(kick * mass * jump_speed)
+			lit = true
+			_blast()
+		# The jets: lit by the jump or by a press in the air, and burning for as
+		# long as the button is held and the tank has anything in it.
+		if (pressed and not _grounded and _burn > 0.15) or lit:
+			_burning = true
+		if _burning and (not Input.is_action_pressed(&"wv_up") or _burn <= 0.0 or _menus()):
+			_burning = false
+		if _burning:
+			_burn = maxf(_burn - delta, 0.0)
+			body.apply_central_force(body.global_basis.y * mass * _g * burn_lift)
+			_jet_dust -= delta
+			if _jet_dust <= 0.0:
+				_jet_dust = 0.22
+				_blast(false)
+		elif _grounded:
+			_burn = minf(_burn + burn_refill * delta, burn_time)
 		_seat()
 	else:
+		_burning = false
+		_burn = minf(_burn + burn_refill * delta, burn_time)
 		_settle(delta)
+	_show_jets(delta)
 	_fell_off(delta)
 
 
@@ -764,6 +811,107 @@ func _menus() -> bool:
 	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open
 
 
+# ------------------------------------------------------------------ the boosters
+
+## A jet at each booster's mouth (two layers: the hot core and the plume round
+## it) and one light under the middle for all four.
+func _make_jets(on: Node3D, s: float) -> void:
+	var tex := load(GLOW) as Texture2D
+	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+		var at := Vector3(NOZZLE.x * corner.x, NOZZLE.y, NOZZLE.z * corner.y) * s
+		# (size at birth, how fast it leaves, how long it lasts, how many)
+		on.add_child(_jet(tex, at, 1.5 * s, 16.0, 0.16, 14, [Color(0.75, 0.9, 1.0, 1.0), Color(0.35, 0.6, 1.0, 0.8), Color(0.2, 0.3, 1.0, 0.0)]))
+		on.add_child(_jet(tex, at, 2.6 * s, 11.0, 0.3, 18, [Color(1.0, 0.8, 0.45, 0.7), Color(1.0, 0.42, 0.1, 0.5), Color(0.5, 0.1, 0.02, 0.0)]))
+	_jet_light = OmniLight3D.new()
+	_jet_light.light_color = Color(1.0, 0.62, 0.3)
+	_jet_light.omni_range = 26.0 * s
+	_jet_light.light_energy = 0.0
+	_jet_light.shadow_enabled = false
+	_jet_light.position = Vector3(0, NOZZLE.y - 2.0, 0) * s
+	_jet_light.visible = false
+	on.add_child(_jet_light)
+
+
+func _jet(tex: Texture2D, at: Vector3, size: float, speed: float, life: float, amount: int, colours: Array) -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.position = at
+	p.amount = amount
+	p.lifetime = life
+	p.emitting = false
+	p.local_coords = false
+	p.fixed_fps = 0
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var m := ParticleProcessMaterial.new()
+	m.direction = Vector3.DOWN
+	m.spread = 5.0
+	m.initial_velocity_min = speed * 0.8
+	m.initial_velocity_max = speed
+	m.gravity = Vector3.ZERO
+	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	m.emission_sphere_radius = size * 0.12
+	m.scale_min = 0.8
+	m.scale_max = 1.15
+	var taper := Curve.new()
+	taper.add_point(Vector2(0.0, 1.0))
+	taper.add_point(Vector2(1.0, 0.3))
+	var taper_tex := CurveTexture.new()
+	taper_tex.curve = taper
+	m.scale_curve = taper_tex
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.45, 1.0])
+	g.colors = PackedColorArray(colours)
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = g
+	m.color_ramp = ramp
+	p.process_material = m
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_texture = tex
+	mat.disable_fog = true
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE * size
+	quad.material = mat
+	p.draw_pass_1 = quad
+	p.visibility_aabb = AABB(Vector3(-4, -8, -4), Vector3(8, 10, 8))
+	_jets.append(p)
+	return p
+
+
+func _show_jets(delta: float) -> void:
+	if _jet_light == null:
+		return
+	for p in _jets:
+		if p.emitting != _burning:
+			p.emitting = _burning
+	var want := (5.0 + randf() * 1.5) if _burning else 0.0
+	_jet_light.light_energy = lerpf(_jet_light.light_energy, want, clampf(delta * 18.0, 0.0, 1.0))
+	_jet_light.visible = _jet_light.light_energy > 0.05
+	if _tank != null:
+		_tank.value = _burn / maxf(burn_time, 0.01)
+		_tank.visible = _driver and _burn < burn_time - 0.01
+
+
+## What the jets do to the ground under them, if it is near: a ring thrown out
+## flat along it and dust (`hard`: the jump's own light-up, with fire in it).
+func _blast(hard := true) -> void:
+	var from := body.global_position
+	var q := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * (WHEEL_R * 2.0 * model_scale + 5.0))
+	q.exclude = [body.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if hit.is_empty():
+		return
+	var at := to_local(hit["position"] as Vector3)
+	var k := _k()
+	if hard:
+		Fx.spawn(self, "shockwave", at + Vector3(0, 0.08, 0), 1.6 * k)
+		Fx.spawn(self, "impact_fire", at, 0.45 * k)
+	Fx.spawn(self, "dust_cloud", at, (1.5 if hard else 1.0) * k)
+
+
 # ------------------------------------------------------------------ drawn each frame
 
 func _process(delta: float) -> void:
@@ -851,10 +999,28 @@ func _make_prompts() -> void:
 	_prompt.text = "DRIVE  [E]"
 	layer.add_child(_prompt)
 	_hint = _label(font, 20, 0.05, 0.1)
-	_hint.text = "STICK  drive and steer      JUMP  jump      RUN  more power      USE  get out" \
+	_hint.text = "STICK  drive and steer      JUMP  jump, hold for jets      RUN  more power      USE  get out" \
 			if DisplayServer.is_touchscreen_available() else \
-			"W S  drive      A D  steer      SPACE  jump      SHIFT  more power      L  lights      E  get out"
+			"W S  drive      A D  steer      SPACE  jump, hold for jets      SHIFT  more power      L  lights      E  get out"
 	layer.add_child(_hint)
+	# What is left in the boosters' tank, while it is not full.
+	_tank = ProgressBar.new()
+	_tank.anchor_left = 0.44
+	_tank.anchor_right = 0.56
+	_tank.anchor_top = 0.115
+	_tank.anchor_bottom = 0.125
+	_tank.min_value = 0.0
+	_tank.max_value = 1.0
+	_tank.show_percentage = false
+	_tank.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(1.0, 0.6, 0.2, 0.9)
+	var back := StyleBoxFlat.new()
+	back.bg_color = Color(0, 0, 0, 0.45)
+	_tank.add_theme_stylebox_override(&"fill", fill)
+	_tank.add_theme_stylebox_override(&"background", back)
+	_tank.visible = false
+	layer.add_child(_tank)
 
 
 func _label(font: Font, px: int, top: float, bottom: float) -> Label:
@@ -880,3 +1046,16 @@ func warm(stage: Node3D) -> void:
 	copy.scale = Vector3.ONE * 0.03
 	stage.add_child(copy)
 	DetailLayer.apply(copy, 0.5)
+	# The jets, lit once, and what they throw up off the ground.
+	var jets := Node3D.new()
+	stage.add_child(jets)
+	var mine := _jets.duplicate()
+	var my_light := _jet_light
+	_jets.clear()
+	_make_jets(jets, 0.03)
+	for p in _jets:
+		p.emitting = true
+	_jets.assign(mine)
+	_jet_light = my_light
+	for effect in ["shockwave", "impact_fire", "dust_cloud"]:
+		Fx.spawn(stage, effect, Vector3.ZERO, 0.03)

@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c8pmqecxf705h"
+uid="uid://lyombibafkuw"
 path.s3tc="res://.godot/imported/uni_truck_tire_side_color.jpg-39ac163c20590d80543989c77da6028e.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_tire_side_color.jpg-39ac163c20590d80543989c77da6028e.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "f9038c9218bce38a4d74d63c3d1ea1df"
+"md5": "04148d5db3146a5b9e6fe48252aa8d01"
 }
 
 [deps]

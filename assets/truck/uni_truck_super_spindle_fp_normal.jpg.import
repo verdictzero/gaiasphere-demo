@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bx11mwc4s11rj"
+uid="uid://o27v5dnlw1oe"
 path.s3tc="res://.godot/imported/uni_truck_super_spindle_fp_normal.jpg-bbce8e2f958d6c9cf1f57240dc111292.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_super_spindle_fp_normal.jpg-bbce8e2f958d6c9cf1f57240dc111292.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "a54daa11e4ef2b16386bf11c18af4728"
+"md5": "c5823c0b6c4d304057855c870170b5cc"
 }
 
 [deps]

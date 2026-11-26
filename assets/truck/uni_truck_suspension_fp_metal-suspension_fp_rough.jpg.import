@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://43lyjolrrkig"
+uid="uid://c0et0bq28e0f1"
 path.s3tc="res://.godot/imported/uni_truck_suspension_fp_metal-suspension_fp_rough.jpg-e22f284cf7cff97c3b8652e142d34ef0.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_suspension_fp_metal-suspension_fp_rough.jpg-e22f284cf7cff97c3b8652e142d34ef0.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "f474ac71bf62b7e8c74a36c437522fe8"
+"md5": "517bbd175d1da0e6bd62f7ba64a113dd"
 }
 
 [deps]

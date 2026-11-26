@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c5865tmqbkp6g"
+uid="uid://cnjtbwgaruawy"
 path.s3tc="res://.godot/imported/uni_truck_gyro_fp_diffuse.jpg-56b7ab7b08c079fa52f03d1c4ea56013.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_gyro_fp_diffuse.jpg-56b7ab7b08c079fa52f03d1c4ea56013.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "6201bd1754234ae9a503e27468536c9c"
+"md5": "19fb59d828a71750661906f83dc28226"
 }
 
 [deps]

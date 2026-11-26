@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmlgodml4n7a0"
+uid="uid://deuqyn7omi0rp"
 path.s3tc="res://.godot/imported/uni_truck_tire_tread_color.jpg-26b968234c91355452ca0b9b8e33b204.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_tire_tread_color.jpg-26b968234c91355452ca0b9b8e33b204.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "55297f4021fd38c6462fe6afa58f2b73"
+"md5": "0e836ea138d88d8199035e4ed0330dc5"
 }
 
 [deps]

@@ -5,7 +5,9 @@ resized so its longer side is at most `side` pixels and stored again as a JPEG
 whose materials are all opaque has no use for a few stray see-through texels
 left by its baking). Everything else is carried over.
 
-    python3 tools/import_glb_small.py <in.glb> <out.glb> [side=1024] [opaque]
+    python3 tools/import_glb_small.py <in.glb> <out.glb> [side=1024] [opaque|-] [jpeg quality=88]
+
+(A side larger than any picture leaves every one at its own size: only recompressed.)
 """
 import json
 import struct
@@ -15,7 +17,7 @@ import cv2
 import numpy as np
 
 
-def main(src, dst, side=1024, opaque=False):
+def main(src, dst, side=1024, opaque=False, quality=88):
     data = open(src, "rb").read()
     n = struct.unpack_from("<I", data, 12)[0]
     doc = json.loads(data[20:20 + n])
@@ -35,7 +37,7 @@ def main(src, dst, side=1024, opaque=False):
                 ok, enc = cv2.imencode(".png", img)
                 image_views[i]["mimeType"] = "image/png"
             else:
-                ok, enc = cv2.imencode(".jpg", img[..., :3] if img.ndim == 3 else img, [cv2.IMWRITE_JPEG_QUALITY, 88])
+                ok, enc = cv2.imencode(".jpg", img[..., :3] if img.ndim == 3 else img, [cv2.IMWRITE_JPEG_QUALITY, quality])
                 image_views[i]["mimeType"] = "image/jpeg"
             chunk = enc.tobytes()
         while len(out) % 4:
@@ -57,4 +59,5 @@ def main(src, dst, side=1024, opaque=False):
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 1024,
-         len(sys.argv) > 4 and sys.argv[4] == "opaque")
+         len(sys.argv) > 4 and sys.argv[4] == "opaque",
+         int(sys.argv[5]) if len(sys.argv) > 5 else 88)

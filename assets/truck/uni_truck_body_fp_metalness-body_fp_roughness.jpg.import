@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqkv8lr8a2amf"
+uid="uid://dxpwvh4cfpvc"
 path.s3tc="res://.godot/imported/uni_truck_body_fp_metalness-body_fp_roughness.jpg-673d3ba1ab8fab30eb71b2537784532f.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_body_fp_metalness-body_fp_roughness.jpg-673d3ba1ab8fab30eb71b2537784532f.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "a849c6687489f23b97c74bd9f2d77a2e"
+"md5": "12dba9fca696258095edc479d956517c"
 }
 
 [deps]

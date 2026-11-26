@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b22twxrsd2b0r"
+uid="uid://btws0cv3tyve6"
 path.s3tc="res://.godot/imported/uni_truck_wheel_hub_drive_motor_assy_fp_metal-wheel_hub_drive_motor_assy_fp_rough.jpg-f7575931977f34cd00c6c2d5a7363c1b.s3tc.ctex"
 path.etc2="res://.godot/imported/uni_truck_wheel_hub_drive_motor_assy_fp_metal-wheel_hub_drive_motor_assy_fp_rough.jpg-f7575931977f34cd00c6c2d5a7363c1b.etc2.ctex"
 metadata={
@@ -10,7 +10,7 @@ metadata={
 "vram_texture": true
 }
 generator_parameters={
-"md5": "c799af9cca0e28d25ec15369e6eba1a6"
+"md5": "17ca41b2becbf3ea0755126ff9ae71af"
 }
 
 [deps]
