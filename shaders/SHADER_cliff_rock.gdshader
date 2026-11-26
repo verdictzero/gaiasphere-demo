@@ -107,9 +107,15 @@ void fragment() {
 	vec3 albedo = (textureGrad(ground_albedo, vec3(rp.zy, rock_layer), dzy_x, dzy_y).rgb * bw.x
 			+ textureGrad(ground_albedo, vec3(rp.xz, rock_layer), dxz_x, dxz_y).rgb * bw.y
 			+ textureGrad(ground_albedo, vec3(rp.xy, rock_layer), dxy_x, dxy_y).rgb * bw.z) * rock_tint;
-	vec3 tx = textureGrad(ground_normal, vec3(rp.zy, rock_layer), dzy_x, dzy_y).xyz * 2.0 - 1.0;
-	vec3 ty = textureGrad(ground_normal, vec3(rp.xz, rock_layer), dxz_x, dxz_y).xyz * 2.0 - 1.0;
-	vec3 tz = textureGrad(ground_normal, vec3(rp.xy, rock_layer), dxy_x, dxy_y).xyz * 2.0 - 1.0;
+	vec3 tx = vec3(0.0, 0.0, 1.0);
+	vec3 ty = vec3(0.0, 0.0, 1.0);
+	vec3 tz = vec3(0.0, 0.0, 1.0);
+	// (Its relief only as far as it still shows: SHADERINC_ground_lay's normal_reach.)
+	if (normal_reach <= 0.0 || dist < normal_reach) {
+		tx = textureGrad(ground_normal, vec3(rp.zy, rock_layer), dzy_x, dzy_y).xyz * 2.0 - 1.0;
+		ty = textureGrad(ground_normal, vec3(rp.xz, rock_layer), dxz_x, dxz_y).xyz * 2.0 - 1.0;
+		tz = textureGrad(ground_normal, vec3(rp.xy, rock_layer), dxy_x, dxy_y).xyz * 2.0 - 1.0;
+	}
 	vec3 nx = vec3(tx.xy * detail + geo_n.zy, abs(tx.z) * geo_n.x);
 	vec3 ny = vec3(ty.xy * detail + geo_n.xz, abs(ty.z) * geo_n.y);
 	vec3 nz = vec3(tz.xy * detail + geo_n.xy, abs(tz.z) * geo_n.z);
@@ -150,11 +156,11 @@ void fragment() {
 			vec3 grass_a = vec3(0.0);
 			vec3 grass_n = vec3(0.0, 0.0, 1.0);
 			if (wood < 1.0) {
-				lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, a0, n0);
+				lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, dist, a0, n0);
 				grass_a = a0 * meadow_tint;
 				grass_n = n0;
 				if (dryness > 0.0) {
-					lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, a0, n0);
+					lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, dist, a0, n0);
 					grass_a = mix(grass_a, a0 * dry_tint, dryness);
 					grass_n = mix(grass_n, n0, dryness);
 				}
@@ -164,13 +170,13 @@ void fragment() {
 			if (wood > 0.0) {
 				float litter_mix = clamp(forest * (0.25 + macro2 * 1.1) * smoothstep(0.25, 0.6, macro + macro2 * 0.5), 0.0, 1.0);
 				vec3 moss_a; vec3 moss_n;
-				lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, moss_a, moss_n);
-				lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, a0, n0);
+				lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, dist, moss_a, moss_n);
+				lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, dist, a0, n0);
 				ground_a = mix(grass_a, mix(moss_a * moss_tint, a0 * litter_tint, litter_mix * 0.8), wood);
 				ground_n = mix(grass_n, mix(moss_n, n0, litter_mix * 0.8), wood);
 				float clearing = wood_clearing(p) * wood;
 				if (clearing > 0.0) {
-					lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, a0, n0);
+					lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, dist, a0, n0);
 					a0 = mix(vec3(dot(a0, vec3(0.3, 0.55, 0.15))), a0, 0.4);
 					ground_a = mix(ground_a, a0 * floor_tint, clearing);
 					ground_n = mix(ground_n, n0, clearing);
@@ -180,12 +186,12 @@ void fragment() {
 		vec3 top_a = ground_a * share.x;
 		vec3 top_n = ground_n * share.x;
 		if (share.y > 0.003) {
-			lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, a0, n0);
+			lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, dist, a0, n0);
 			top_a += a0 * soil_tint * share.y;
 			top_n += n0 * share.y;
 		}
 		if (share.z > 0.003) {
-			lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, a0, n0);
+			lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, dist, a0, n0);
 			top_a += a0 * sand_tint * share.z;
 			top_n += n0 * share.z;
 		}

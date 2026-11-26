@@ -36,10 +36,26 @@ float wood_clearing(vec2 p) {
 // cross-faded where it changes, the seam following the picture's own light and
 // dark. Colour into `a`, the unpacked normal into `n`. `dx`, `dy`: the uv's
 // screen derivatives, taken outside any branch.
-void lay(float layer, vec2 uv, vec2 dx, vec2 dy, out vec3 a, out vec3 n) {
+// FAR OFF IT IS LAID MORE CHEAPLY, in two ways, each with its own distance (0:
+// never, laid in full everywhere):
+//   `normal_reach`      past this the surface's normal map is not read at all.
+//                       (The ground's relief has already faded out by its
+//                       `detail_distance`, so at that distance nothing changes.)
+//   `stochastic_reach`  past this one copy of the picture is laid, the one that
+//                       has the larger share there, in place of two cross-faded:
+//                       a repeat that far off is too small to see.
+// `dist` is how far the pixel is from the eye, metres.
+uniform float normal_reach = 140.0;
+uniform float stochastic_reach = 90.0;
+
+void lay(float layer, vec2 uv, vec2 dx, vec2 dy, float dist, out vec3 a, out vec3 n) {
+	bool relief = normal_reach <= 0.0 || dist < normal_reach;
+	n = vec3(0.0, 0.0, 1.0);
 	if (!stochastic) {
 		a = textureGrad(ground_albedo, vec3(uv, layer), dx, dy).rgb;
-		n = textureGrad(ground_normal, vec3(uv, layer), dx, dy).xyz * 2.0 - 1.0;
+		if (relief) {
+			n = textureGrad(ground_normal, vec3(uv, layer), dx, dy).xyz * 2.0 - 1.0;
+		}
 		return;
 	}
 	// (An explicit level: this is called inside branches, where a sampler's own
@@ -49,13 +65,23 @@ void lay(float layer, vec2 uv, vec2 dx, vec2 dy, out vec3 a, out vec3 n) {
 	float f = fract(l);
 	vec2 oa = sin(vec2(3.0, 7.0) * ia);
 	vec2 ob = sin(vec2(3.0, 7.0) * (ia + 1.0));
+	if (stochastic_reach > 0.0 && dist >= stochastic_reach) {
+		vec2 o = f < 0.5 ? oa : ob;
+		a = textureGrad(ground_albedo, vec3(uv + o, layer), dx, dy).rgb;
+		if (relief) {
+			n = textureGrad(ground_normal, vec3(uv + o, layer), dx, dy).xyz * 2.0 - 1.0;
+		}
+		return;
+	}
 	vec3 ca = textureGrad(ground_albedo, vec3(uv + oa, layer), dx, dy).rgb;
 	vec3 cb = textureGrad(ground_albedo, vec3(uv + ob, layer), dx, dy).rgb;
 	float b = smoothstep(0.2, 0.8, f - 0.1 * dot(ca - cb, vec3(1.0)));
 	a = mix(ca, cb, b);
-	vec3 na = textureGrad(ground_normal, vec3(uv + oa, layer), dx, dy).xyz;
-	vec3 nb = textureGrad(ground_normal, vec3(uv + ob, layer), dx, dy).xyz;
-	n = mix(na, nb, b) * 2.0 - 1.0;
+	if (relief) {
+		vec3 na = textureGrad(ground_normal, vec3(uv + oa, layer), dx, dy).xyz;
+		vec3 nb = textureGrad(ground_normal, vec3(uv + ob, layer), dx, dy).xyz;
+		n = mix(na, nb, b) * 2.0 - 1.0;
+	}
 }
 
 

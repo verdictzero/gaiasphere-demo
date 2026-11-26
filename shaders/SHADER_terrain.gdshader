@@ -157,25 +157,25 @@ void fragment() {
 	vec3 meadow_a = vec3(0.2); vec3 meadow_n = vec3(0.0, 0.0, 1.0);
 	vec3 dry_a = vec3(0.2); vec3 dry_n = vec3(0.0, 0.0, 1.0);
 	if (has_ground && wood > 0.0) {
-		lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, moss_a, moss_n);
+		lay(L_MOSS, p / moss_size, pdx / moss_size, pdy / moss_size, dist, moss_a, moss_n);
 	}
 	if (has_earth || river > 0.0) {
-		lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, soil_a, soil_n);
+		lay(L_SOIL, p / soil_size, pdx / soil_size, pdy / soil_size, dist, soil_a, soil_n);
 	}
 	if (forest > 0.003 && (has_ground || has_earth)) {
-		lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, litter_a, litter_n);
+		lay(L_LITTER, p / litter_size, pdx / litter_size, pdy / litter_size, dist, litter_a, litter_n);
 	}
 	if (trail > 0.003 && has_earth) {
-		lay(L_TRAIL, p / trail_size, pdx / trail_size, pdy / trail_size, trail_a, trail_n);
+		lay(L_TRAIL, p / trail_size, pdx / trail_size, pdy / trail_size, dist, trail_a, trail_n);
 	}
 	if (w.a > 0.003 || river > 0.0) {
-		lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, sand_a, sand_n);
+		lay(L_SAND, p / sand_size, pdx / sand_size, pdy / sand_size, dist, sand_a, sand_n);
 	}
 	if (has_ground && wood < 1.0 && dryness < 1.0) {
-		lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, meadow_a, meadow_n);
+		lay(L_MEADOW, p / meadow_size, pdx / meadow_size, pdy / meadow_size, dist, meadow_a, meadow_n);
 	}
 	if (has_ground && wood < 1.0 && dryness > 0.0) {
-		lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, dry_a, dry_n);
+		lay(L_DRY, p / dry_size, pdx / dry_size, pdy / dry_size, dist, dry_a, dry_n);
 	}
 	moss_a *= moss_tint;
 	soil_a *= soil_tint;
@@ -193,7 +193,7 @@ void fragment() {
 	float clearing = wood > 0.0 ? wood_clearing(p) * wood : 0.0;
 	if (clearing > 0.0) {
 		vec3 fl_a; vec3 fl_n;
-		lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, fl_a, fl_n);
+		lay(L_FLOOR, p / floor_size, pdx / floor_size, pdy / floor_size, dist, fl_a, fl_n);
 		fl_a = mix(vec3(dot(fl_a, vec3(0.3, 0.55, 0.15))), fl_a, 0.4);
 		ground_a = mix(ground_a, fl_a * floor_tint, clearing);
 		ground_n = mix(ground_n, fl_n, clearing);
@@ -234,9 +234,15 @@ void fragment() {
 		rock_a = (textureGrad(ground_albedo, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).rgb * bw.x
 				+ textureGrad(ground_albedo, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).rgb * bw.y
 				+ textureGrad(ground_albedo, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).rgb * bw.z) * rock_tint;
-		vec3 tx = textureGrad(ground_normal, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).xyz * 2.0 - 1.0;
-		vec3 ty = textureGrad(ground_normal, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).xyz * 2.0 - 1.0;
-		vec3 tz = textureGrad(ground_normal, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).xyz * 2.0 - 1.0;
+		vec3 tx = vec3(0.0, 0.0, 1.0);
+		vec3 ty = vec3(0.0, 0.0, 1.0);
+		vec3 tz = vec3(0.0, 0.0, 1.0);
+		// (Its relief only as far as it still shows: SHADERINC_ground_lay's normal_reach.)
+		if (normal_reach <= 0.0 || dist < normal_reach) {
+			tx = textureGrad(ground_normal, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).xyz * 2.0 - 1.0;
+			ty = textureGrad(ground_normal, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).xyz * 2.0 - 1.0;
+			tz = textureGrad(ground_normal, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).xyz * 2.0 - 1.0;
+		}
 		vec3 nx = vec3(tx.xy * detail + geo_n.zy, abs(tx.z) * geo_n.x);
 		vec3 ny = vec3(ty.xy * detail + geo_n.xz, abs(ty.z) * geo_n.y);
 		vec3 nz = vec3(tz.xy * detail + geo_n.xy, abs(tz.z) * geo_n.z);
@@ -270,9 +276,9 @@ void fragment() {
 			* smoothstep(0.45, 0.6, macro2 + (macro - 0.5) * 0.6) * (1.0 - wood) * w.r;
 	if (scree + stony > 0.003) {
 		vec3 sc_a; vec3 sc_n;
-		lay(L_SCREE, p / scree_size, pdx / scree_size, pdy / scree_size, sc_a, sc_n);
+		lay(L_SCREE, p / scree_size, pdx / scree_size, pdy / scree_size, dist, sc_a, sc_n);
 		vec3 st_a; vec3 st_n;
-		lay(L_STONY, p / stony_size, pdx / stony_size, pdy / stony_size, st_a, st_n);
+		lay(L_STONY, p / stony_size, pdx / stony_size, pdy / stony_size, dist, st_a, st_n);
 		scree = smoothstep(0.3, 0.7, scree + (height_of(sc_a) - 0.5) * 0.6);
 		albedo = mix(albedo, sc_a * scree_tint, scree);
 		flat_n = mix(flat_n, sc_n, scree);
@@ -288,7 +294,7 @@ void fragment() {
 	float detail_fade = 1.0 - smoothstep(detail_distance, detail_distance * 2.5, dist);
 	if (river > 0.0) {
 		vec3 bed_a; vec3 bed_nn;
-		lay(L_BED, p / bed_size, pdx / bed_size, pdy / bed_size, bed_a, bed_nn);
+		lay(L_BED, p / bed_size, pdx / bed_size, pdy / bed_size, dist, bed_a, bed_nn);
 		bed_a *= bed_tint;
 		// Under the mere's surface, by height: the causeway stands in the middle of
 		// the band and is dry.

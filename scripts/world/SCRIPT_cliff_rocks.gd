@@ -163,7 +163,7 @@ func _ready() -> void:
 				"meadow_tint", "dry_tint", "floor_tint",
 				"strata_strength", "strata_bed", "strata_warp", "strata_dip",
 				"strata_colour", "strata_colour_bed", "strata_colour_a", "strata_colour_b", "strata_colour_c",
-				"strata_colour_d", "strata_colour_e"]:
+				"strata_colour_d", "strata_colour_e", "normal_reach", "stochastic_reach"]:
 			var v: Variant = terrain.get_shader_parameter(p)
 			if v != null:
 				_material.set_shader_parameter(p, v)

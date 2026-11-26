@@ -33,6 +33,12 @@ const ROWS := [
 	["strata_colour_bed", "Coloured bed thickness", "slide", 0.5, 20.0, 0.25, "m"],
 	["edge_wear", "Cliff edge wear", "slide", 0.0, 1.5, 0.05, "%"],
 	["crevice", "Cliff crevice dark", "slide", 0.0, 1.0, 0.05, "%"],
+	# The ground laid more cheaply far off (SHADERINC_ground_lay's normal_reach and
+	# stochastic_reach): each a tick, and how far off it begins.
+	["far_normals", "Far ground: no normal maps", "tick"],
+	["normal_reach", "... beyond", "slide", 20.0, 400.0, 5.0, "m"],
+	["far_single", "Far ground: no stochastic", "tick"],
+	["stochastic_reach", "... beyond", "slide", 10.0, 400.0, 5.0, "m"],
 	# How the cliff's rocks are drawn by distance (SCRIPT_cliff_rocks.gd's `view`).
 	["cliff_lod", "Cliff detail distance", "slide", 0.25, 4.0, 0.05, "x"],
 	["cliff_far", "Cliff merged past", "slide", 100.0, 2000.0, 25.0, "m"],
@@ -54,10 +60,11 @@ const ROWS := [
 	["ao_directions", "HBAO directions", "slide", 2.0, 12.0, 1.0, "n"],
 	["ao_steps", "HBAO steps", "slide", 2.0, 10.0, 1.0, "n"],
 ]
-const PER_COLUMN := 15
+const PER_COLUMN := 17
 ## The rock's settings as the shaders have them to begin with.
 const ROCK := {"strata_strength": 0.85, "strata_bed": 1.9, "strata_warp": 1.6, "strata_dip": 0.035,
 	"strata_colour": 0.5, "strata_colour_bed": 5.5,
+	"normal_reach": 140.0, "stochastic_reach": 90.0,
 	"edge_wear": 1.1, "crevice": 0.7}
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.93)
@@ -70,6 +77,7 @@ static var menu_open := false
 
 var _defaults := {}
 var _rock := ROCK.duplicate()
+var _far := {"far_normals": true, "far_single": true}
 var _view: Control
 var _font: Font
 var _drag := -1
@@ -115,6 +123,8 @@ func _read(key: String) -> Variant:
 			return DetailLayer.depth
 		"grime":
 			return DetailLayer.grime
+	if _far.has(key):
+		return _far[key]
 	if key.begins_with("cliff_"):
 		var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
 		return cliffs.view[key.substr(6)] if cliffs != null else (true if key == "cliff_occlusion" else 1.0)
@@ -135,7 +145,11 @@ func _write(key: String, value: Variant) -> void:
 		"grime":
 			DetailLayer.set_look(DetailLayer.grain, DetailLayer.depth, float(value))
 		_:
-			if key.begins_with("cliff_"):
+			if _far.has(key):
+				_far[key] = bool(value)
+				_set_rock("normal_reach", float(_rock["normal_reach"]))
+				_set_rock("stochastic_reach", float(_rock["stochastic_reach"]))
+			elif key.begins_with("cliff_"):
 				var cliffs := get_node_or_null(^"../CliffRocks") as CliffRocks
 				if cliffs != null:
 					cliffs.set_view(key.substr(6), value)
@@ -162,6 +176,11 @@ func _set_rock(key: String, value: float) -> void:
 	for m: ShaderMaterial in mats:
 		if key == "strata_dip":
 			m.set_shader_parameter(key, Vector2(value, value * 0.5))
+		elif key == "normal_reach":
+			# (0 is "never": the tick off.)
+			m.set_shader_parameter(key, value if bool(_far["far_normals"]) else 0.0)
+		elif key == "stochastic_reach":
+			m.set_shader_parameter(key, value if bool(_far["far_single"]) else 0.0)
 		else:
 			m.set_shader_parameter(key, value)
 
