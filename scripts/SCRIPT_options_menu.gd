@@ -9,6 +9,9 @@ extends CanvasLayer
 #                  grime, on the truck and the shuttle (SCRIPT_detail_layer.gd)
 #   Detail depth   how deep those bumps are
 #   Detail grime   how strongly its grime and wear darken the paint
+#   Strata ...     the beds drawn on the sides of the cliff's rock: how strong,
+#                  how thick a bed, how far the lines wander, how much they dip
+#   Cliff edge wear / crevice dark   the baked wear and cracks on the cliff block
 #
 # Nothing here is saved: each run starts from the defaults.
 
@@ -18,7 +21,18 @@ const ROWS := [
 	["grain", "Detail grain", "slide", 1.0, 16.0, 0.5, "x"],
 	["depth", "Detail depth", "slide", 0.0, 2.0, 0.05, "%"],
 	["grime", "Detail grime", "slide", 0.0, 1.5, 0.05, "%"],
+	# The cliff's rock (SHADER_cliff_rock.gdshader, and the terrain's own rock for
+	# the strata): each is a shader setting of the same name.
+	["strata_strength", "Strata strength", "slide", 0.0, 1.5, 0.05, "%"],
+	["strata_bed", "Strata bed thickness", "slide", 0.3, 6.0, 0.1, "m"],
+	["strata_warp", "Strata wander", "slide", 0.0, 6.0, 0.1, "m"],
+	["strata_dip", "Strata dip", "slide", 0.0, 0.3, 0.005, "slope"],
+	["edge_wear", "Cliff edge wear", "slide", 0.0, 1.5, 0.05, "%"],
+	["crevice", "Cliff crevice dark", "slide", 0.0, 1.0, 0.05, "%"],
 ]
+## The rock's settings as the shaders have them to begin with.
+const ROCK := {"strata_strength": 0.85, "strata_bed": 1.9, "strata_warp": 1.6, "strata_dip": 0.035,
+	"edge_wear": 1.1, "crevice": 0.7}
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.93)
 const EDGE := Color(1, 1, 1, 0.14)
@@ -29,6 +43,7 @@ const INK := Color(0.93, 0.95, 0.97)
 static var menu_open := false
 
 var _defaults := {}
+var _rock := ROCK.duplicate()
 var _view: Control
 var _font: Font
 var _drag := -1
@@ -74,7 +89,7 @@ func _read(key: String) -> Variant:
 			return DetailLayer.depth
 		"grime":
 			return DetailLayer.grime
-	return 0.0
+	return _rock.get(key, 0.0)
 
 
 func _write(key: String, value: Variant) -> void:
@@ -87,6 +102,28 @@ func _write(key: String, value: Variant) -> void:
 			DetailLayer.set_look(DetailLayer.grain, float(value), DetailLayer.grime)
 		"grime":
 			DetailLayer.set_look(DetailLayer.grain, DetailLayer.depth, float(value))
+		_:
+			if _rock.has(key):
+				_rock[key] = float(value)
+				_set_rock(key, float(value))
+
+
+## A setting of the rock's, onto the cliff rocks' material and the terrain's (the
+## strata are on both). The dip is one number here: the beds tilt that much one
+## way and half as much across.
+func _set_rock(key: String, value: float) -> void:
+	var mats: Array = []
+	var cliffs := get_node_or_null(^"../CliffRocks")
+	if cliffs != null and cliffs.get("_material") is ShaderMaterial:
+		mats.append(cliffs.get("_material"))
+	var world := get_node_or_null(^"../GaiaSphere")
+	if world != null and world.get(&"terrain_material") is ShaderMaterial:
+		mats.append(world.get(&"terrain_material"))
+	for m: ShaderMaterial in mats:
+		if key == "strata_dip":
+			m.set_shader_parameter(key, Vector2(value, value * 0.5))
+		else:
+			m.set_shader_parameter(key, value)
 
 
 func set_open(open: bool) -> void:
@@ -216,6 +253,10 @@ func _shown(row: Array) -> String:
 	var v := float(_read(row[0]))
 	if String(row[6]) == "x":
 		return "%.1fx" % v
+	if String(row[6]) == "m":
+		return "%.1f m" % v
+	if String(row[6]) == "slope":
+		return "%.1f%%" % (v * 100.0)
 	return "%d%%" % int(round(v * 100.0))
 
 
