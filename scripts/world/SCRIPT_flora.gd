@@ -930,8 +930,8 @@ func prefill_covered() -> void:
 const BAKE_STORE := "flora"
 const BAKE_VERSION := 2
 ## Ground steeper than this (rise over run) is a cliff's face and bare: where the
-## terrain's shader begins to draw it as rock (`cliff_face` there: 0.46).
-const ROCK_FACE := 0.44
+## terrain's shader begins to draw it as rock (`cliff_face` there: 0.55).
+const ROCK_FACE := 0.52
 const SOURCES := [
 	"res://scripts/world/SCRIPT_flora.gd",
 	"res://scripts/world/SCRIPT_island_field.gd",

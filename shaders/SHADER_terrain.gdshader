@@ -45,9 +45,10 @@ uniform float rock_size = 5.0;
 uniform float meadow_size = 2.4;
 uniform float dry_size = 2.6;
 uniform float floor_size = 3.0;
-// (0.91: a slope of 0.46, 25 degrees; 0.86: of 0.6, 31 degrees. The hills have
+// (0.875: a slope of 0.55, 29 degrees; 0.845: of 0.63, 32 degrees: a narrow
+// band, so the rock stops at the wall's foot. The hills have
 // little ground steeper: 1200 places in 20 m2 over the whole island at 0.6.)
-uniform vec2 cliff_face = vec2(0.91, 0.86);
+uniform vec2 cliff_face = vec2(0.875, 0.845);
 uniform float scree_size = 2.2;
 uniform float stony_size = 4.0;
 uniform vec3 meadow_tint : source_color = vec3(0.68, 0.95, 0.5);
@@ -246,7 +247,10 @@ void fragment() {
 	// cliff models' own rock with its beds (they stand in it and carry on from it).
 	// Per pixel, from the face's own normal: `cliff_face` is the normal's height
 	// where the rock starts and where the face is all rock.
-	float face = 1.0 - smoothstep(cliff_face.y, cliff_face.x, geo_n.y);
+	// (The LESS steep of the smoothed normal and the triangle's own: at a wall's
+	// foot and brow the smoothed one still leans, and the rock ran out over the
+	// level ground there.)
+	float face = 1.0 - smoothstep(cliff_face.y, cliff_face.x, max(geo_n.y, tri_n.y));
 	w = mix(w, vec4(0.0, 0.0, 1.0, 0.0), face);
 	float rock_w = max(max(w.b, bank_w), cw_side);
 	if (rock_w > 0.003) {
