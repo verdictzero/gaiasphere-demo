@@ -570,11 +570,21 @@ func crash(x: float, z: float, h: float) -> float:
 		return out0
 	var g2 := _gouge_at(d)
 	var dug := h - CRASH_DEPTH * w.x
-	var cut := h - CRASH_CUT * g2.y * w.y
-	# Above the water the gouge is never cut below it: there is no water to fill
-	# a trench in the beach, and one dug under the mere's level would stand dry.
-	if h > _lag_level + 0.15:
-		cut = maxf(cut, _lag_level + 0.15)
+	# AT THE WATER'S EDGE THE TRENCH RUNS OUT TO NOTHING AND IN AGAIN, smoothly.
+	# Above the water it is never cut below it (there is no water to fill a trench
+	# in the beach, and one dug under the mere's level would stand dry), so there
+	# it takes only a share of what the ground has risen over the water; below,
+	# it deepens over the first three metres of depth. (It used to be cut to its
+	# full depth to within a hand of the surface and held dead level above: a step
+	# and a shelf across the skid, right where it leaves the water.)
+	var depth := CRASH_CUT * g2.y * w.y
+	var over := h - (_lag_level + 0.15)
+	if over >= 0.0:
+		# (Easing up to its full depth, never more than four fifths of the rise.)
+		depth = depth * (1.0 - exp(-0.8 * over / maxf(depth, 0.01)))
+	else:
+		depth *= smoothstep(0.0, 3.0, -over)
+	var cut := h - depth
 	var out := minf(dug, cut) + berm
 	# Thrown up round the bowl where the gouge does not leave it.
 	var far2 := d.length() / CRASH_BOWL
