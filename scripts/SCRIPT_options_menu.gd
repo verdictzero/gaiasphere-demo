@@ -12,6 +12,8 @@ extends CanvasLayer
 #   Strata ...     the beds drawn on the sides of the cliff's rock: how strong,
 #                  how thick a bed, how far the lines wander, how much they dip
 #   Cliff edge wear / crevice dark   the baked wear and cracks on the cliff block
+#   Ambient occlusion ...   the screen-space shade in creases: off, or one of three
+#                  methods, and its dozen settings (SCRIPT_ambient_occlusion.gd)
 #
 # Nothing here is saved: each run starts from the defaults.
 
@@ -29,7 +31,22 @@ const ROWS := [
 	["strata_dip", "Strata dip", "slide", 0.0, 0.3, 0.005, "slope"],
 	["edge_wear", "Cliff edge wear", "slide", 0.0, 1.5, 0.05, "%"],
 	["crevice", "Cliff crevice dark", "slide", 0.0, 1.0, 0.05, "%"],
+	# Ambient occlusion over the whole frame (SCRIPT_ambient_occlusion.gd): each
+	# "ao_" row is the setting of that name without the prefix.
+	["ao_method", "Ambient occlusion", "slide", 0.0, 3.0, 1.0, "ao"],
+	["ao_intensity", "AO intensity", "slide", 0.0, 4.0, 0.05, "%"],
+	["ao_radius", "AO radius", "slide", 0.1, 5.0, 0.05, "m2"],
+	["ao_radius_growth", "AO radius grows with distance", "slide", 0.0, 0.15, 0.005, "slope"],
+	["ao_power", "AO contrast", "slide", 0.25, 6.0, 0.05, "x"],
+	["ao_bias", "AO bias (self-shading)", "slide", 0.0, 0.2, 0.005, "m2"],
+	["ao_falloff", "AO depth falloff", "slide", 0.1, 4.0, 0.05, "x"],
+	["ao_max_distance", "AO reaches", "slide", 20.0, 600.0, 5.0, "m"],
+	["ao_floor_light", "AO darkest allowed", "slide", 0.0, 1.0, 0.05, "%"],
+	["ao_samples", "AO samples (Fast, SSAO)", "slide", 2.0, 32.0, 1.0, "n"],
+	["ao_directions", "HBAO directions", "slide", 2.0, 12.0, 1.0, "n"],
+	["ao_steps", "HBAO steps", "slide", 2.0, 10.0, 1.0, "n"],
 ]
+const PER_COLUMN := 11
 ## The rock's settings as the shaders have them to begin with.
 const ROCK := {"strata_strength": 0.85, "strata_bed": 1.9, "strata_warp": 1.6, "strata_dip": 0.035,
 	"edge_wear": 1.1, "crevice": 0.7}
@@ -89,6 +106,9 @@ func _read(key: String) -> Variant:
 			return DetailLayer.depth
 		"grime":
 			return DetailLayer.grime
+	if key.begins_with("ao_"):
+		var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
+		return float(ao.values[key.substr(3)]) if ao != null else float(AmbientOcclusion.DEFAULTS[key.substr(3)])
 	return _rock.get(key, 0.0)
 
 
@@ -103,7 +123,11 @@ func _write(key: String, value: Variant) -> void:
 		"grime":
 			DetailLayer.set_look(DetailLayer.grain, DetailLayer.depth, float(value))
 		_:
-			if _rock.has(key):
+			if key.begins_with("ao_"):
+				var ao := get_node_or_null(^"../AmbientOcclusion") as AmbientOcclusion
+				if ao != null:
+					ao.put(key.substr(3), float(value))
+			elif _rock.has(key):
 				_rock[key] = float(value)
 				_set_rock(key, float(value))
 
@@ -163,14 +187,16 @@ func _k() -> float:
 
 func _panel_rect() -> Rect2:
 	var k := _k()
-	var size := Vector2(820.0, 220.0 + 56.0 * float(ROWS.size())) * k
+	var columns := ceili(float(ROWS.size()) / float(PER_COLUMN))
+	var size := Vector2(48.0 + 786.0 * float(columns), 210.0 + 56.0 * float(mini(ROWS.size(), PER_COLUMN))) * k
 	return Rect2((_view.size - size) * 0.5, size)
 
 
 func _row_rect(i: int) -> Rect2:
 	var k := _k()
 	var p := _panel_rect()
-	return Rect2(p.position + Vector2(34.0 * k, (100.0 + 56.0 * float(i)) * k), Vector2(p.size.x - 68.0 * k, 56.0 * k))
+	return Rect2(p.position + Vector2((34.0 + 786.0 * float(i / PER_COLUMN)) * k, (100.0 + 56.0 * float(i % PER_COLUMN)) * k),
+			Vector2(752.0 * k, 56.0 * k))
 
 
 func _control_rect(i: int) -> Rect2:
@@ -178,7 +204,7 @@ func _control_rect(i: int) -> Rect2:
 	var r := _row_rect(i)
 	if ROWS[i][2] == "tick":
 		return Rect2(Vector2(r.end.x - 122.0 * k, r.position.y + 13.0 * k), Vector2(56.0, 30.0) * k)
-	return Rect2(Vector2(r.position.x + 250.0 * k, r.position.y + 13.0 * k), Vector2(330.0, 30.0) * k)
+	return Rect2(Vector2(r.position.x + 330.0 * k, r.position.y + 13.0 * k), Vector2(290.0, 30.0) * k)
 
 
 func _defaults_rect() -> Rect2:
@@ -251,6 +277,12 @@ func _label(at: Vector2, text: String, px: float, color: Color, align := 0) -> v
 
 func _shown(row: Array) -> String:
 	var v := float(_read(row[0]))
+	if String(row[6]) == "ao":
+		return AmbientOcclusion.METHODS[clampi(int(round(v)), 0, AmbientOcclusion.METHODS.size() - 1)]
+	if String(row[6]) == "n":
+		return "%d" % int(round(v))
+	if String(row[6]) == "m2":
+		return "%.2f m" % v
 	if String(row[6]) == "x":
 		return "%.1fx" % v
 	if String(row[6]) == "m":
@@ -272,7 +304,7 @@ func _draw_view() -> void:
 	for i in ROWS.size():
 		var row: Array = ROWS[i]
 		var r := _row_rect(i)
-		if i > 0:
+		if i % PER_COLUMN > 0:
 			_view.draw_rect(Rect2(r.position, Vector2(r.size.x, maxf(1.0, k))), Color(1, 1, 1, 0.06))
 		_label(r.position + Vector2(0.0, 36.0 * k), row[1], 21.0, Color(INK.r, INK.g, INK.b, 0.88))
 		var c := _control_rect(i)
