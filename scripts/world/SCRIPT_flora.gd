@@ -235,15 +235,21 @@ func _build_layers() -> void:
 	var rock: Material = load("res://materials/MAT_boulder.tres")
 	var boulder_kinds: Array[Dictionary] = []
 	for b in BOULDERS:
-		var lods: Array = []
-		for i in 3:
-			var m := _mesh_of("res://assets/boulder/%s/%s_lod%d.gltf" % [b, b, i])
-			m.surface_set_material(0, rock)
-			lods.append(m)
-		boulder_kinds.append({"lods": lods, "shape": (lods[2] as ArrayMesh).create_convex_shape(true, true), "shape_lift": 0.0})
+		# Every level the simplifier makes from the finest of the boulder's own
+		# (MeshLods): eight or so, each held only as near as it is worth.
+		var lod0 := _mesh_of("res://assets/boulder/%s/%s_lod0.gltf" % [b, b])
+		lod0.surface_set_material(0, rock)
+		var lods: Array = MeshLods.chain(lod0, 12)
+		boulder_kinds.append({"lods": lods, "shape": (lods[mini(4, lods.size() - 1)] as ArrayMesh).create_convex_shape(true, true),
+				"shape_lift": 0.0})
+	var steps: Array = []
+	for d in MeshLods.distances(mini(8, (boulder_kinds[0]["lods"] as Array).size()), 3.0, 1.6):
+		steps.append(float(d) * _scale)
 	_layers.append({
-		"name": "boulders", "tile": 32.0, "radius": 380.0 * _scale, "stride": STRIDE,
-		"dists": [26.0 * _scale, 90.0 * _scale], "shadow_lods": 2,
+		# (Past `radius` the bigger boulders are still drawn, island-wide, at their
+		# simplest: `_far_rocks`. Rocks never go.)
+		"name": "boulders", "tile": 32.0, "radius": maxf(380.0 * _scale, float(steps.back()) * 1.2), "stride": STRIDE,
+		"dists": steps, "shadow_lods": 2,
 		"kinds": boulder_kinds, "prefill": true, "place": _place_boulders, "height": 8.0, "collide": true,
 		"near_field": true,
 	})
@@ -1005,6 +1011,7 @@ func prefill_step() -> bool:
 					_prefill_jobs.append([li, Vector2i(x, z)])
 		if _prefill_jobs.is_empty():
 			_prefilled = true
+			_far_rocks()
 			return true
 		_prefill_group = WorkerThreadPool.add_group_task(_prefill_one, _prefill_jobs.size(), -1, false, "flora")
 		return false
@@ -1013,6 +1020,7 @@ func prefill_step() -> bool:
 	WorkerThreadPool.wait_for_group_task_completion(_prefill_group)
 	_drain(1 << 30)
 	_prefilled = true
+	_far_rocks()
 	var report := ""
 	for layer in _layers:
 		var total := 0
@@ -1229,12 +1237,59 @@ func rock_mesh(kind: int) -> Mesh:
 	if layer.is_empty():
 		return null
 	var lods: Array = layer["kinds"][kind]["lods"]
-	return lods[lods.size() - 1] as Mesh
+	return lods[mini(3, lods.size() - 1)] as Mesh
 
 
 ## Take a boulder `rock_on` found out of the world: its meshes and its collider.
 func quarry(rock: Dictionary) -> void:
 	_take_out(_rock_layer(), rock, 0.02)
+
+
+## ROCKS NEVER GO. Past the boulder layer's radius, where its tiles stop being
+## drawn, every boulder big enough to be seen from there (over 0.8 m) is drawn
+## island-wide at its simplest, one MultiMesh per kind per FAR_CELL square (so
+## the squares out of view are culled), dithering in exactly where the near ones
+## dither out (lod_in: the layer's radius). Built once the island is planted.
+func _far_rocks() -> void:
+	var layer := _rock_layer()
+	if layer.is_empty() or layer.has("far_rocks"):
+		return
+	var kinds: Array = layer["kinds"]
+	var packed := {}         # Vector3i(cell x, cell z, kind) -> PackedFloat32Array
+	for key in layer["cache"]:
+		var bufs: Array = layer["cache"][key]
+		for k in bufs.size():
+			var buf: PackedFloat32Array = bufs[k]
+			for i in range(0, buf.size(), STRIDE):
+				if Vector3(buf[i + 1], buf[i + 5], buf[i + 9]).length() < 0.8:
+					continue
+				var slot := Vector3i(int(floor(buf[i + 3] / FAR_CELL)), int(floor(buf[i + 11] / FAR_CELL)), k)
+				var into: PackedFloat32Array = packed.get(slot, PackedFloat32Array())
+				into.append_array(buf.slice(i, i + STRIDE))
+				packed[slot] = into
+	var holder := Node3D.new()
+	holder.name = "FarRocks"
+	add_child(holder)
+	var count := 0
+	for slot: Vector3i in packed:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		var lods: Array = kinds[slot.z]["lods"]
+		mm.mesh = lods[lods.size() - 1]
+		var buf: PackedFloat32Array = packed[slot]
+		mm.instance_count = buf.size() / STRIDE
+		mm.buffer = buf
+		count += mm.instance_count
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.custom_aabb = AABB(Vector3(slot.x * FAR_CELL - 10.0, -60.0, slot.y * FAR_CELL - 10.0),
+				Vector3(FAR_CELL + 20.0, 260.0, FAR_CELL + 20.0))
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.set_instance_shader_parameter(&"lod_in", float(layer["radius"]))
+		mmi.set_instance_shader_parameter(&"lod_out", 0.0)
+		holder.add_child(mmi)
+	layer["far_rocks"] = holder
+	print("[flora] %d far rocks, drawn to the horizon" % count)
 
 
 ## One plant or stone out of a layer's instance buffers, and its collider (the

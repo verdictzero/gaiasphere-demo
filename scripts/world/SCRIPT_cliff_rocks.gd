@@ -42,9 +42,10 @@ const KINDS := [
 	["cliff_pillar_a", 0.1, 14.0, 80.0],
 	["cliff_pillar_b", 0.05, 14.0, 80.0],
 ]
-## Where each level of detail hands over to the next, metres; past the last,
-## nothing is drawn.
-const LOD_ENDS := [90.0, 320.0, 1000.0, 2800.0]
+## Where each level of detail hands over to the next (MeshLods.distances: a
+## dozen or so metres for the finest, stepping out), per kind; the last level is
+## drawn however far away the rock is: rocks never go.
+var _lod_ends := {}        # kind -> [distances]
 const TILE := 256.0
 const LOD_BAND := 0.12
 const CACHE_VERSION := 3
@@ -111,11 +112,11 @@ func _read_manifest() -> void:
 		var s: Array = entry["size_m"]
 		_sizes[entry["name"]] = Vector3(float(s[0]), float(s[1]), float(s[2]))
 	for kind in KINDS:
-		var lods: Array = []
-		for i in LOD_ENDS.size():
-			var m := Flora._mesh_of("res://assets/cliff/%s/%s_lod%d.gltf" % [kind[0], kind[0], i])
-			lods.append(m)
+		# Every level the simplifier makes, from the finest of the kit's own.
+		var lods: Array = MeshLods.chain(Flora._mesh_of("res://assets/cliff/%s/%s_lod0.gltf" % [kind[0], kind[0]]) as ArrayMesh)
 		_meshes[kind[0]] = lods
+		var size: Vector3 = _sizes.get(kind[0], Vector3.ONE * 16.0)
+		_lod_ends[kind[0]] = MeshLods.distances(lods.size(), maxf(size.x, size.y) * 1.2)
 
 
 # ------------------------------------------------------------------ where
@@ -246,6 +247,7 @@ func _build() -> void:
 		for k: int in tiles[key]:
 			var list: Array = tiles[key][k]
 			var lods: Array = _meshes[KINDS[k][0]]
+			var ends: Array = _lod_ends[KINDS[k][0]]
 			for l in lods.size():
 				var mm := MultiMesh.new()
 				mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -258,15 +260,17 @@ func _build() -> void:
 				mmi.multimesh = mm
 				mmi.material_override = _material
 				mmi.position = origin
-				var lo := float(LOD_ENDS[l - 1]) if l > 0 else 0.0
-				var hi := float(LOD_ENDS[l])
+				var last := l == lods.size() - 1
+				var lo := float(ends[l - 1]) if l > 0 else 0.0
+				var hi := 0.0 if last else float(ends[l])
 				# Each rock's own hand-over is the shader's dither, by its own distance;
-				# the square as a whole is only drawn while any of it may need to be.
+				# the square as a whole is only drawn while any of it may need to be,
+				# and the last level always (0: no end).
 				mmi.set_instance_shader_parameter(&"lod_in", lo)
-				mmi.set_instance_shader_parameter(&"lod_out", hi if l < lods.size() - 1 else hi)
+				mmi.set_instance_shader_parameter(&"lod_out", hi)
 				mmi.visibility_range_begin = maxf(0.0, lo * (1.0 - LOD_BAND) - half_diag)
-				mmi.visibility_range_end = hi * (1.0 + LOD_BAND) + half_diag
-				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if l < 2 \
+				mmi.visibility_range_end = 0.0 if last else hi * (1.0 + LOD_BAND) + half_diag
+				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hi > 0.0 and hi < 400.0 \
 						else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				add_child(mmi)
 	print("[cliffs] %d rock masses against the tablelands' walls" % _rocks.size())
@@ -287,7 +291,8 @@ func _make_solid(here: Vector3) -> void:
 			continue
 		var name: String = KINDS[int(rock[0])][0]
 		if not _hulls.has(name):
-			_hulls[name] = ((_meshes[name][LOD_ENDS.size() - 1] as ArrayMesh).create_convex_shape(true, true) as ConvexPolygonShape3D).points
+			var chain: Array = _meshes[name]
+			_hulls[name] = ((chain[mini(4, chain.size() - 1)] as ArrayMesh).create_convex_shape(true, true) as ConvexPolygonShape3D).points
 		# (Its scale put into the hull's points: a shape is not to be scaled unevenly.)
 		var scale := t.basis.get_scale()
 		var pts := PackedVector3Array()
@@ -307,7 +312,7 @@ func warm(stage: Node3D) -> void:
 	if _material == null or _meshes.is_empty():
 		return
 	var mi := MeshInstance3D.new()
-	mi.mesh = _meshes[KINDS[0][0]][LOD_ENDS.size() - 1]
+	mi.mesh = (_meshes[KINDS[0][0]] as Array).back()
 	mi.material_override = _material
 	mi.scale = Vector3.ONE * 0.01
 	stage.add_child(mi)
