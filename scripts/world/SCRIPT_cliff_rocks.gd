@@ -25,13 +25,13 @@ extends Node3D
 @export var world_path: NodePath = ^"../GaiaSphere"
 @export var explorer_path: NodePath = ^"../Explorer"
 ## Metres between the points the walls are searched at.
-@export var search_step := 9.0
+@export var search_step := 7.0
 ## How steep (rise over run) the ground must be to count as a wall.
 @export var wall_slope := 1.05
 ## How much of a wall's height a rock stands, (least, most).
-@export var cover := Vector2(0.55, 1.0)
+@export var cover := Vector2(0.65, 1.2)
 ## How much of a rock's depth is pushed back into the wall.
-@export var buried := 0.62
+@export var buried := 0.42
 @export var solid_reach := 70.0
 
 # name, how often, (min, max) of the wall heights it suits, metres
@@ -48,7 +48,7 @@ const KINDS := [
 var _lod_ends := {}        # kind -> [distances]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 4
+const CACHE_VERSION := 5
 
 var _field: IslandField
 var _sizes := {}           # kind -> Vector3 size in metres, as made
@@ -170,7 +170,7 @@ func _layout(field: IslandField) -> Array:
 			for dz in range(-2, 3):
 				for dx in range(-2, 3):
 					for other in taken.get(cell + Vector2i(dx, dz), []):
-						if (other[0] as Vector2).distance_to(p) < (float(other[1]) + width * 0.5) * 0.7:
+						if (other[0] as Vector2).distance_to(p) < (float(other[1]) + width * 0.5) * 0.5:
 							crowded = true
 			if crowded:
 				continue
