@@ -30,6 +30,9 @@ const FIRS := ["fir_small_a", "fir_small_b", "fir_medium_a", "fir_medium_b",
 		"fir_tall_a", "fir_tall_b", "fir_giant_a", "fir_giant_b"]
 const FERNS := ["fern_small_a", "fern_medium_a", "fern_medium_b", "fern_large_a"]
 const BOULDERS := ["boulder_a", "boulder_b", "boulder_c", "boulder_d", "boulder_e"]
+## The first of the boulder layer's fresh-dug kinds (the crash's debris): the same
+## five shapes over again in pale, mossless stone.
+const DEBRIS_KIND := 5
 
 const STRIDE := 12          # floats per instance: a 3x4 transform
 const STRIDE_CUSTOM := 16   # ... plus a custom vec4
@@ -242,6 +245,21 @@ func _build_layers() -> void:
 		var lods: Array = MeshLods.chain(lod0, 12)
 		boulder_kinds.append({"lods": lods, "shape": (lods[mini(4, lods.size() - 1)] as ArrayMesh).create_convex_shape(true, true),
 				"shape_lift": 0.0})
+	# AND THE SAME FIVE AGAIN AS FRESH-DUG ROCK (kinds DEBRIS_KIND and up): what
+	# the shuttle tore out of the ground coming down. Never weathered and never
+	# grown over: pale, clean stone, no moss, its broken faces still bright.
+	var dug := (rock as ShaderMaterial).duplicate() as ShaderMaterial
+	dug.set_shader_parameter("moss_amount", 0.0)
+	dug.set_shader_parameter("rock_tint", Color(2.15, 1.95, 1.65))
+	dug.set_shader_parameter("macro_variation", 0.25)
+	dug.set_shader_parameter("ground_occlusion_height", 0.2)
+	for i in BOULDERS.size():
+		var fresh: Array = []
+		for m: ArrayMesh in boulder_kinds[i]["lods"]:
+			var copy := m.duplicate() as ArrayMesh
+			copy.surface_set_material(0, dug)
+			fresh.append(copy)
+		boulder_kinds.append({"lods": fresh, "shape": boulder_kinds[i]["shape"], "shape_lift": 0.0})
 	var steps: Array = []
 	for d in MeshLods.distances(mini(8, (boulder_kinds[0]["lods"] as Array).size()), 3.0, 1.6):
 		steps.append(float(d) * _scale)
@@ -778,7 +796,7 @@ func _place_boulders(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 	for d in _crash_debris(f):
 		var where: Transform3D = d[1]
 		if int(floor(where.origin.x / tile)) == key.x and int(floor(where.origin.z / tile)) == key.y:
-			_push(bufs[int(d[0])], where.basis, where.origin)
+			_push(bufs[DEBRIS_KIND + int(d[0])], where.basis, where.origin)
 	return bufs
 
 
@@ -939,7 +957,7 @@ func prefill_covered() -> void:
 ## and only places whatever the file does not hold. No file, or one whose
 ## signature no longer matches, and it is all worked out here as before.
 const BAKE_STORE := "flora"
-const BAKE_VERSION := 2
+const BAKE_VERSION := 3
 ## Ground steeper than this (rise over run) is a cliff's face and bare: where the
 ## terrain's shader begins to draw it as rock (`cliff_face` there: 0.55).
 const ROCK_FACE := 0.52
