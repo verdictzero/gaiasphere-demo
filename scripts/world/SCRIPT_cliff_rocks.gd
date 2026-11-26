@@ -77,7 +77,9 @@ const FAR_AT := 600.0
 ## What a build ships (tests/BAKE_island.gd writes it), read before user://.
 const BAKED := "res://data/bake/cliff_rocks.bake"
 const CELL := 32.0
-const BLOCK := "res://assets/cliff_block/cliff_block.res"
+## (Baked by tools/bake_cliff_block.py: its vertex colour carries edge wear and
+## crevice light for the shader.)
+const BLOCK := "res://assets/cliff_block/cliff_block.glb"
 ## Triangles in the block's second level of detail.
 const BLOCK_LOD1 := 700
 ## And in its first: the block as handed over is 6,724.
@@ -127,9 +129,9 @@ func _ready() -> void:
 		_kit_size.append(size)
 		_kit_low.append((lods[0] as Mesh).get_aabb().position.y)
 		_lod_ends.append(MeshLods.distances(lods.size(), maxf(size.x, size.y) * 1.2))
-	# THE BLOCK (assets/cliff_block, tools/import_cliff_block.gd): the user's own
+	# THE BLOCK (assets/cliff_block, tools/bake_cliff_block.py): the user's own
 	# chunk of cliff, the main thing the walls are built of. Numbered after the kit.
-	var block := load(BLOCK) as ArrayMesh
+	var block := Flora._mesh_of(BLOCK) as ArrayMesh
 	# ITS SECOND LEVEL IS 700 TRIANGLES (the user's figure), not the half the
 	# simplifier's chain would give next: the whole block only within 30 m, then
 	# straight to 700, then on down the chain from there.

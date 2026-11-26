@@ -50,6 +50,10 @@ static func reduced(mesh: ArrayMesh, triangles: int) -> ArrayMesh:
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 	var index: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	# (Its vertex colours, where it has them, are carried: averaged at each weld.)
+	var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR] != null else PackedColorArray()
+	var wc := PackedColorArray()
+	var wcount := PackedInt32Array()
 	var where := {}
 	var to := PackedInt32Array()
 	to.resize(verts.size())
@@ -61,7 +65,12 @@ static func reduced(mesh: ArrayMesh, triangles: int) -> ArrayMesh:
 			where[key] = wv.size()
 			wv.append(verts[i])
 			wn.append(Vector3.ZERO)
+			wc.append(Color(0, 0, 0, 0))
+			wcount.append(0)
 		to[i] = where[key]
+		if i < colours.size():
+			wc[to[i]] += colours[i]
+			wcount[to[i]] += 1
 		wn[to[i]] += normals[i] if i < normals.size() else Vector3.UP
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -84,17 +93,22 @@ static func reduced(mesh: ArrayMesh, triangles: int) -> ArrayMesh:
 	var kv := PackedVector3Array()
 	var kn := PackedVector3Array()
 	var ki := PackedInt32Array()
+	var kc := PackedColorArray()
 	for i in idx:
 		if not slot.has(i):
 			slot[i] = kv.size()
 			kv.append(wv[i])
 			kn.append(wn[i].normalized())
+			if not colours.is_empty():
+				kc.append(wc[i] / float(maxi(wcount[i], 1)))
 		ki.append(slot[i])
 	var out := []
 	out.resize(Mesh.ARRAY_MAX)
 	out[Mesh.ARRAY_VERTEX] = kv
 	out[Mesh.ARRAY_NORMAL] = kn
 	out[Mesh.ARRAY_INDEX] = ki
+	if not kc.is_empty():
+		out[Mesh.ARRAY_COLOR] = kc
 	var m := ArrayMesh.new()
 	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
 	return m

@@ -33,6 +33,14 @@ uniform float detail_distance = 140.0;
 // INSTANCE_CUSTOM: x the wood there (the field's forest), y z w the shares of
 // ground, earth and sand. The edge of it is broken by the rock's own relief:
 // turf in the cracks first.
+// EDGE WEAR AND CREVICES, baked into the mesh's vertex colour
+// (tools/bake_cliff_block.py) and laid over the rock's texture: COLOR.r is
+// 1 - wear (the block's proud edges and corners), COLOR.g the sky a point sees
+// (toward 0 down a crack). A mesh with no baked colour is white: nothing added.
+// The rock's own grain breaks the worn edge up, so it is chipped, not airbrushed.
+uniform float edge_wear : hint_range(0.0, 1.5) = 0.75;      // how much paler and smoother a worn edge is
+uniform vec3 wear_tint : source_color = vec3(1.0, 0.97, 0.9);
+uniform float crevice : hint_range(0.0, 1.0) = 0.7;         // how dark the bottom of a crack
 uniform float top_start : hint_range(0.0, 1.0) = 0.62;   // how upward a face must look (normal.y) to begin to be ground
 uniform float top_full : hint_range(0.0, 1.0) = 0.86;    // and to be all ground
 uniform bool stochastic = true;
@@ -108,6 +116,17 @@ void fragment() {
 	vec3 world_n = normalize(nx.zyx * bw.x + ny.xzy * bw.y + nz.xyz * bw.z);
 	float roughness = 0.82;
 
+	// WEAR ON THE EDGES, DARK IN THE CRACKS (the bake, over the texture).
+	float grain = clamp(dot(albedo / rock_tint, vec3(0.45, 0.45, 0.1)) * 2.2, 0.0, 1.0);
+	float worn = (1.0 - COLOR.r) * edge_wear;
+	worn = smoothstep(0.25, 0.75, worn + (grain - 0.5) * 0.5) * clamp(worn * 2.0, 0.0, 1.0);
+	albedo = mix(albedo, (mix(albedo, vec3(dot(albedo, vec3(0.33))), 0.35) * 1.5 + 0.02) * wear_tint, worn);
+	roughness = mix(roughness, 0.7, worn);
+	float shut = (1.0 - COLOR.g) * crevice;
+	albedo *= 1.0 - shut * 0.75;
+	roughness = mix(roughness, 0.95, shut);
+	world_n = normalize(mix(world_n, geo_n, worn * 0.5));
+
 	// THE TOP: the ground beside it, carried on over (the terrain's own blend).
 	float top = smoothstep(top_start, top_full, geo_n.y);
 	if (top > 0.0) {
@@ -180,6 +199,8 @@ void fragment() {
 	roughness = mix(roughness, 0.28, wet * 0.85);
 
 	ALBEDO = albedo * brightness;
+	AO = 1.0 - shut * 0.6;
+	AO_LIGHT_AFFECT = 0.35;
 	ROUGHNESS = roughness;
 	METALLIC = 0.0;
 	SPECULAR = 0.4;
