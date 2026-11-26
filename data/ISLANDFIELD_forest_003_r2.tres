@@ -2,6 +2,12 @@
 
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_island_field.gd" id="1_field"]
 
+; ROLLED BACK (the user: "roll back the terrain to before the cliffs ... smooth and
+; hilly like it used to be"): `mesa_enabled` is off and the cones, springs, rivers
+; and trails are back. The settings below are kept for the day they are wanted.
+; Steep faces are rock with strata by their angle (the terrain's shader) and the
+; cliff models are peppered over them (SCRIPT_cliff_rocks.gd, `pepper`).
+;
 ; TABLELANDS (the user, after v32: "less hills and more like valleys and plateaus
 ; and like very varied terrain ... a lot of flat plateaus and defined buildable
 ; areas on those flat plateaus as a global rule"): outside the mere and the crash
@@ -33,7 +39,7 @@
 
 [resource]
 script = ExtResource("1_field")
-mesa_enabled = true
+mesa_enabled = false
 mesa_height = 90.0
 mesa_levels = 10
 mesa_ramps = 0.42
@@ -177,7 +183,7 @@ ruin_ring_slide = 80.0
 ruin_ring_earthwork_max = 7.0
 crater_enabled = false
 divot_enabled = false
-trail_enabled = false
+trail_enabled = true
 trail_knots = 70
 trail_spacing = 110.0
 trail_width = 1.6
@@ -193,7 +199,7 @@ course_hole = 3
 par_extra_step = 300.0
 safe_pad_radius = 0.0
 flow_enabled = true
-flow_cones = 0
+flow_cones = 2
 flow_cone_radius = Vector2(190, 250)
 flow_cone_height = Vector2(0.1, 0.15)
 flow_cone_crater = Vector2(0.1, 0.14)
@@ -206,7 +212,7 @@ flow_lake_fill = 0.55
 flow_flank_flows = Vector2i(1, 2)
 flow_flank_moving = 1.0
 flow_breach_moving = 1.0
-flow_vents = 0
+flow_vents = 8
 flow_vent_moving = 0.35
 flow_vent_radius = Vector2(20, 34)
 flow_vent_height = Vector2(0.12, 0.2)

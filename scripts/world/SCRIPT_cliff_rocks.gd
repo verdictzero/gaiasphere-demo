@@ -41,6 +41,14 @@ extends Node3D
 @export var search_step := 4.5
 ## How steep (rise over run) the ground must be to count as a wall.
 @export var wall_slope := 1.05
+## ON THE HILLS (the tablelands off: the island as it was, smooth and rolling) the
+## rock is PEPPERED over the steep faces, not built along walls: ground at least
+## this steep takes a rock at this share of the places searched, each sized to
+## the face it stands in, between these heights (metres).
+@export var hill_slope := 0.5
+@export_range(0.0, 1.0) var pepper := 0.2
+@export var hill_height := Vector2(3.0, 11.0)
+@export var enabled := true
 ## Shards to a place on the wall, (least, most).
 @export var cluster := Vector2i(2, 4)
 ## Height against the wall's: the back row's, and the front row's.
@@ -69,7 +77,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 16   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 17   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -108,13 +116,16 @@ var _far: Array = []       # every square's far one
 var _cells := {}           # Vector2i (CELL metres) -> [indices into _rocks], for what is solid
 
 
+var _laid := false
+
+
 func _ready() -> void:
 	var world := get_node_or_null(world_path)
 	_explorer = get_node_or_null(explorer_path) as Node3D
 	if world == null or not world.has_method(&"get_field"):
 		return
 	_field = world.call(&"get_field")
-	if _field == null or not _field.mesa_enabled:
+	if _field == null or not enabled:
 		set_process(false)
 		return
 	add_to_group(Prewarm.GROUP)
@@ -170,6 +181,7 @@ func _ready() -> void:
 	var cached := _read_cache()
 	if not cached.is_empty():
 		_rocks = cached
+		_laid = true
 		_build()
 		return
 	var copy := _field.clone()
@@ -181,6 +193,7 @@ func _process(_delta: float) -> void:
 		WorkerThreadPool.wait_for_task_completion(_task)
 		_task = -1
 		_rocks = _result
+		_laid = true
 		_write_cache(_rocks)
 		_build()
 	if _rocks.is_empty() or _explorer == null:
@@ -295,7 +308,10 @@ func _layout(field: IslandField) -> Array:
 	rng.seed = field.world_seed ^ 0xC11FF
 	var reach := isl.radius * 1.15
 	var n := int(reach * 2.0 / search_step)
-	var keep := field.mesa_keep + field.mesa_keep_ease * 0.3
+	var hills := not field.mesa_enabled
+	var keep := 0.0 if hills else field.mesa_keep + field.mesa_keep_ease * 0.3
+	var steep := hill_slope if hills else wall_slope
+	var back := 6.0 if hills else 12.0
 	# (Inside the middle only the cows' meadow's own walls: FlowTerrain's meadow.)
 	var flows: FlowTerrain = field.flows_for(isl)
 	var meadow := Vector2.INF
@@ -308,24 +324,32 @@ func _layout(field: IslandField) -> Array:
 			if p.distance_to(isl.center) < keep:
 				continue
 			# (No rock on the shuttle's path and its hill: the exception to the rule.)
-			if flows != null and flows.crash_clear(p.x, p.y) < 130.0:
+			if flows != null and flows.crash_clear(p.x, p.y) < (90.0 if hills else 130.0):
 				continue
 			var m := field.mask_for(isl, p.x, p.y)
-			if m < field.mesa_shore * 1.5:
+			if m < (0.04 if hills else field.mesa_shore * 1.5):
 				continue          # the island's own edge: its wall is not a tableland's
 			var h := field.height_at(p.x, p.y, -1e9)
 			var hx := field.height_at(p.x + 2.0, p.y, h)
 			var hz := field.height_at(p.x, p.y + 2.0, h)
 			var grad := Vector2(hx - h, hz - h) / 2.0
-			if grad.length() < wall_slope:
+			if grad.length() < steep:
+				continue
+			if hills and rng.randf() > pepper:
 				continue
 			var out_dir := -grad.normalized()          # down the wall: the way it looks
 			var along := Vector2(-out_dir.y, out_dir.x)
-			var top := field.height_at(p.x - out_dir.x * 12.0, p.y - out_dir.y * 12.0, h)
-			var foot := field.height_at(p.x + out_dir.x * 12.0, p.y + out_dir.y * 12.0, h)
+			var top := field.height_at(p.x - out_dir.x * back, p.y - out_dir.y * back, h)
+			var foot := field.height_at(p.x + out_dir.x * back, p.y + out_dir.y * back, h)
 			var tall := top - foot
 			if tall < 3.0:
 				continue
+			if hills:
+				# An outcrop in a slope, not a tier's wall: as big as the face is steep,
+				# within its limits, its foot and top taken about where it stands.
+				tall = clampf(tall * rng.randf_range(0.6, 1.2), hill_height.x, hill_height.y)
+				foot = h - tall * 0.5
+				top = h + tall * 0.5
 			# The ground at the wall's top, for the rocks' own tops to carry on.
 			# (Read well back from the edge, on the level: at the lip itself the
 			# ground is steep, and steep ground is bare of wood and half rock, which
@@ -406,7 +430,7 @@ func _kit_for(rng: RandomNumberGenerator, tall: float) -> int:
 # ------------------------------------------------------------------ kept
 
 func _cache_path() -> String:
-	var key := "%d|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s" % [CACHE_VERSION, _field.world_seed, _field.mesa_height,
+	var key := "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s" % [_field.mesa_enabled, hill_slope, pepper, hill_height, CACHE_VERSION, _field.world_seed, _field.mesa_height,
 			_field.mesa_levels, _field.mesa_scale, _field.mesa_warp, _field.mesa_riser, _field.mesa_ramps,
 			_field.canyon_width, SHARDS * 100 + KIT.size(), search_step, wall_slope, cluster, back_height, front_height, aspect,
 			kit_share]
@@ -430,7 +454,7 @@ func _read_cache() -> Array:
 ## For the bake (tests/BAKE_island.gd): true once the rocks are placed, and the
 ## layout written where a build will ship it.
 func placed() -> bool:
-	return _task < 0 and (not _rocks.is_empty() or _field == null or not _field.mesa_enabled)
+	return _task < 0 and (_laid or _field == null or not enabled)
 
 
 func save_bake() -> int:
