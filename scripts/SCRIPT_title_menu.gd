@@ -96,7 +96,8 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# RUN BY A SCRIPT (the bake, the tests, the renders: `godot --script ...`), there
 	# is nobody to press START: it stands aside, and comes up only if asked for.
-	if get_tree().get_script() != null:
+	# (VES_TITLE in the environment: a test of the title itself, which wants it.)
+	if get_tree().get_script() != null and not OS.has_environment("VES_TITLE"):
 		menu_open = false
 		_boot = false
 		_view.visible = false
