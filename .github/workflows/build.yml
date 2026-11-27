@@ -1,10 +1,10 @@
 # Builds the Windows and Linux executables and the Android APK and attaches them to a release.
 #
-#   push to the release branch -> a release v<config/version> (project.godot's)
+#   push to the release branch -> a release <config/version> (project.godot's)
 #                                 with both zips; bump the version to make another
 #   push a tag v<something>    -> a release of that name
 #   run it by hand (Actions)   -> the builds as a workflow artifact; tick `release`
-#                                 to publish v<config/version> from that branch too
+#                                 to publish <config/version> from that branch too
 name: Build
 
 on:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: "Also publish a release named v<config/version>"
+        description: "Also publish a release named <config/version>"
         type: boolean
         default: false
 
@@ -76,7 +76,7 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             name="$GITHUB_REF_NAME"
           else
-            name="v$(sed -n 's/^config\/version="\(.*\)"$/\1/p' project.godot | head -1)"
+            name="$(sed -n 's/^config\/version="\(.*\)"$/\1/p' project.godot | head -1)"
           fi
           if gh release view "$name" >/dev/null 2>&1; then
             echo "::error::$name is already released. Bump config/version in project.godot and push again."
@@ -85,4 +85,4 @@ jobs:
           gh release create "$name" build/VES27_windows.zip build/VES27_linux.zip build/VES27_android.apk \
             --target "$GITHUB_SHA" \
             --title "Virtual Emulator Simulator 27 $name" \
-            --notes "Windows and Linux: unzip and run. Android: an arm64 debug-signed APK to sideload. The island is baked into the build. Controls are in the README."
+            --notes "Windows and Linux: unzip and run. Android: an arm64 APK to sideload; it installs over the last one (same key, a higher version code). The island is baked into the build. Controls are in the README."

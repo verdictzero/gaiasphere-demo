@@ -151,6 +151,14 @@ fetches the two export templates it wants if they are missing. Pushing to the
 after `config/version` in `project.godot` (`.github/workflows/build.yml`), so
 a new release is: bump that number, push `main`, push `main:release`.
 
+Versions are `2027.N`, N counting up by one a release with as many digits as it
+comes to (`2027.42`, `2027.43`, ... `2027.100`): `config/version` in
+`project.godot` and `version/name` in `export_presets.cfg`. Android's
+`version/code` there is N itself and must go up every release. Every APK is
+signed with the one key in `tools/ves27_sideload.keystore`, so each installs
+over the last; a build signed with any other key will not, and nor will one
+whose code has not gone up.
+
 ## Changing the island
 
 Open `data/ISLANDFIELD_forest_003_r2.tres` in the editor. `seed` is a

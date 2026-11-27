@@ -43,12 +43,13 @@ android() {
 	local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 	[ -d "$sdk" ] || { echo "android: set ANDROID_HOME to the Android SDK" >&2; exit 1; }
 	local java_home="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")}"
-	local keystore="$HOME/.android/debug.keystore"
-	if [ ! -f "$keystore" ]; then
-		mkdir -p "$HOME/.android"
-		keytool -genkeypair -keyalg RSA -alias androiddebugkey -keypass android -keystore "$keystore" \
-			-storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12 >/dev/null 2>&1
-	fi
+	# ONE KEY FOR EVERY BUILD, kept in the repository (tools/ves27_sideload.keystore):
+	# Android only installs an update over an app signed with the same key, and a
+	# key made afresh on each build machine (as this used to do) meant every
+	# release had to have the last one uninstalled first. It is a sideload key,
+	# its password the stock debug one; not one to publish to a store with.
+	local keystore="$PWD/tools/ves27_sideload.keystore"
+	[ -f "$keystore" ] || { echo "android: $keystore is missing" >&2; exit 1; }
 	# Godot reads these from its editor settings, not from the project.
 	python3 - "$sdk" "$java_home" "$keystore" "$(echo "$VER" | cut -d. -f1,2)" <<'PY'
 import os, re, sys
