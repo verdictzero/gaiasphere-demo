@@ -11,7 +11,7 @@ extends CanvasLayer
 # it): the island from straight above, north up, drawn from the island's own
 # field (water, shore, meadow, wood, rock, the trails and the shuttle's skid, lit
 # from the north-west so the hills show), with where you are and which way you
-# face, the truck, the wreck, the stone and the herds marked on it.
+# face, and two things marked on it: the Uni-Truck and the Shuttle Wreckage.
 #
 # The picture is worked out once, on the worker threads behind everything else,
 # from MAP_SIDE x MAP_SIDE looks at the field, and kept in user:// under the
@@ -274,19 +274,11 @@ func _draw_view() -> void:
 	if flows != null and flows.has_method(&"crash_site"):
 		var site: PackedVector2Array = flows.crash_site()
 		if site[1] != Vector2.ZERO:
-			legend.append(["The wreck", Color(1.0, 0.45, 0.3), site[0], "square"])
-	if _field != null:
-		legend.append(["The stone", Color(0.8, 0.7, 1.0), SwordStone.site(_field), "diamond"])
+			legend.append(["Shuttle Wreckage", Color(1.0, 0.45, 0.3), site[0], "square"])
 	var truck := get_node_or_null(^"../UniTruck")
 	if truck != null and truck.get("body") != null:
 		var at := (truck.get("body") as Node3D).global_position
-		legend.append(["The truck", Color(0.45, 0.85, 1.0), Vector2(at.x, at.z), "square"])
-	var herds := get_node_or_null(^"../CowHerds")
-	if herds != null:
-		var first := true
-		for herd: Dictionary in herds.get("_herds"):
-			legend.append(["Herds" if first else "", Color(1, 1, 1), herd["centre"], "dot"])
-			first = false
+		legend.append(["Uni-Truck", Color(0.45, 0.85, 1.0), Vector2(at.x, at.z), "square"])
 	var line := 0
 	for entry: Array in legend:
 		var at := _to_map(entry[2])
