@@ -114,7 +114,7 @@ func holding() -> bool:
 
 
 func _menus() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or UniTruck.driving
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or UniTruck.driving
 
 
 # ------------------------------------------------------------------ setting one down

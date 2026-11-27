@@ -109,7 +109,7 @@ func set_open(open: bool) -> void:
 	if open == menu_open or _enviro == null:
 		return
 	if open:
-		for other_name in ["GraphicsMenu", "OptionsMenu", "Inventory"]:
+		for other_name in ["GraphicsMenu", "OptionsMenu", "Inventory", "MapMenu"]:
 			var other := get_node_or_null("../" + other_name)
 			if other != null and other.has_method(&"set_open"):
 				other.call(&"set_open", false)

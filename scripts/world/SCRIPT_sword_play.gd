@@ -177,7 +177,7 @@ func _process(delta: float) -> void:
 		_motes.emitting = false
 		return
 	_sway(delta)
-	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open:
+	if Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open:
 		return
 	# Something to be worked comes first: a door in front of you is opened, not hit.
 	if Input.is_action_just_pressed(&"wv_attack") and _mouse_ready():

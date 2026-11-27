@@ -43,6 +43,7 @@ const THUMB := [
 # THE TOP ROW, right to left: action and label. Each is a tap.
 const ROW := [
 	[&"wv_options", "OPT"],
+	[&"wv_map", "MAP"],
 	[&"wv_environment", "ENV"],
 	[&"wv_graphics", "GFX"],
 	[&"wv_fly", "FLY"],
@@ -126,7 +127,7 @@ func _k() -> float:
 
 
 func _menu_open() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open
 
 
 ## Flying or swimming: when there is an up and a down.
@@ -327,6 +328,8 @@ func _draw() -> void:
 			on = on or EnvironmentMenu.menu_open
 		elif action == &"wv_options":
 			on = on or OptionsMenu.menu_open
+		elif action == &"wv_map":
+			on = on or MapMenu.menu_open
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = lit_fill if on else fill
 		sb.set_corner_radius_all(int(r.size.y * 0.5))

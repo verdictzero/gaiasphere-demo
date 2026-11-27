@@ -398,7 +398,7 @@ func set_open(open: bool) -> void:
 	menu_open = open
 	_view.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	if open:
-		for other_name in ["EnvironmentMenu", "OptionsMenu"]:
+		for other_name in ["EnvironmentMenu", "OptionsMenu", "MapMenu"]:
 			var other := get_node_or_null("../" + other_name)
 			if other != null and other.has_method(&"set_open"):
 				other.call(&"set_open", false)
