@@ -46,7 +46,8 @@ func _process(_d: float) -> bool:
 	_step += 1
 	var view: Control = title.get("_view")
 	var r: Rect2 = title.call(&"_button_rect", 0, 5)
-	var at := r.get_center()
+	# (Input goes in as the window has it, in its own pixels: the view is stretched over it.)
+	var at := r.get_center() * Vector2(root.size) / view.size
 	match _step:
 		5:
 			print("click: window %s, view %s, START at %s, paused %s" % [root.size, view.size, r, paused])
