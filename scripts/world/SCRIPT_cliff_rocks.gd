@@ -48,8 +48,10 @@ extends Node3D
 ## where the terrain's shader has the face all rock, `cliff_face`: a model
 ## always stands in rock of its own kind, never in grass.)
 @export var hill_slope := 0.63
-@export_range(0.0, 1.0) var pepper := 0.5
+@export_range(0.0, 1.0) var pepper := 0.85
 @export var hill_height := Vector2(3.0, 11.0)
+## The share of those places that take a second, smaller block between.
+@export_range(0.0, 1.0) var fill := 0.6
 @export var enabled := true
 ## Shards to a place on the wall, (least, most).
 @export var cluster := Vector2i(2, 4)
@@ -79,7 +81,7 @@ const KIT := [
 ]
 const TILE := 256.0
 const LOD_BAND := 0.12
-const CACHE_VERSION := 18   # (the layout; how it is drawn is not kept)
+const CACHE_VERSION := 19   # (the layout; how it is drawn is not kept)
 ## Past this every rock in a square is drawn in ONE draw, as the simplest shard
 ## (at this distance one broken column is as good as another): a draw a square,
 ## not one for every kind of rock in it.
@@ -385,6 +387,19 @@ func _layout(field: IslandField) -> Array:
 			# (Its middle a little under the wall's: its foot in the ground below.)
 			var bmid := (foot + top) * 0.5 - (float(_kit_low[KIT.size()]) + bsize.y * 0.5) * by - rng.randf_range(0.3, 1.2)
 			out.append([SHARDS + KIT.size(), Transform3D(bturn.scaled_local(bscale), Vector3(bat.x, bmid, bat.y)), turf])
+			# AND MIDWAY UP THE FACE, BETWEEN: on a hill's face a second, smaller
+			# block more often than not, half sunk in the slope a little way along
+			# it and up or down it from the first, so a face is filled with rock
+			# standing out of it and not dotted with single outcrops.
+			if hills and rng.randf() < fill:
+				var fs := by * rng.randf_range(0.45, 0.8)
+				var fscale := Vector3(fs * rng.randf_range(0.8, 1.7), fs, fs * rng.randf_range(0.8, 1.7))
+				var fturn := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.2, 0.2)) \
+						* Basis(Vector3.BACK, rng.randf_range(-0.2, 0.2))
+				var fat := p + along * rng.randf_range(-1.0, 1.0) * search_step * 0.9 + out_dir * rng.randf_range(-0.6, 0.6) * back
+				var fh := field.height_at(fat.x, fat.y, h)
+				var fmid := fh - (float(_kit_low[KIT.size()]) + bsize.y * 0.5) * fs - rng.randf_range(0.1, 0.5) * bsize.y * fs
+				out.append([SHARDS + KIT.size(), Transform3D(fturn.scaled_local(fscale), Vector3(fat.x, fmid, fat.y)), turf])
 			# Now and then one of the old kit's masses, in the wall, faced out of it.
 			if rng.randf() < kit_share:
 				var kit := _kit_for(rng, tall)
@@ -450,7 +465,7 @@ func _kit_for(rng: RandomNumberGenerator, tall: float) -> int:
 # ------------------------------------------------------------------ kept
 
 func _cache_path() -> String:
-	var key := "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s" % [_field.mesa_enabled, hill_slope, pepper, hill_height, CACHE_VERSION, _field.world_seed, _field.mesa_height,
+	var key := "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s" % ["%s/%s" % [_field.mesa_enabled, fill], hill_slope, pepper, hill_height, CACHE_VERSION, _field.world_seed, _field.mesa_height,
 			_field.mesa_levels, _field.mesa_scale, _field.mesa_warp, _field.mesa_riser, _field.mesa_ramps,
 			_field.canyon_width, SHARDS * 100 + KIT.size(), search_step, wall_slope, cluster, back_height, front_height, aspect,
 			kit_share]

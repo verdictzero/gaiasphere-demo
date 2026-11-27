@@ -342,6 +342,9 @@ class Zone extends RefCounted:
 	## Which part of a ring road this is — `ROAD_RING`, `ROAD_LAYBY`,
 	## `ROAD_SERVICE` — or `ROAD_NONE` for every other zone, paths included.
 	var road := 0
+	## How far it levels the LAND to its shelf, 0 to 1 (its surface is groomed
+	## the same either way). 1 for everything but a trail: `trail_level`.
+	var level := 1.0
 	## Whether the `a` end and the `b` end are ENDS of the hole: its tee and its
 	## pin. True for every zone but the pieces of a one-hole course (`one_hole`),
 	## which is a chain of capsules joined end to end: there only the first piece's
@@ -1193,6 +1196,11 @@ class Hole extends RefCounted:
 @export var trail_width := 1.6
 ## Its bank either side, metres.
 @export var trail_apron := 3.5
+## How far a trail LEVELS the ground it runs over, 0 to 1. At 1 it is cut and
+## banked to grades between its knots, as a road is: across a hillside that is a
+## bench gouged into the slope, a trench through every rise and a causeway over
+## every dip. At 0 it is only worn into the ground as it lies.
+@export_range(0.0, 1.0) var trail_level := 1.0
 ## Length of each straight piece of a trail, metres.
 @export var trail_segment := 16.0
 ## How far a trail wanders off the straight line between its knots, metres.
@@ -4247,6 +4255,7 @@ func _place_trails(isl: Island, zones: Array) -> Array:
 			zn.width = trail_width
 			zn.apron = trail_apron
 			zn.road = ROAD_TRAIL
+			zn.level = trail_level
 			out.append(zn)
 	return out
 
@@ -4786,7 +4795,7 @@ func zone_at(x: float, z: float, zones: Array, out: Array = []) -> float:
 			# at a flat 1.0 without a second branch.
 			var wf := w if zn.skirt <= 0.0 \
 					else 1.0 - smoothstep(0.0, apron, sd - zn.skirt)
-			best_flat = maxf(best_flat, wf)
+			best_flat = maxf(best_flat, wf * zn.level)
 			# Every zone that flattens the point has its say in the level, as
 			# much as `_lift_weight` gives it: see "THE LIFT" above.
 			if wf > 0.0:
@@ -7122,7 +7131,10 @@ func sample(x: float, z: float) -> Dictionary:
 	var convexity := curvature(h, hx0, hx1, hz0, hz1, d)
 
 	var sand := sand_at(x, z, mask, base_slope, flat, kind, zi[3])
-	var forest := forest_at(x, z, mask, base_slope, flat)
+	# (A PATH DOES NOT CLEAR THE WOOD: its verge is the wood's own floor. Cleared,
+	# the bank either side of every trail was a strip of bright meadow turf, with
+	# the grass that goes with it, through the middle of the forest.)
+	var forest := forest_at(x, z, mask, base_slope, 0.0 if kind == ZONE_PATH else flat)
 	var crater := crater_for(owner)
 	# `h` is handed over so the floor can be pinned to its datum — see `crater_at`.
 	var cr := crater_at(x, z, mask, crater, h)
@@ -7192,6 +7204,9 @@ func sample(x: float, z: float) -> Dictionary:
 		"weights": w,
 		"surface": names[top],
 		"forest": forest,
+		# How far in from the island's edge, in mask units (0 at the edge; 0.05 is
+		# a twentieth of its radius).
+		"mask": mask,
 		"island": owner,
 		"zone": zone_name,
 		"flatten": flat,

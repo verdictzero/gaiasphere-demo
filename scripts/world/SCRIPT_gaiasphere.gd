@@ -243,7 +243,7 @@ const GROUP := &"island_world"
 ## in `_ready` they go on the front of `lod_distances`, and `coast_lod` and
 ## `terrain_shadow_lod` move up by as many, so those still name the grids they did.
 @export_range(0, 3) var near_levels := 2
-@export var near_distances := PackedFloat32Array([40.0, 96.0])
+@export var near_distances := PackedFloat32Array([64.0, 144.0])
 ## Upper distance bound for each LOD level; beyond the last entry the coarsest
 ## level is used. Must be ascending.
 ##

@@ -570,7 +570,10 @@ func _place_trees(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			elif surface == "rock" or surface == "sand" or float(s.get("flatten", 0.0)) > 0.3 \
 					or float(s.get("flow_weight", 0.0)) > 0.3:
 				continue
-			if float(s.get("slope", 0.0)) > 0.4 or CliffRocks.covers(x, z, 1.5):
+			if float(s.get("slope", 0.0)) > STEEP or CliffRocks.covers(x, z, 1.5):
+				continue
+			# (And not out by the island's edge: EDGE.)
+			if float(s.get("mask", 1.0)) < EDGE * (0.85 + 0.5 * _hash(cx, cz, 9)):
 				continue
 			# Meadows are open: the wood thins at their edge and stops inside.
 			if from_stone >= _islet_radius and _hash(cx, cz, 8) < meadow(x, z) * 1.15:
@@ -619,7 +622,8 @@ func _place_ferns(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			if surface == "rock" or surface == "sand":
 				continue
 			# (None on a cliff's face, ROCK_FACE, nor in a cliff's rock.)
-			if float(s.get("slope", 0.0)) > ROCK_FACE or CliffRocks.covers(x, z, 0.4) \
+			if float(s.get("slope", 0.0)) > STEEP or CliffRocks.covers(x, z, 0.4) \
+					or float(s.get("mask", 1.0)) < EDGE * (0.8 + 0.5 * _hash(cx, cz, 37)) \
 					or float(s.get("flow_weight", 0.0)) > 0.4 \
 					or float(s.get("flatten", 0.0)) > 0.25:
 				continue
@@ -870,12 +874,15 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var y := f.height_at(x, z, float(s["height"]))
 			# NONE ON ROCK: not on a cliff's face (the blade's own ground, looked at
 			# only where the ground about is steep at all), nor in a cliff's rock.
-			if float(s.get("slope", 0.0)) > ROCK_FACE * 0.5:
+			if float(s.get("slope", 0.0)) > STEEP * 0.25:
 				var gx := f.height_at(x + 1.0, z, y) - y
 				var gz := f.height_at(x, z + 1.0, y) - y
 				if gx * gx + gz * gz > ROCK_FACE * ROCK_FACE:
 					continue
 			if CliffRocks.covers(x, z, 0.3):
+				continue
+			# Thinning out to nothing well short of the island's edge.
+			if _hash(cx, cz, 60) > smoothstep(EDGE * 0.6, EDGE * 1.2, float(s.get("mask", 1.0))):
 				continue
 			var variant := float(int(_hash(cx, cz, 55) * 3.0) % 3)
 			var tall := 0.45 + 0.55 * _hash(cx, cz, 56)
@@ -957,10 +964,19 @@ func prefill_covered() -> void:
 ## and only places whatever the file does not hold. No file, or one whose
 ## signature no longer matches, and it is all worked out here as before.
 const BAKE_STORE := "flora"
-const BAKE_VERSION := 3
+const BAKE_VERSION := 4
 ## Ground steeper than this (rise over run) is a cliff's face and bare: where the
 ## terrain's shader begins to draw it as rock (`cliff_face` there: 0.55).
 const ROCK_FACE := 0.52
+## The same steepness as the field's samples give it ("slope" there is ONE MINUS
+## THE NORMAL'S HEIGHT, not rise over run: 0.113 is a rise of 0.52, 27 degrees).
+## Trees, ferns and grass stop there. (They were tested against the field's
+## figure as if it were rise over run, and so grew on ground up to 60 degrees.)
+const STEEP := 0.113
+## NOTHING GROWS OUT BY THE ISLAND'S EDGE: no trees, ferns or grass nearer it than
+## about this, in the field's mask units (0 at the edge, 1 at the middle: 0.05 of
+## a 1250 m island is 60 m), the line ragged and the grass thinning out to it.
+const EDGE := 0.05
 const SOURCES := [
 	"res://scripts/world/SCRIPT_flora.gd",
 	"res://scripts/world/SCRIPT_island_field.gd",

@@ -97,6 +97,10 @@ const FLOW_ACROSS_OFFSET := 100.0
 #   aabb        : AABB  — bounds relative to `pivot`, the wall included
 #   aabb_top    : AABB  — the surface's own bounds, shoulder included
 #   aabb_cliff  : AABB  — every band merged
+const NEAR_CELLS := 64
+const NEAR_RADIUS := 1.5
+
+
 static func build(field: IslandField, isl: IslandField.Island, base_x: float,
 		base_z: float, ci: int, cj: int, size: float, cells: int,
 		pivot: Vector3, want_cliffs := true) -> Dictionary:
@@ -113,6 +117,13 @@ static func build(field: IslandField, isl: IslandField.Island, base_x: float,
 	# field has to be asked directly. That costs four extra evaluations per
 	# vertex, but only ever at the LODs that have few vertices to begin with.
 	var d := maxf(field.curvature_radius, 0.001)
+	# THE NEAR LEVELS READ THE GROUND MORE FINELY (GaiaSphere's `near_levels`: more
+	# than NEAR_CELLS cells to the chunk). Over the full distance a slope is the
+	# average of eight metres of ground, so however fine the mesh, what is rock,
+	# scree or turf and which way a face is lit were still decided at 8 m: a
+	# cliff's foot and brow were smeared across it. These take it over NEAR_RADIUS.
+	if n > NEAR_CELLS:
+		d = minf(d, NEAR_RADIUS)
 	var r := 1
 	var probe := true
 	if step <= d:
@@ -333,7 +344,7 @@ static func build(field: IslandField, isl: IslandField.Island, base_x: float,
 			var flat := gflat[k]
 			var kind := gkind[k]
 			var sand := field.sand_at(wx, wz, m, slope, flat, kind, gend[k])
-			var forest := field.forest_at(wx, wz, m, slope, flat)
+			var forest := field.forest_at(wx, wz, m, slope, 0.0 if kind == IslandField.ZONE_PATH else flat)
 			# All three products of one radial evaluation: `x` is the height
 			# offset in metres, `y` the 0..1 char weight, `z` the molten core.
 			# See `IslandField.crater_at`.
