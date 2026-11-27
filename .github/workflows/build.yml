@@ -62,10 +62,10 @@ jobs:
       - name: Keep the zips
         uses: actions/upload-artifact@v4
         with:
-          name: GaiaSphereDemo
+          name: VES27
           path: |
-            build/GaiaSphereDemo_*.zip
-            build/GaiaSphereDemo_android.apk
+            build/VES27_*.zip
+            build/VES27_android.apk
 
       - name: Release
         if: github.event_name == 'push' || inputs.release
@@ -82,7 +82,7 @@ jobs:
             echo "::error::$name is already released. Bump config/version in project.godot and push again."
             exit 1
           fi
-          gh release create "$name" build/GaiaSphereDemo_windows.zip build/GaiaSphereDemo_linux.zip build/GaiaSphereDemo_android.apk \
+          gh release create "$name" build/VES27_windows.zip build/VES27_linux.zip build/VES27_android.apk \
             --target "$GITHUB_SHA" \
-            --title "GaiaSphere Demo $name" \
+            --title "Virtual Emulator Simulator 27 $name" \
             --notes "Windows and Linux: unzip and run. Android: an arm64 debug-signed APK to sideload. The island is baked into the build. Controls are in the README."

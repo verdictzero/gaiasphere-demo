@@ -1,7 +1,7 @@
 class_name Watermark
 extends CanvasLayer
 
-# THE GAIASPHERE LOGO IN THE BOTTOM LEFT CORNER OF THE GAME (the top left on a
+# THE GAME'S LOGO (Virtual Emulator Simulator 27) IN THE BOTTOM LEFT CORNER (the top left on a
 # touchscreen), small and a little see-through, sized to the screen. It takes no
 # input.
 

@@ -1,4 +1,4 @@
-# GaiaSphere Demo
+# Virtual Emulator Simulator 27
 
 A procedural floating island with rivers, creeks, waterfalls and a dark mere,
 built by **GaiaSphere**, the terrain world system (the `GaiaSphere` node,
@@ -12,8 +12,8 @@ Made with Godot 4.7-dev5, on the Mobile renderer.
 ## Running it
 
 Download the build for your machine from the repository's Releases page, unzip
-it and run the one file in it (`GaiaSphereDemo.exe` on Windows,
-`GaiaSphereDemo.x86_64` on Linux). Nothing is installed.
+it and run the one file in it (`VES27.exe` on Windows,
+`VES27.x86_64` on Linux). Nothing is installed.
 
 The first launch spends a while on a black screen that says `building the
 island`: the terrain is generated when the program starts, not shipped. It is
