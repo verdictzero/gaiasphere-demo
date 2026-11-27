@@ -3,12 +3,17 @@ extends CanvasLayer
 
 # THE TITLE SCREEN, which is also the pause menu.
 #
-# AT THE START it stands over everything, a photograph of the island's forest
-# behind it (branding/title_bg.jpg: the game's own picture, at its highest
-# settings, the sun coming through the firs) and the game's name on it, while
-# the island loads behind; START and LOAD are greyed until it has. Escape (or
-# the MENU touch button) in the game brings it back over the game itself, which
-# stops while it is up: START reads RESUME then, and SAVE can be used.
+# AT THE START it is all there is (scenes/SCENE_title.tscn, the program's first
+# scene: this, and the graphics panel): a photograph of the island's forest
+# (branding/title_bg.jpg: the game's own picture, at its highest settings, the
+# sun coming through the firs) and the game's name on it. NOTHING OF THE ISLAND
+# IS LOADED UNTIL START (or LOAD) IS PRESSED: then the game's scene is read in,
+# the photograph stays up with how far along the island is, and the game opens
+# by itself when it is ready. Escape (or the MENU touch button) in the game
+# brings the menu back over the game itself, which stops while it is up: START
+# reads RESUME then, and SAVE can be used.
+# (The game's scene run by itself, as a test may, has the title the old way:
+# over the island as it loads, START greyed until it has.)
 #
 #   START / RESUME   into the game
 #   SAVE             writes the game to user://save.dat (one save)
@@ -36,8 +41,17 @@ const INK := Color(0.95, 0.96, 0.98)
 ## The settings panels there may be, and what each tab says.
 const PANES := [["GraphicsMenu", "GRAPHICS"], ["EnvironmentMenu", "ENVIRONMENT"], ["OptionsMenu", "OPTIONS"]]
 
+const GAME := "res://scenes/SCENE_gaiasphere_demo.tscn"
+
 ## True while it is up: nothing in the game takes input.
 static var menu_open := false
+## From the title to the game's own menu: START was pressed (and LOAD, if it was).
+static var entering := false
+static var pending_load := false
+
+var _front := false               # the title by itself: no island behind it
+var _going := false               # ... and START pressed: the game being read in
+var _auto := false                # in the game, come from the title: opens by itself
 
 var _view: Control
 var _tabs: CanvasLayer
@@ -94,6 +108,14 @@ func _ready() -> void:
 			node.process_mode = Node.PROCESS_MODE_ALWAYS
 			_panes.append([node, String(entry[1])])
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_front = get_node_or_null(^"../Explorer") == null
+	if _front:
+		_ready_to_play = true
+		return
+	if entering:
+		entering = false
+		_auto = true
+		return
 	# RUN BY A SCRIPT (the bake, the tests, the renders: `godot --script ...`), there
 	# is nobody to press START: it stands aside, and comes up only if asked for.
 	# (VES_TITLE in the environment: a test of the title itself, which wants it.)
@@ -107,7 +129,8 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	menu_open = false
+	if not _going:
+		menu_open = false
 	get_tree().paused = false
 
 
@@ -118,11 +141,27 @@ func _loaded() -> bool:
 
 func _process(delta: float) -> void:
 	_note_left = maxf(_note_left - delta, 0.0)
+	if _going:
+		var status := ResourceLoader.load_threaded_get_status(GAME)
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			set_process(false)
+			get_tree().change_scene_to_packed(ResourceLoader.load_threaded_get(GAME) as PackedScene)
+			return
+		if status != ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			_going = false
+			entering = false
+			_say("THE GAME COULD NOT BE READ")
 	if not _ready_to_play and _loaded():
 		_ready_to_play = true
+		if _auto:
+			_auto = false
+			if pending_load and not load_game():
+				_say("NO SAVE THAT CAN BE READ")
+			pending_load = false
+			play()
 	if menu_open:
 		# The game stands still behind it, once there is a game to stand still.
-		if _ready_to_play and not get_tree().paused:
+		if _ready_to_play and not _front and not get_tree().paused:
 			get_tree().paused = true
 		if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -157,7 +196,24 @@ func show_menu() -> void:
 	get_tree().paused = true
 
 
+## From the title: the game's scene is read in (on another thread, the title still
+## drawing), and its own menu takes over from this one.
+func _enter(with_save: bool) -> void:
+	if _going:
+		return
+	_leave_options()
+	if ResourceLoader.load_threaded_request(GAME) != OK:
+		_say("THE GAME COULD NOT BE READ")
+		return
+	_going = true
+	entering = true
+	pending_load = with_save
+
+
 func play() -> void:
+	if _front:
+		_enter(false)
+		return
 	if not _ready_to_play:
 		return
 	_leave_options()
@@ -247,6 +303,8 @@ func _input(event: InputEvent) -> void:
 # ------------------------------------------------------------------ the buttons
 
 func _buttons() -> Array:
+	if _going or _auto:
+		return []
 	var out: Array = [["START" if _boot else "RESUME", "play", _ready_to_play]]
 	out.append(["SAVE", "save", _ready_to_play and not _boot])
 	out.append(["LOAD", "load", _ready_to_play and FileAccess.file_exists(SAVE)])
@@ -291,7 +349,9 @@ func _press(what: String) -> void:
 		"save":
 			_say("SAVED" if save_game() else "COULD NOT SAVE")
 		"load":
-			if load_game():
+			if _front:
+				_enter(true)
+			elif load_game():
 				play()
 			else:
 				_say("NO SAVE THAT CAN BE READ")
@@ -403,6 +463,8 @@ func _draw_view() -> void:
 	var foot := Vector2(full.size.x * 0.5, full.size.y - 34.0 * k)
 	if _note_left > 0.0:
 		_label(foot, _note, 24.0, Color(1.0, 0.86, 0.4, minf(_note_left, 1.0)))
+	elif _going:
+		_label(foot, "THE ISLAND: LOADING", 22.0, Color(INK.r, INK.g, INK.b, 0.7))
 	elif not _ready_to_play:
 		var cover := get_parent().get_node_or_null(^"LoadingCover")
 		var how := String((cover.get("_label") as Label).text) if cover != null and cover.get("_label") is Label else "LOADING"

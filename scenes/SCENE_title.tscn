@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/SCRIPT_graphics_menu.gd" id="gfxmenu"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_title_menu.gd" id="titlemenu"]
+
+[node name="Title" type="Node"]
+
+[node name="GraphicsMenu" type="CanvasLayer" parent="."]
+script = ExtResource("gfxmenu")
+
+[node name="TitleMenu" type="CanvasLayer" parent="."]
+script = ExtResource("titlemenu")

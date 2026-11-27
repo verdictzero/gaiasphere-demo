@@ -386,9 +386,14 @@ func _apply_display() -> void:
 
 
 func _save() -> void:
+	# Only what has been chosen: a value still as this machine began is left out, so
+	# that the title's panel (which has no island to ask) does not write its own
+	# guesses over what the game would begin with.
 	var cfg := ConfigFile.new()
+	cfg.load(FILE)
 	for key in values:
-		cfg.set_value("graphics", key, values[key])
+		if cfg.has_section_key("graphics", key) or values[key] != _defaults.get(key):
+			cfg.set_value("graphics", key, values[key])
 	cfg.save(FILE)
 
 
