@@ -18,7 +18,7 @@ GLOBS = ["textures/polyhaven/*.jpg", "assets/*/textures/*.png", "assets/*/textur
          "assets/*/textures/impostors/*.png",
          "assets/chips/*.png", "assets/leaves/*.png", "assets/berry_bush/*.png",
          "assets/build/*/*.png", "assets/build/*/*.jpg", "assets/fx/*.webp",
-         "assets/truck/*.jpg"]
+         "assets/truck/*.jpg", "assets/power/*.jpg", "assets/power/*_impostor.png"]
 changed = 0
 for g in GLOBS:
     for tex in sorted(ROOT.glob(g)):
