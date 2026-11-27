@@ -218,6 +218,8 @@ void fragment() {
 	}
 	vec3 bw = pow(abs(tri_n), vec3(triplanar_sharpness));
 	bw /= bw.x + bw.y + bw.z;
+	// (Where one side is all but all of it, that side alone: two reads for six.)
+	bw = one_side(bw);
 	vec3 rp = world_pos / rock_size;
 	vec3 rock_a = vec3(0.0);
 	vec3 rock_world_n = geo_n;
@@ -254,17 +256,19 @@ void fragment() {
 	w = mix(w, vec4(0.0, 0.0, 1.0, 0.0), face);
 	float rock_w = max(max(w.b, bank_w), cw_side);
 	if (rock_w > 0.003) {
-		rock_a = (textureGrad(ground_albedo, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).rgb * bw.x
-				+ textureGrad(ground_albedo, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).rgb * bw.y
-				+ textureGrad(ground_albedo, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).rgb * bw.z) * rock_tint;
+		rock_a = vec3(0.0);
+		if (bw.x > 0.0) { rock_a += textureGrad(ground_albedo, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).rgb * bw.x; }
+		if (bw.y > 0.0) { rock_a += textureGrad(ground_albedo, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).rgb * bw.y; }
+		if (bw.z > 0.0) { rock_a += textureGrad(ground_albedo, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).rgb * bw.z; }
+		rock_a *= rock_tint;
 		vec3 tx = vec3(0.0, 0.0, 1.0);
 		vec3 ty = vec3(0.0, 0.0, 1.0);
 		vec3 tz = vec3(0.0, 0.0, 1.0);
 		// (Its relief only as far as it still shows: SHADERINC_ground_lay's normal_reach.)
 		if (normal_reach <= 0.0 || dist < normal_reach) {
-			tx = textureGrad(ground_normal, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).xyz * 2.0 - 1.0;
-			ty = textureGrad(ground_normal, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).xyz * 2.0 - 1.0;
-			tz = textureGrad(ground_normal, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).xyz * 2.0 - 1.0;
+			if (bw.x > 0.0) { tx = textureGrad(ground_normal, vec3(rp.zy, L_ROCK), dzy_x, dzy_y).xyz * 2.0 - 1.0; }
+			if (bw.y > 0.0) { ty = textureGrad(ground_normal, vec3(rp.xz, L_ROCK), dxz_x, dxz_y).xyz * 2.0 - 1.0; }
+			if (bw.z > 0.0) { tz = textureGrad(ground_normal, vec3(rp.xy, L_ROCK), dxy_x, dxy_y).xyz * 2.0 - 1.0; }
 		}
 		vec3 nx = vec3(tx.xy * detail + geo_n.zy, abs(tx.z) * geo_n.x);
 		vec3 ny = vec3(ty.xy * detail + geo_n.xz, abs(ty.z) * geo_n.y);

@@ -86,6 +86,20 @@ void lay(float layer, vec2 uv, vec2 dx, vec2 dy, float dist, out vec3 a, out vec
 
 
 
+// ROCK FROM ONE SIDE WHERE ONE SIDE IS NEARLY ALL OF IT. Rock is laid on from
+// three sides and blended by which way the face looks; where one side has 96
+// parts in a hundred, the other two are dropped (their weights made nothing, so
+// the shaders skip their reads): a colour and a normal read for three of each,
+// on most of a cliff's face and all of its top. The four in a hundred lost is
+// under what the eye can find at the join.
+vec3 one_side(vec3 w) {
+	if (w.x > 0.96) { return vec3(1.0, 0.0, 0.0); }
+	if (w.y > 0.96) { return vec3(0.0, 1.0, 0.0); }
+	if (w.z > 0.96) { return vec3(0.0, 0.0, 1.0); }
+	return w;
+}
+
+
 // STRATA: the beds the island's rock is laid down in, drawn on its SIDES ONLY (a
 // face that looks up or down has none), and GLOBAL: they are a function of where
 // a point is in the world and nothing else, so a bed runs on unbroken from one

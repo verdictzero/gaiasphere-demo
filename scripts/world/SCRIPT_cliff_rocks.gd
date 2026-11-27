@@ -137,9 +137,13 @@ func _ready() -> void:
 	add_to_group(Prewarm.GROUP)
 	for i in SHARDS:
 		var lods: Array = MeshLods.chain(shard_mesh(i), 16)
+		# (TWO LEVELS OF A SHARD, its own and its simplest: there are twelve kinds
+		# of them, and every level of every kind is a draw in every square. A
+		# shard is a hundred-odd triangles to begin with.)
+		if lods.size() > 2:
+			lods = [lods[0], lods.back()]
 		_meshes.append(lods)
-		# A shard of the usual size, 25 m by 5: its finest level held to 25 m or so.
-		_lod_ends.append(MeshLods.distances(lods.size(), 9.0, 1.7))
+		_lod_ends.append(MeshLods.distances(lods.size(), 24.0, 1.7))
 	var sizes := {}
 	for entry in JSON.parse_string(FileAccess.get_file_as_string("res://assets/cliff/manifest.json")):
 		var sz: Array = entry["size_m"]

@@ -244,6 +244,9 @@ const GROUP := &"island_world"
 ## `terrain_shadow_lod` move up by as many, so those still name the grids they did.
 @export_range(0, 3) var near_levels := 2
 @export var near_distances := PackedFloat32Array([64.0, 144.0])
+## How steep (rise over run) the steepest ground in a chunk must be for it to be
+## given the coarser of the near levels (x) and the finest (y): `_finest_for`.
+@export var near_steep := Vector2(0.22, 0.42)
 ## Upper distance bound for each LOD level; beyond the last entry the coarsest
 ## level is used. Must be ascending.
 ##
@@ -842,7 +845,14 @@ func _scan_island(state: Dictionary, eye: Vector3, wanted: Array) -> void:
 			continue
 
 		var lod: int = coast_lod if coastal else _lod_for(dist, live.get("lod", -1))
+		# A NEAR LEVEL ONLY WHERE THE GROUND WANTS ONE: `_finest_for`.
+		if not coastal and lod < near_levels:
+			lod = maxi(lod, _finest_for(state, ck, x0, z0))
 		var want_col := _collides_at(lod)
+		# AND IT STANDS ON THE 64-CELL LEVEL'S COLLISION, which is in the cache
+		# already and agrees with it at every vertex they share (`_install`).
+		if lod < near_levels and _cache_has(cell, ck, chunk_cells):
+			want_col = false
 		if not live.is_empty() and live["lod"] == lod:
 			continue
 
@@ -852,6 +862,45 @@ func _scan_island(state: Dictionary, eye: Vector3, wanted: Array) -> void:
 		wanted.append({"dist": dist, "pk": pk, "cell": cell, "ck": ck,
 				"lod": lod, "col": want_col,
 				"had_col": bool(live.get("collision", false))})
+
+
+# THE FINEST LEVEL A CHUNK IS WORTH, as a level's number: the near levels are a
+# quarter and a sixteenth of a million triangles a chunk, and most ground does
+# not want them: a meadow at half a metre between vertices is the same meadow.
+# So a chunk's ground is looked over once (its steepest rise over run, on a grid
+# of `NEAR_PROBE` points a side) and it is given the finest level only if some of
+# it is as steep as `near_steep.y` (a cliff's face, a bank, the crash's trench),
+# the next only if as steep as `near_steep.x`, and otherwise none.
+const NEAR_PROBE := 25
+
+
+func _finest_for(state: Dictionary, ck: Vector2i, x0: float, z0: float) -> int:
+	if not state.has("steep"):
+		state["steep"] = {}
+	var known: Dictionary = state["steep"]
+	if not known.has(ck):
+		var isl: IslandField.Island = state["isl"]
+		var step := chunk_size / float(NEAR_PROBE - 1)
+		var heights := PackedFloat32Array()
+		heights.resize(NEAR_PROBE * NEAR_PROBE)
+		for j in NEAR_PROBE:
+			for i in NEAR_PROBE:
+				heights[j * NEAR_PROBE + i] = field.height_at(x0 + float(i) * step, z0 + float(j) * step, isl.base_y)
+		var steepest := 0.0
+		for j in NEAR_PROBE:
+			for i in NEAR_PROBE:
+				var h := heights[j * NEAR_PROBE + i]
+				if i + 1 < NEAR_PROBE:
+					steepest = maxf(steepest, absf(heights[j * NEAR_PROBE + i + 1] - h) / step)
+				if j + 1 < NEAR_PROBE:
+					steepest = maxf(steepest, absf(heights[(j + 1) * NEAR_PROBE + i] - h) / step)
+		known[ck] = steepest
+	var steep := float(known[ck])
+	if steep >= near_steep.y:
+		return 0
+	if steep >= near_steep.x:
+		return maxi(near_levels - 1, 0)
+	return near_levels
 
 
 # Distance from the eye to the nearest point of a chunk's footprint, taking the
@@ -1110,18 +1159,37 @@ func _install(entry: Dictionary) -> void:
 	if entry.get("cache_only", false):
 		return
 
-	var old = chunks.get(ck, {}).get("node", null)
+	var was: Dictionary = chunks.get(ck, {})
+	var old = was.get("node", null)
+	var old_base = was.get("base", null)
+	# UNDER A NEAR LEVEL THAT HAS NO COLLISION OF ITS OWN, the 64-cell level stays
+	# in the tree, hidden, for its body: a collider of a quarter of a million faces
+	# made for every chunk walked over was the hitch in walking. The two agree at
+	# every vertex they share, so the feet are within centimetres of the ground.
+	var base: MeshInstance3D = null
+	if node != null and cells > chunk_cells and not bool(entry["collision"]):
+		var held: Variant = cache.get(_cache_key(ck, chunk_cells))
+		if held != null and is_instance_valid(held):
+			base = held
 	if old != null and is_instance_valid(old) and old != node:
-		# Out of the tree, NOT freed — the cache still owns it, and the point of
-		# holding it is that coming back to this level costs nothing.
-		(state["holder"] as Node3D).remove_child(old)
-		# A NEAR LEVEL is not kept: it is far too big to hold one for every chunk
-		# walked over. Freed, and meshed again if the player comes back.
-		var old_lod := int(chunks[ck]["lod"])
-		var old_cells := _cells_for_lod(old_lod) if old_lod >= 0 else 0
-		if old_cells > chunk_cells:
-			cache.erase(_cache_key(ck, old_cells))
-			(old as Node).queue_free()
+		if old == base:
+			pass                     # it stays, hidden, under what replaces it
+		else:
+			# Out of the tree, NOT freed — the cache still owns it, and the point of
+			# holding it is that coming back to this level costs nothing.
+			(state["holder"] as Node3D).remove_child(old)
+			# A NEAR LEVEL is not kept: it is far too big to hold one for every chunk
+			# walked over. Freed, and meshed again if the player comes back.
+			var old_lod := int(was["lod"])
+			var old_cells := _cells_for_lod(old_lod) if old_lod >= 0 else 0
+			if old_cells > chunk_cells:
+				cache.erase(_cache_key(ck, old_cells))
+				(old as Node).queue_free()
+	# The level that was kept under the old one, if it is not wanted under the new.
+	if old_base != null and is_instance_valid(old_base) and old_base != base and old_base != node:
+		if (old_base as Node).get_parent() != null:
+			(state["holder"] as Node3D).remove_child(old_base)
+		(old_base as Node3D).visible = true
 	chunks.erase(ck)
 
 	if node == null:
@@ -1129,9 +1197,15 @@ func _install(entry: Dictionary) -> void:
 		# the nearest ones starve everything behind them.
 		chunks[ck] = {"node": null, "lod": entry["lod"], "collision": false}
 		return
+	node.visible = true
 	if node.get_parent() == null:
 		(state["holder"] as Node3D).add_child(node)
 	chunks[ck] = {"node": node, "lod": entry["lod"], "collision": entry["collision"]}
+	if base != null:
+		if base.get_parent() == null:
+			(state["holder"] as Node3D).add_child(base)
+		base.visible = false
+		chunks[ck]["base"] = base
 
 
 # The node for a finished build, from whichever half of the chunk cache holds it.

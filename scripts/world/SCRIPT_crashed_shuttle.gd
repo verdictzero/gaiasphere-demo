@@ -132,6 +132,18 @@ func _process(_delta: float) -> void:
 	if not settled:
 		return
 	var explorer := get_node_or_null(explorer_path) as Node3D
+	# The dust over the skid is only there while there is anyone near enough to
+	# see it (hidden particles are not worked out at all).
+	if _dust_holder != null and explorer != null:
+		var cam := get_viewport().get_camera_3d()
+		var eye := cam.global_position if cam != null else explorer.global_position
+		var a: Vector2 = _dust_line[0]
+		var ab: Vector2 = (_dust_line[1] as Vector2) - a
+		var q := Vector2(eye.x, eye.z)
+		var t := clampf((q - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+		var show := q.distance_to(a + ab * t) < DUST_SEEN
+		if show != _dust_holder.visible:
+			_dust_holder.visible = show
 	if explorer == null or not bool(explorer.get("arrived")):
 		return
 	# IN THE CABIN THE WATER DOES NOT LIFT YOU. Left to float, a swimmer goes up
@@ -293,9 +305,16 @@ static func bubble_layers() -> Array:
 
 ## WHAT IT DUG UP IS STILL IN THE AIR: dust drifting over the skid all the way up
 ## the hill. (Nothing in the water: the silt over the trench there was taken out.)
+const DUST_SEEN := 220.0
+var _dust_holder: Node3D
+var _dust_line: Array = [Vector2.ZERO, Vector2.ZERO]
+
+
 func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 	var holder := Node3D.new()
 	holder.name = "Dust"
+	_dust_holder = holder
+	_dust_line = [at, at + back * FlowTerrain.CRASH_GOUGE]
 	holder.top_level = true
 	add_child(holder)
 	holder.global_transform = Transform3D.IDENTITY
