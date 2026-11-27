@@ -46,6 +46,8 @@ func _process(_d: float) -> bool:
 		["crash_skid", Vector3(105, 6, 30), Vector3(40, 0, 0)],          # over the shore, down into the water
 		["crash_skid_side", Vector3(70, -9, 2.2), Vector3(190, 0, 2)],   # on the skid, looking up it: the dust
 		["crash_skid_under", Vector3(34, 9, 2.5), Vector3(2, 0, 1.5)],   # under water, down the trench to the wreck
+		["crash_wreck", Vector3(9, 13, 3.5), Vector3(0, 0, 2.0)],          # close by the wreck, from one side
+		["crash_wreck_weed", Vector3(-16, -22, 5.0), Vector3(0, 0, 1.5)],  # from out on the bed, over the weed
 	]
 	var side := Vector3(-_up.y, 0.0, _up.x)
 	var back := Vector3(_up.x, 0.0, _up.y)
