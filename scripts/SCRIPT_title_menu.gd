@@ -25,7 +25,8 @@ extends CanvasLayer
 #
 # WHAT A SAVE HOLDS: where you stand and which way you face; health, hunger,
 # stamina and breath; the bag and what is in hand; the hour and the weather;
-# EVERYTHING BUILT (every piece of every building, and every cooking fire); every
+# EVERYTHING BUILT (every piece of every building, every cooking fire, every power
+# part with its charge and every cable as it lies); every
 # tree felled and rock quarried; where the truck is. Not the cows (a herd is made
 # up again overnight anyway) nor what is cooking on a fire.
 # A load takes down what is built and builds what the save has. One thing it
@@ -503,6 +504,9 @@ func save_game() -> bool:
 	var cooking := root.get_node_or_null(^"Cooking")
 	if cooking != null and cooking.has_method(&"saved"):
 		data["fires"] = cooking.call(&"saved")
+	var power := root.get_node_or_null(^"Power")
+	if power != null:
+		data["power"] = power.call(&"saved")
 	var flora := root.get_node_or_null(^"Flora")
 	if flora != null:
 		data["taken"] = (flora.get("taken") as Array).duplicate(true)
@@ -544,6 +548,9 @@ func load_game() -> bool:
 	var cooking := root.get_node_or_null(^"Cooking")
 	if cooking != null and data.has("fires"):
 		cooking.call(&"restore", data["fires"])
+	var power := root.get_node_or_null(^"Power")
+	if power != null:
+		power.call(&"restore", data.get("power", {}))
 	if truck != null and data.has("truck") and truck.get("body") != null:
 		var body := truck.get("body") as RigidBody3D
 		body.global_transform = data["truck"]

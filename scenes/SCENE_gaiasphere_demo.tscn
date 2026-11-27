@@ -35,6 +35,7 @@
 [ext_resource type="Script" path="res://scripts/SCRIPT_options_menu.gd" id="optmenu"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_map_menu.gd" id="mapmenu"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_title_menu.gd" id="titlemenu"]
+[ext_resource type="Script" path="res://scripts/world/SCRIPT_power.gd" id="power"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_ambient_occlusion.gd" id="ao"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_rocks.gd" id="cliffrocks"]
 [ext_resource type="Material" path="res://materials/MAT_cloud_sea.tres" id="cloud_mat"]
@@ -94,6 +95,9 @@ script = ExtResource("building")
 
 [node name="Cooking" type="Node3D" parent="."]
 script = ExtResource("cooking")
+
+[node name="Power" type="Node3D" parent="."]
+script = ExtResource("power")
 
 [node name="CowHerds" type="Node3D" parent="."]
 script = ExtResource("cows")
