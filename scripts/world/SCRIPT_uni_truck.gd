@@ -818,7 +818,7 @@ func _fell_off(delta: float) -> void:
 
 
 func _menus() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or TitleMenu.menu_open
 
 
 # ------------------------------------------------------------------ its tracks

@@ -158,7 +158,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _menus() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or UniTruck.driving
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or TitleMenu.menu_open or UniTruck.driving
 
 
 func _process(_delta: float) -> void:
@@ -361,6 +361,7 @@ func build(plan: Dictionary) -> Node3D:
 	piece.set_meta(&"build_item", item)
 	piece.set_meta(&"build_key", key)
 	piece.set_meta(&"build_in", b)
+	piece.set_meta(&"build_other", bool(plan.get("other_hand", false)))
 	add_child(piece)
 	piece.global_transform = at
 	(_buildings[b]["slots"] as Dictionary)[key] = piece
@@ -433,6 +434,42 @@ func put(b: int, item: String, p: Vector3, look: Vector3, turns := 0) -> Node3D:
 	plan["frame"] = _buildings[b]["frame"]
 	plan["at"] = (plan["frame"] as Transform3D) * (plan["stands"] as Transform3D)
 	return build(plan)
+
+
+# ------------------------------------------------------------------ kept and put back
+
+## Everything built, for the save: each building's frame and its pieces (what,
+## in which slot, where it stands, which hand).
+func saved() -> Array:
+	var out: Array = []
+	for b: Dictionary in _buildings:
+		var pieces: Array = []
+		for key: String in b["slots"]:
+			var piece: Variant = b["slots"][key]
+			if not is_instance_valid(piece):
+				continue
+			pieces.append({"item": String((piece as Node).get_meta(&"build_item")), "key": key,
+				"at": (piece as Node3D).global_transform, "other_hand": bool((piece as Node).get_meta(&"build_other", false))})
+		if not pieces.is_empty():
+			out.append({"frame": b["frame"], "pieces": pieces})
+	return out
+
+
+## What stands is taken down (not into the bag) and `list` built in its place.
+func restore(list: Array) -> void:
+	for b: Dictionary in _buildings:
+		for piece: Variant in (b["slots"] as Dictionary).values():
+			if is_instance_valid(piece):
+				(piece as Node).queue_free()
+	_buildings.clear()
+	for entry: Dictionary in list:
+		_buildings.append({"frame": entry["frame"], "slots": {}})
+		var b := _buildings.size() - 1
+		for piece: Dictionary in entry["pieces"]:
+			if not PIECES.has(String(piece["item"])):
+				continue
+			build({"building": b, "item": piece["item"], "key": piece["key"], "at": piece["at"],
+				"other_hand": bool(piece.get("other_hand", false))})
 
 
 # ------------------------------------------------------------------ taking it down

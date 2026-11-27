@@ -1354,7 +1354,45 @@ func tree_mesh(kind: int) -> Mesh:
 ## Take a tree `tree_on` found out of the wood: its meshes, its impostors and its
 ## collider all go, for as long as this run lasts.
 func fell(tree: Dictionary) -> void:
+	taken.append(["trees", tree["origin"]])
 	_take_out(_tree_layer(), tree, 0.6)
+
+
+## EVERY TREE FELLED AND ROCK QUARRIED THIS GAME, for the save: [which layer,
+## where it stood]. `take_again` takes each out of a fresh island.
+var taken: Array = []
+
+
+func take_again(list: Array) -> void:
+	for entry: Array in list:
+		var layer: Dictionary = _tree_layer() if String(entry[0]) == "trees" else _rock_layer()
+		if layer.is_empty():
+			continue
+		var at: Vector3 = entry[1]
+		var already := false
+		for mine: Array in taken:
+			if String(mine[0]) == String(entry[0]) and (mine[1] as Vector3).distance_to(at) < 0.05:
+				already = true
+				break
+		if already:
+			continue
+		var tile := float(layer["tile"])
+		var key := Vector2i(int(floor(at.x / tile)), int(floor(at.z / tile)))
+		var bufs: Variant = (layer["cache"] as Dictionary).get(key)
+		if bufs == null:
+			continue
+		for k in (bufs as Array).size():
+			var buf: PackedFloat32Array = bufs[k]
+			var found := -1
+			for i in range(0, buf.size(), STRIDE):
+				if absf(buf[i + 3] - at.x) < 0.05 and absf(buf[i + 11] - at.z) < 0.05:
+					found = i
+					break
+			if found >= 0:
+				taken.append([String(entry[0]), at])
+				_take_out(layer, {"key": key, "kind": k, "index": found, "origin": at},
+						0.6 if String(entry[0]) == "trees" else 0.02)
+				break
 
 
 func _rock_layer() -> Dictionary:
@@ -1420,6 +1458,7 @@ func rock_mesh(kind: int) -> Mesh:
 
 ## Take a boulder `rock_on` found out of the world: its meshes and its collider.
 func quarry(rock: Dictionary) -> void:
+	taken.append(["rocks", rock["origin"]])
 	_take_out(_rock_layer(), rock, 0.02)
 
 

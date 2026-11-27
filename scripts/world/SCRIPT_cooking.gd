@@ -114,7 +114,7 @@ func holding() -> bool:
 
 
 func _menus() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or UniTruck.driving
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or TitleMenu.menu_open or UniTruck.driving
 
 
 # ------------------------------------------------------------------ setting one down
@@ -159,6 +159,24 @@ func set_down(at: Transform3D) -> Node3D:
 		if grower != null:
 			grower.call(&"clear_ground", at, Vector2(fire_width * 0.6, fire_width * 0.6))
 	return fire
+
+
+## Where every fire stands, for the save; and those put back in place of what is there.
+func saved() -> Array:
+	var out: Array = []
+	for fire: Dictionary in _fires:
+		if is_instance_valid(fire["node"]):
+			out.append((fire["node"] as Node3D).global_transform)
+	return out
+
+
+func restore(list: Array) -> void:
+	for fire: Dictionary in _fires:
+		if is_instance_valid(fire["node"]):
+			(fire["node"] as Node).queue_free()
+	_fires.clear()
+	for at: Transform3D in list:
+		set_down(at)
 
 
 # ------------------------------------------------------------------ working one

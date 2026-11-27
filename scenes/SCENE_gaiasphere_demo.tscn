@@ -34,6 +34,7 @@
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_uni_truck.gd" id="unitruck"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_options_menu.gd" id="optmenu"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_map_menu.gd" id="mapmenu"]
+[ext_resource type="Script" path="res://scripts/SCRIPT_title_menu.gd" id="titlemenu"]
 [ext_resource type="Script" path="res://scripts/SCRIPT_ambient_occlusion.gd" id="ao"]
 [ext_resource type="Script" path="res://scripts/world/SCRIPT_cliff_rocks.gd" id="cliffrocks"]
 [ext_resource type="Material" path="res://materials/MAT_cloud_sea.tres" id="cloud_mat"]
@@ -164,3 +165,6 @@ script = ExtResource("cover")
 world_path = NodePath("../GaiaSphere")
 explorer_path = NodePath("../Explorer")
 scatter_paths = [NodePath("../Flora")]
+
+[node name="TitleMenu" type="CanvasLayer" parent="."]
+script = ExtResource("titlemenu")

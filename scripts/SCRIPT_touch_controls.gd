@@ -42,6 +42,7 @@ const THUMB := [
 ]
 # THE TOP ROW, right to left: action and label. Each is a tap.
 const ROW := [
+	[&"wv_menu", "MENU"],
 	[&"wv_options", "OPT"],
 	[&"wv_map", "MAP"],
 	[&"wv_environment", "ENV"],
@@ -127,7 +128,7 @@ func _k() -> float:
 
 
 func _menu_open() -> bool:
-	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open
+	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open or MapMenu.menu_open or TitleMenu.menu_open
 
 
 ## Flying or swimming: when there is an up and a down.
