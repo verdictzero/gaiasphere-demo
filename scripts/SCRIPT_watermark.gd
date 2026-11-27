@@ -6,7 +6,7 @@ extends CanvasLayer
 # input.
 
 ## The logo's width as a share of the screen's height.
-@export var size := 0.26
+@export var size := 0.2
 @export var opacity := 0.85
 ## Stand at the top left whatever the screen (a touchscreen always does).
 @export var at_top := false
