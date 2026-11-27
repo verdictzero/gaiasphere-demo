@@ -1,0 +1,61 @@
+TERRAIN ANALYSIS: an island 1250 m across the radius, 23 x 23 chunks of 128 m
+  344 chunks hold land
+
+LEVEL 256 cells (0.50 m between vertices): 14 chunks, 3727360 vertices, 1863680 triangles  (a sample)
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 79 degrees at (97, -6, 248)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (16, 14))
+  seams with a neighbour at the same level: 5 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+  against a neighbour one level coarser: 5 pairs, widest step 0.40 m, 0 over the 3.0 m the skirt covers
+  against the 64-cell level at the vertices they share: 59150 compared, 0 over 5 mm apart, furthest 0.0000 m
+
+LEVEL 128 cells (1.00 m between vertices): 14 chunks, 946176 vertices, 473088 triangles  (a sample)
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 79 degrees at (84, -5, 208)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (16, 14))
+  seams with a neighbour at the same level: 5 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+  against a neighbour one level coarser: 28 pairs, widest step 1.32 m, 0 over the 3.0 m the skirt covers
+  against the 64-cell level at the vertices they share: 59150 compared, 0 over 5 mm apart, furthest 0.0000 m
+
+LEVEL 64 cells (2.00 m between vertices): 344 chunks, 5234296 vertices, 2654772 triangles
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 77 degrees at (83, -6, 206)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (16, 13))
+  seams with a neighbour at the same level: 643 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+  against a neighbour one level coarser: 475 pairs, widest step 3.82 m, 1 over the 3.0 m the skirt covers
+
+LEVEL 32 cells (4.00 m between vertices): 344 chunks, 1395968 vertices, 716652 triangles
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 72 degrees at (68, -6, 162)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (17, 14))
+  seams with a neighbour at the same level: 643 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+  against a neighbour one level coarser: 475 pairs, widest step 5.62 m, 2 over the 3.0 m the skirt covers
+
+LEVEL 16 cells (8.00 m between vertices): 344 chunks, 392748 vertices, 205564 triangles
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 57 degrees at (50, -6, 182)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (17, 14))
+  seams with a neighbour at the same level: 643 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+  against a neighbour one level coarser: 475 pairs, widest step 6.05 m, 3 over the 3.0 m the skirt covers
+
+LEVEL 8 cells (16.00 m between vertices): 344 chunks, 120164 vertices, 64554 triangles
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 37 degrees at (46, -6, 182)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (17, 14))
+  seams with a neighbour at the same level: 643 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+  against a neighbour one level coarser: 475 pairs, widest step 10.50 m, 28 over the 3.0 m the skirt covers
+
+LEVEL 4 cells (32.00 m between vertices): 344 chunks, 41112 vertices, 22662 triangles
+  not numbers 0   normals not unit 0   splat weights wrong 0
+  triangles of no area 0   ground facing down 0
+  edges over 80 degrees, inland: 0 in 0 chunks; steepest 24 degrees at (-170, -3, -282)
+  vertices off the field's height by over 5 cm: 0; furthest 0.000 m (chunk (15, 13))
+  seams with a neighbour at the same level: 643 pairs, 0 vertices over 2 mm apart, widest 0.0000 m 
+
+34 FAULTS COUNTED, above   (173 s)
