@@ -23,6 +23,13 @@ func _click(at: Vector2, down: bool) -> void:
 	Input.parse_input_event(e)
 
 
+func _move(at: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = at
+	e.global_position = at
+	Input.parse_input_event(e)
+
+
 func _process(_d: float) -> bool:
 	var title: TitleMenu = _scene.get_node("TitleMenu")
 	if not bool(title.get("_ready_to_play")):
@@ -30,15 +37,30 @@ func _process(_d: float) -> bool:
 	_step += 1
 	var view: Control = title.get("_view")
 	var r: Rect2 = title.call(&"_button_rect", 0, 5)
-	if _step == 5:
-		print("click: view %s visible %s filter %d, START at %s, paused %s, hovered %s" % [view.size, view.is_visible_in_tree(), view.mouse_filter,
-				r, paused, root.gui_get_hovered_control()])
-		_click(r.get_center(), true)
-	if _step == 7:
-		_click(r.get_center(), false)
-	if _step == 12:
-		print("click: after a click on START: menu_open %s, paused %s" % [TitleMenu.menu_open, paused])
-		print("click: %s" % ("START WORKS" if not TitleMenu.menu_open else "START DOES NOTHING"))
-		quit(0)
-		return true
+	var at := r.get_center()
+	match _step:
+		5:
+			print("click: window %s, view %s, START at %s, paused %s, mouse mode %d" % [root.size, view.size, r, paused, Input.mouse_mode])
+			_move(at)
+		8:
+			print("click: A  paused, under the pointer: %s; the title's hover %d" % [root.gui_get_hovered_control(), int(title.get("_hover"))])
+			_click(at, true)
+		10:
+			_click(at, false)
+		14:
+			print("click: A  after a click: menu_open %s" % TitleMenu.menu_open)
+			if TitleMenu.menu_open:
+				paused = false
+				title.set_process(false)          # (or it stops the game again at once)
+				_move(at + Vector2(3, 0))
+		17:
+			print("click: B  not paused, under the pointer: %s; hover %d" % [root.gui_get_hovered_control(), int(title.get("_hover"))])
+			_click(at, true)
+		19:
+			_click(at, false)
+		23:
+			print("click: B  after a click: menu_open %s" % TitleMenu.menu_open)
+			print("click: done")
+			quit(0)
+			return true
 	return false
