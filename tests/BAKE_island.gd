@@ -22,6 +22,8 @@ func _initialize() -> void:
 	bake.record_arrays = true
 	# Built afresh, never read back: a bake read from disk holds no arrays to write.
 	bake.refuse_disk = true
+	# Every blade of grass on the island, not only what is round the start.
+	Flora.grass_everywhere = true
 	_scene = (load("res://scenes/SCENE_gaiasphere_demo.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
 	_scene.get_node("GaiaSphere").connect(&"pregen_finished", func() -> void: _done = true)

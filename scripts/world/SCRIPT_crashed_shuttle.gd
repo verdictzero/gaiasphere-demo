@@ -29,7 +29,7 @@ extends Node3D
 ## The model's size against how it was made (its aisle is 1.8 m high as made).
 @export var size := 1.25
 ## Metres its belly is sunk into the sand of its divot.
-@export var sunk := 0.4
+@export var sunk := 0.12
 ## Degrees it lies over to one side.
 @export var roll := 7.0
 ## How many places on the hull leak air.
@@ -87,6 +87,16 @@ func _ready() -> void:
 	var nose := field.height_at(at.x + fall.x * reach, at.y + fall.y * reach, ground)
 	steep = atan2(tail - nose, reach * 2.0)
 	ground = maxf((tail + nose) * 0.5, ground - 0.4)
+	# ON THE BED, NOT IN IT: stood on the highest ground under any part of its
+	# belly (down its length and out to both sides), each point taken along the
+	# hull's own pitch back to its middle, so no part of the bed stands up
+	# through its floor.
+	var across := Vector2(-fall.y, fall.x)
+	for along_i in 7:
+		var d_along := lerpf(-reach, reach, float(along_i) / 6.0)
+		for side_m: float in [-1.6 * size, 0.0, 1.6 * size]:
+			var q := at + fall * d_along + across * side_m
+			ground = maxf(ground, field.height_at(q.x, q.y, ground) + d_along * tan(steep))
 	# Its nose (the model's +z) down the fall of the ground and along it; its
 	# belly on the bed, a hand's depth into the sand.
 	var along := Vector3(fall.x * cos(steep), -sin(steep), fall.y * cos(steep)).normalized()

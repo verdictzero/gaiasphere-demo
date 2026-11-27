@@ -404,7 +404,7 @@ func lagoon(x: float, z: float, g: float) -> float:
 ## the whole hull is under: at 19 it lay up the shelf with its tail in the air.)
 const CRASH_IN := 55.0            ## metres in from the outer shore the wreck lies
 const CRASH_BOWL := 11.0          ## the divot's radius
-const CRASH_DEPTH := 1.5          ## and how deep its middle is dug
+const CRASH_DEPTH := 0.7          ## and how deep its middle is dug
 const CRASH_RIM := 0.45           ## the lip thrown up round it
 const CRASH_GOUGE := 215.0        ## how far back up the shore and the hill the gouge runs
 const CRASH_WIDE := 6.5           ## its half-width at the wreck (it narrows going back)
@@ -507,7 +507,9 @@ func _gouge_at(d: Vector2) -> Vector3:
 	# From nothing where it touched down to its full width and depth at the wreck.
 	var touch := smoothstep(1.0, 1.0 - CRASH_TOUCH, t)
 	var wide := lerpf(CRASH_WIDE, CRASH_WIDE * 0.6, t) * lerpf(0.35, 1.0, touch)
-	var deep := lerpf(1.0, 0.5, t) * touch
+	# (And shallow where the wreck came to rest: it had stopped ploughing. Cut to
+	# its full depth there, the hull lay in a trench as deep as most of itself.)
+	var deep := lerpf(1.0, 0.5, t) * touch * lerpf(0.3, 1.0, smoothstep(4.0, 30.0, along))
 	# It wanders a little: nothing that weighs what a shuttle does slides straight.
 	var off := absf(d.dot(Vector2(-_crash_out.y, _crash_out.x)) - 1.2 * sin(along * 0.16) - 2.0 * sin(along * 0.037))
 	return Vector3(wide, deep, off)

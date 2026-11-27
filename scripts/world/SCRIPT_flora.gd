@@ -64,6 +64,7 @@ var _mere_reach := 0.0
 var _path_a := Vector2.ZERO      # the cobbled way over the causeway: its two ends and half its width
 var _path_b := Vector2.ZERO
 var _path_half := 0.0
+var _wreck := Vector2.ZERO
 var _crash: Variant = null       # the mere's FlowTerrain, for where the shuttle's skid is
 
 
@@ -92,6 +93,8 @@ func _ready() -> void:
 		_mere_reach = float(_field.get("flow_lagoon_radius")) * 1.25
 	_glade = Vector3.ZERO
 	_crash = flows if (flows != null and flows.has_lagoon()) else null
+	if _crash != null:
+		_wreck = (_crash.crash_site() as PackedVector2Array)[0]
 	if flows != null and flows.has_lagoon():
 		var site: PackedVector2Array = flows.crash_site()
 		if site[1] != Vector2.ZERO:
@@ -288,6 +291,8 @@ func _build_layers() -> void:
 		"name": "grass", "tile": 10.0, "radius": reach, "stride": STRIDE_CUSTOM,
 		"dists": [], "shadow_lods": 0,
 		"kinds": [{"lods": [_grass_mesh(blades)]}], "prefetch": 70.0, "place": _place_grass, "height": 1.5,
+		# (Kept packed small, and opened out when a tile is drawn: `_pack_grass`.)
+		"packed": true,
 	})
 
 	for layer in _layers:
@@ -667,7 +672,29 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			# themselves shorten the same way, tall at the heart, small outside. Between
 			# the clumps the bed is not bare: short weed, thinly, everywhere.
 			var inward := maxf(1.0 - c.x / c.y, 0.0) if c.y > 0.0 else 0.0
-			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * c.z * density + 0.07 * density:
+			var rich := c.z
+			# ROUND THE WRECK THE WEED IS THICK: besides the bed's own clumps, a
+			# stand of it in most of the 9 m squares within WRECK_WEED of the
+			# shuttle, each a few metres across, tall at its heart.
+			if _crash != null:
+				var from_wreck := Vector2(x, z).distance_to(_wreck)
+				if from_wreck < WRECK_WEED:
+					var sx := int(floor(x / 9.0))
+					var sz := int(floor(z / 9.0))
+					for oz in range(-1, 2):
+						for ox in range(-1, 2):
+							if _hash(sx + ox, sz + oz, 131) > 0.72:
+								continue
+							var mid := Vector2((float(sx + ox) + 0.2 + 0.6 * _hash(sx + ox, sz + oz, 132)) * 9.0,
+									(float(sz + oz) + 0.2 + 0.6 * _hash(sx + ox, sz + oz, 133)) * 9.0)
+							var reach := 2.6 + 3.4 * _hash(sx + ox, sz + oz, 134)
+							var into := 1.0 - Vector2(x, z).distance_to(mid) / reach
+							# (Thinning out toward the edge of the wreck's ground.)
+							into *= 1.0 - smoothstep(WRECK_WEED * 0.7, WRECK_WEED, from_wreck)
+							if into > inward * rich:
+								inward = into
+								rich = 1.0
+			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * rich * density + 0.07 * density:
 				continue
 			# THE SHUTTLE WENT THROUGH IT: none in its trench or on the berms, and
 			# out from there what is left is thin, short and torn, back to whole
@@ -684,7 +711,7 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			var depth := _mere_level - ground
 			if depth < 1.1:
 				continue
-			var tall := (0.6 + 4.6 * inward * c.z) * (0.7 + 0.6 * _hash(cx, cz, 114)) * lerpf(0.3, 1.0, swept)
+			var tall := (0.6 + 4.6 * inward * rich) * (0.7 + 0.6 * _hash(cx, cz, 114)) * lerpf(0.3, 1.0, swept)
 			tall = minf(tall, depth * 0.92)
 			var wide := tall * (0.55 + 0.35 * _hash(cx, cz, 115)) * 2.0 * 0.5
 			var basis := Basis(Vector3.UP, _hash(cx, cz, 116) * TAU)
@@ -901,6 +928,86 @@ func _place_grass(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 	return [buf]
 
 
+# ------------------------------------------------------------------ grass, kept small
+#
+# ALL THE ISLAND'S GRASS IS PLACED IN THE BUILD (the user: "PRE-BAKE ALL GRASS ...
+# driving in the truck causes grass to lag behind"): a truck at speed crosses
+# tiles faster than their grass could be worked out, so none of it is worked out
+# in play any more. It is millions of clumps, and as drawn a clump is sixteen
+# floats, hundreds of megabytes of them; so a tile's grass is KEPT as fourteen
+# bytes a clump and opened out into what is drawn only when the tile is
+# (`_unpack_grass`), which is a few hundred clumps and no work to speak of.
+#
+#   0  u16  x in the tile (a metre's margin either side)     2  u16  z likewise
+#   4  f32  height                                           8  u8   turned (256ths of a turn)
+#   9  u8   how tall (1/200 m)                               10 u8   how wide for its height (1/100)
+#   11 u8   which clump of the atlas    12, 13  u8  its two lots (the shader's shade and thinning)
+const GRASS_BYTES := 14
+## How far round the wreck the weed stands thick (`_place_seaweed`), metres.
+const WRECK_WEED := 85.0
+## Set by tests/BAKE_island.gd: plant the grass of the whole island, not only
+## round where the player starts.
+static var grass_everywhere := false
+
+
+static func _pack_grass(buf: PackedFloat32Array, key: Vector2i, tile: float) -> PackedByteArray:
+	var n := buf.size() / STRIDE_CUSTOM
+	var out := PackedByteArray()
+	out.resize(n * GRASS_BYTES)
+	var x0 := float(key.x) * tile - 1.0
+	var z0 := float(key.y) * tile - 1.0
+	var span := 65535.0 / (tile + 2.0)
+	for k in n:
+		var i := k * STRIDE_CUSTOM
+		var o := k * GRASS_BYTES
+		var wide := Vector2(buf[i], buf[i + 8]).length()
+		var tall := buf[i + 5]
+		out.encode_u16(o, clampi(int(round((buf[i + 3] - x0) * span)), 0, 65535))
+		out.encode_u16(o + 2, clampi(int(round((buf[i + 11] - z0) * span)), 0, 65535))
+		out.encode_float(o + 4, buf[i + 7])
+		out[o + 8] = int(round(fposmod(atan2(-buf[i + 8], buf[i]), TAU) / TAU * 256.0)) & 255
+		out[o + 9] = clampi(int(round(tall * 200.0)), 0, 255)
+		out[o + 10] = clampi(int(round(wide / maxf(tall, 0.001) * 100.0)), 0, 255)
+		out[o + 11] = clampi(int(round(buf[i + 12])), 0, 255)
+		out[o + 12] = clampi(int(round(buf[i + 13] * 255.0)), 0, 255)
+		out[o + 13] = clampi(int(round(buf[i + 14] * 255.0)), 0, 255)
+	return out
+
+
+static func _unpack_grass(data: PackedByteArray, key: Vector2i, tile: float) -> PackedFloat32Array:
+	var n := data.size() / GRASS_BYTES
+	var buf := PackedFloat32Array()
+	buf.resize(n * STRIDE_CUSTOM)
+	var x0 := float(key.x) * tile - 1.0
+	var z0 := float(key.y) * tile - 1.0
+	var span := (tile + 2.0) / 65535.0
+	for k in n:
+		var o := k * GRASS_BYTES
+		var i := k * STRIDE_CUSTOM
+		var yaw := float(data[o + 8]) / 256.0 * TAU
+		var tall := float(data[o + 9]) / 200.0
+		var wide := tall * float(data[o + 10]) / 100.0
+		buf[i] = cos(yaw) * wide
+		buf[i + 2] = sin(yaw) * wide
+		buf[i + 3] = x0 + float(data.decode_u16(o)) * span
+		buf[i + 5] = tall
+		buf[i + 7] = data.decode_float(o + 4)
+		buf[i + 8] = -sin(yaw) * wide
+		buf[i + 10] = cos(yaw) * wide
+		buf[i + 11] = z0 + float(data.decode_u16(o + 2)) * span
+		buf[i + 12] = float(data[o + 11])
+		buf[i + 13] = float(data[o + 12]) / 255.0
+		buf[i + 14] = float(data[o + 13]) / 255.0
+	return buf
+
+
+## A tile's buffers as they are drawn, from what the cache holds for it.
+func _drawn(layer: Dictionary, key: Vector2i, held: Array) -> Array:
+	if not layer.has("packed"):
+		return held
+	return [_unpack_grass(held[0], key, float(layer["tile"]))]
+
+
 # ------------------------------------------------------------------ threading
 
 func _take_field() -> IslandField:
@@ -921,6 +1028,8 @@ func _work(li: int, key: Vector2i) -> void:
 	var f := _take_field()
 	var bufs: Array = (layer["place"] as Callable).call(f, layer, key)
 	_give_field(f)
+	if layer.has("packed"):
+		bufs = [_pack_grass(bufs[0], key, float(layer["tile"]))]
 	_done_mutex.lock()
 	_done.append([li, key, bufs])
 	_done_mutex.unlock()
@@ -945,10 +1054,11 @@ func _exit_tree() -> void:
 
 # THE LOADING COVER'S HOOKS: everything is planted behind the loading screen, so
 # nothing has to be worked out while the player is moving. Trees, ferns, bushes,
-# seaweed and boulders are placed for the whole island. Grass is the exception:
-# the whole island's grass would be millions of clumps and hundreds of megabytes,
-# so it is placed for `GRASS_PRELOAD` metres round where the player starts, and
-# after that always `prefetch` metres ahead of what is drawn (see _update_layer).
+# seaweed and boulders are placed for the whole island, and so is the grass in a
+# build (`grass_everywhere`, kept packed: "grass, kept small" above). Run from
+# the editor or a test with no bake, grass is placed for `GRASS_PRELOAD` metres
+# round where the player starts and after that `prefetch` metres ahead of what
+# is drawn (see _update_layer), which is also what fills any tile a bake lacks.
 const GRASS_PRELOAD := 320.0
 
 
@@ -964,7 +1074,7 @@ func prefill_covered() -> void:
 ## and only places whatever the file does not hold. No file, or one whose
 ## signature no longer matches, and it is all worked out here as before.
 const BAKE_STORE := "flora"
-const BAKE_VERSION := 4
+const BAKE_VERSION := 5
 ## Ground steeper than this (rise over run) is a cliff's face and bare: where the
 ## terrain's shader begins to draw it as rock (`cliff_face` there: 0.55).
 const ROCK_FACE := 0.52
@@ -1069,7 +1179,7 @@ func prefill_step() -> bool:
 					var c := Vector2((float(x) + 0.5) * tile, (float(z) + 0.5) * tile)
 					if c.length() > _extent + tile:
 						continue
-					if not whole and c.distance_to(start) > GRASS_PRELOAD:
+					if not whole and not grass_everywhere and c.distance_to(start) > GRASS_PRELOAD:
 						continue
 					if cache.has(Vector2i(x, z)):
 						continue
@@ -1091,7 +1201,7 @@ func prefill_step() -> bool:
 		var total := 0
 		for bufs in (layer["cache"] as Dictionary).values():
 			for buf in bufs:
-				total += (buf as PackedFloat32Array).size() / int(layer["stride"])
+				total += buf.size() / (GRASS_BYTES if layer.has("packed") else int(layer["stride"]))
 		report += "%s %d  " % [layer["name"], total]
 	print("[flora] planted: %s(%d tiles)" % [report, _prefill_jobs.size()])
 	return true
@@ -1433,7 +1543,7 @@ func _sweep(layer: Dictionary, key: Vector2i, zones: Array) -> void:
 			near.append(zone)
 	if near.is_empty():
 		return
-	var bufs: Array = (layer["cache"] as Dictionary)[key]
+	var bufs: Array = _drawn(layer, key, (layer["cache"] as Dictionary)[key])
 	var stride := int(layer["stride"])
 	var open: Variant = (layer["tiles"] as Dictionary).get(key)
 	var gone := false
@@ -1463,6 +1573,8 @@ func _sweep(layer: Dictionary, key: Vector2i, zones: Array) -> void:
 					mmi.multimesh.buffer = kept
 	if not gone:
 		return
+	if layer.has("packed"):
+		(layer["cache"] as Dictionary)[key] = [_pack_grass(bufs[0], key, tile)]
 	if open != null:
 		open["bufs"] = bufs
 	layer["rebin"] = true
@@ -1533,7 +1645,7 @@ func _update_layer(li: int, at: Vector3) -> void:
 					if tiles.has(key):
 						continue
 					if cache.has(key):
-						tiles[key] = {"bufs": cache[key], "lods": {}}
+						tiles[key] = {"bufs": _drawn(layer, key, cache[key]), "lods": {}}
 					elif not asked.has(key) and not layer.get("prefill", false):
 						asked[key] = true
 						WorkerThreadPool.add_task(_work.bind(li, key))

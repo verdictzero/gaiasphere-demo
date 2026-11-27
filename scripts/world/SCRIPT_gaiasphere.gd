@@ -819,6 +819,18 @@ func _scan_island(state: Dictionary, eye: Vector3, wanted: Array) -> void:
 	if state.has("classifying"):
 		return   # its land is still being worked out; see `_ensure_island`
 
+	var skid := _skid_chunks(state, base_x, base_z)
+	var skid_lod := 0
+	if not skid.is_empty():
+		var line: Array = state["skid_line"]
+		var a: Vector2 = line[0]
+		var ab: Vector2 = (line[1] as Vector2) - a
+		var q := Vector2(eye.x, eye.z)
+		var on := a + ab * clampf((q - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+		var away := Vector3(q.x - on.x, eye.y - field.height_at(on.x, on.y, isl.base_y), q.y - on.y).length()
+		skid_lod = maxi(_lod_for(away, int(state.get("skid_lod", -1))), mini(1, near_levels))
+		state["skid_lod"] = skid_lod
+
 	for key in state["land"]:
 		var ck: Vector2i = key
 		var coastal: bool = state["land"][key]
@@ -845,8 +857,17 @@ func _scan_island(state: Dictionary, eye: Vector3, wanted: Array) -> void:
 			continue
 
 		var lod: int = coast_lod if coastal else _lod_for(dist, live.get("lod", -1))
-		# A NEAR LEVEL ONLY WHERE THE GROUND WANTS ONE: `_finest_for`.
-		if not coastal and lod < near_levels:
+		if not coastal and skid.has(ck):
+			# THE SHUTTLE'S SKID IS ONE THING and its chunks are all at one level,
+			# the one its nearest point calls for (and never the very finest: it is
+			# a trench 13 m across, and a metre between vertices draws it). Each at
+			# its own, a chunk further up the hill showed the trench coarser than
+			# the one before it and the two did not meet; and where the trench
+			# peters out at its top the ground is not steep enough to be given a
+			# near level at all (`_finest_for`), so that chunk never matched.
+			lod = skid_lod
+		elif not coastal and lod < near_levels:
+			# A NEAR LEVEL ONLY WHERE THE GROUND WANTS ONE: `_finest_for`.
 			lod = maxi(lod, _finest_for(state, ck, x0, z0))
 		var want_col := _collides_at(lod)
 		# AND IT STANDS ON THE 64-CELL LEVEL'S COLLISION, which is in the cache
@@ -862,6 +883,38 @@ func _scan_island(state: Dictionary, eye: Vector3, wanted: Array) -> void:
 		wanted.append({"dist": dist, "pk": pk, "cell": cell, "ck": ck,
 				"lod": lod, "col": want_col,
 				"had_col": bool(live.get("collision", false))})
+
+
+# The chunks the shuttle's skid runs through (within SKID_REACH of its line, from
+# the wreck to where it touched down): {chunk: true}, worked out once an island.
+const SKID_REACH := 22.0
+
+
+func _skid_chunks(state: Dictionary, base_x: float, base_z: float) -> Dictionary:
+	if state.has("skid"):
+		return state["skid"]
+	var out := {}
+	state["skid"] = out
+	var isl: IslandField.Island = state["isl"]
+	var flows: Variant = field.flows_for(isl)
+	if flows == null or not flows.has_method(&"crash_site"):
+		return out
+	var site: PackedVector2Array = flows.crash_site()
+	if site[1] == Vector2.ZERO:
+		return out
+	var a := site[0] - site[1] * 14.0
+	var b := site[0] + site[1] * (FlowTerrain.CRASH_GOUGE + 6.0)
+	state["skid_line"] = [a, b]
+	var steps := int(a.distance_to(b) / 4.0) + 1
+	var side := Vector2(-site[1].y, site[1].x)
+	for i in steps + 1:
+		var p := a.lerp(b, float(i) / float(steps))
+		for off: float in [-SKID_REACH, 0.0, SKID_REACH]:
+			var q := p + side * off
+			var ck := Vector2i(int(floor((q.x - base_x) / chunk_size)), int(floor((q.y - base_z) / chunk_size)))
+			if (state["land"] as Dictionary).has(ck) and not bool(state["land"][ck]):
+				out[ck] = true
+	return out
 
 
 # THE FINEST LEVEL A CHUNK IS WORTH, as a level's number: the near levels are a
