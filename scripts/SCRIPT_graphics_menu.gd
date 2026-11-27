@@ -53,9 +53,9 @@ const ROWS := [
 	# THE FAR GROUND'S SHORT CUTS (SHADERINC_ground_lay's normal_reach and
 	# stochastic_reach, on the terrain and the cliffs): each a tick, and where from.
 	["far_normals", "Far ground: no normal maps", "tick"],
-	["normal_reach", "... beyond", "slide", 20.0, 400.0, 5.0, "m"],
+	["normal_reach", "Dist. threshold", "slide", 20.0, 400.0, 5.0, "m"],
 	["far_single", "Far ground: no stochastic", "tick"],
-	["stochastic_reach", "... beyond", "slide", 10.0, 400.0, 5.0, "m"],
+	["stochastic_reach", "Dist. threshold", "slide", 10.0, 400.0, 5.0, "m"],
 	# HOW THE CLIFFS' ROCKS ARE DRAWN BY DISTANCE (SCRIPT_cliff_rocks.gd's `view`:
 	# each "cliff_" row is the setting of that name without the prefix).
 	["cliff_lod", "Cliff detail distance", "slide", 0.25, 4.0, 0.05, "x"],
