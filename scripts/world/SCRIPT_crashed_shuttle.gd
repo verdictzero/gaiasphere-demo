@@ -295,12 +295,19 @@ static func bubble_layers() -> Array:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / float(side) * 2.0 - Vector2.ONE
 			var r := p.length()
 			var inside := 1.0 - smoothstep(0.965, 0.995, r)
-			# The body: all but clear face on (a speckle of it, no more), thickening
-			# only close to the edge.
-			var body := (0.05 + 0.6 * pow(clampf(r, 0.0, 1.0), 9.0)) * inside
-			# The wall: a hair's breadth, right at the rim.
-			var wall := smoothstep(0.925, 0.95, r) * inside
-			colour.set_pixel(x, y, Color(0.97, 1.0, 1.0, clampf(maxf(body, wall), 0.0, 1.0)))
+			# CUT OUT, NOT SPECKLED: a bubble is its bright wall and the glint on it,
+			# and clear through the middle. Each pixel of it is wholly there or
+			# wholly not (the material cuts at half), so nothing of it is drawn as
+			# a screen of dots: that was the grain.
+			# The wall: a firm ring at the rim, a little heavier at its foot.
+			var foot := 0.5 + 0.5 * clampf(p.y, -1.0, 1.0)
+			var wall := smoothstep(0.80 - 0.06 * foot, 0.86 - 0.06 * foot, r) * inside
+			# The glint: a crescent up and to the left, and a dot of light across from it.
+			var turn := atan2(-p.y, -p.x)                       # 0 toward the left, a quarter turn up
+			var crescent := smoothstep(0.42, 0.5, r) * (1.0 - smoothstep(0.62, 0.7, r)) \
+					* (1.0 - smoothstep(0.45, 0.6, absf(turn - 0.8)))
+			var dot := 1.0 - smoothstep(0.07, 0.11, p.distance_to(Vector2(0.36, 0.38)))
+			colour.set_pixel(x, y, Color(0.97, 1.0, 1.0, clampf(maxf(wall, maxf(crescent, dot)), 0.0, 1.0)))
 			var flat := p.limit_length(0.985)
 			var n := Vector3(flat.x, -flat.y, sqrt(maxf(1.0 - flat.length_squared(), 0.0))).normalized()
 			lie.set_pixel(x, y, Color(n.x * 0.5 + 0.5, n.y * 0.5 + 0.5, n.z * 0.5 + 0.5, 1.0))
@@ -367,11 +374,12 @@ func _bubbles() -> void:
 	# NOT BLENDED. Under water the whole view is redrawn from a copy of the screen
 	# taken before anything see-through is drawn (SHADER_underwater, and the
 	# water's own surface from above), so a blended bubble is painted over and
-	# never seen. This one is drawn solid, pixel by pixel, as many of its pixels
-	# as it is opaque there (a screen-door): it is in that copy, takes light and
-	# shadow like anything solid, and still lets the water show through its body.
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
-	mat.alpha_hash_scale = 1.0
+	# never seen. So it is drawn solid and CUT OUT: its wall and its glint there,
+	# its middle not (`bubble_layers`), each pixel one or the other. (It used to
+	# be a screen of dots, as many as it was opaque: that read as grain.)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	# (Under half, so a small bubble far off keeps its ring.)
+	mat.alpha_scissor_threshold = 0.35
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.billboard_keep_scale = true
 	mat.vertex_color_use_as_albedo = true
