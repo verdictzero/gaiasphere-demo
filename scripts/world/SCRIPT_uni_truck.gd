@@ -42,7 +42,8 @@ extends Node3D
 # they can be lit again in the air to hold a fall off or clear a gap. Each jet
 # is a blue-white core in an orange plume, with a light under the truck, and
 # near the ground they throw up a ring and dust. What is left in the tank is the
-# BOOST bar with the others at the foot of the screen; in god mode it never empties. The view is from
+# BOOST bar with the others at the foot of the screen; in god mode it never empties.
+# It leaves its TRACKS on the ground behind it ("its tracks", below). The view is from
 # behind and above, swung round with the mouse or the right stick, and drifts
 # back behind the truck once it is moving and left alone.
 #
@@ -644,6 +645,7 @@ func _wheel(delta: float) -> void:
 		r = [0.0, 0.0]
 	if r[0] >= 1.0:
 		_grounded = false
+		_track_break = true            # (off the ground: the track stops here)
 		_load = 0.0
 		_d = move_toward(_d, -droop_travel, delta * 3.0)
 		return
@@ -659,6 +661,7 @@ func _wheel(delta: float) -> void:
 	else:
 		_normal = info["normal"]
 		_contact = info["point"]
+	_track_point()
 	# The grass and the seaweed lean out of the wheel's way (SHADER_foliage's push_bend).
 	RenderingServer.global_shader_parameter_set(&"plant_push_b", Vector4(_contact.x, _contact.y, _contact.z, 1.5 * _k()))
 	# The coilover: preloaded to carry the truck at rest, stiffer as it is pressed,
@@ -818,6 +821,107 @@ func _menus() -> bool:
 	return Inventory.menu_open or GraphicsMenu.menu_open or EnvironmentMenu.menu_open or OptionsMenu.menu_open
 
 
+# ------------------------------------------------------------------ its tracks
+#
+# WHERE THE WHEEL HAS RUN, IT LEAVES ITS TRACK: a ribbon the tyre's width laid on
+# the ground behind it, a point every TRACK_STEP metres while the wheel is down
+# (broken where it left the ground), pressed in the tread's pattern
+# (SHADER_tire_track.gdshader), the last TRACK_POINTS of them kept and each
+# fading out over the end of TRACK_LIFE seconds.
+const TRACK_STEP := 0.4
+const TRACK_POINTS := 700
+const TRACK_LIFE := 150.0
+const TRACK_HALF := 0.81           # half the tyre's width, in the model's units
+
+var _tracks: MeshInstance3D
+var _track: Array = []             # [left, right, metres along, when laid (s), starts a new run]
+var _track_break := true
+var _track_dirty := false
+var _track_redrawn := 0.0
+
+
+func _track_point() -> void:
+	var half := TRACK_HALF * model_scale
+	var across := body.global_basis.x - _normal * body.global_basis.x.dot(_normal)
+	if across.length() < 0.01:
+		return
+	across = across.normalized() * half
+	var mid := _contact + _normal * 0.03
+	var along := 0.0
+	var fresh := _track_break
+	if not _track.is_empty() and not fresh:
+		var last: Array = _track.back()
+		var was: Vector3 = ((last[0] as Vector3) + (last[1] as Vector3)) * 0.5
+		var moved := was.distance_to(mid)
+		if moved < TRACK_STEP:
+			return
+		if moved > 4.0:
+			fresh = true               # (it was put somewhere else: not one run)
+		along = float(last[2]) + moved
+	_track_break = false
+	_track.append([mid - across, mid + across, along, Time.get_ticks_msec() * 0.001, fresh])
+	if _track.size() > TRACK_POINTS:
+		_track.pop_front()
+		(_track[0] as Array)[4] = true
+	_track_dirty = true
+
+
+func _draw_tracks(delta: float) -> void:
+	# (Again whenever a point is laid, and a few times a second so the old end fades.)
+	_track_redrawn += delta
+	if not _track_dirty and (_track_redrawn < 0.5 or _track.is_empty()):
+		return
+	_track_dirty = false
+	_track_redrawn = 0.0
+	if _tracks == null:
+		_tracks = MeshInstance3D.new()
+		_tracks.name = "Tracks"
+		_tracks.top_level = true
+		_tracks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var mat := ShaderMaterial.new()
+		mat.shader = load("res://shaders/SHADER_tire_track.gdshader")
+		_tracks.material_override = mat
+		_tracks.mesh = ArrayMesh.new()
+		add_child(_tracks)
+		_tracks.global_transform = Transform3D.IDENTITY
+	var now := Time.get_ticks_msec() * 0.001
+	while not _track.is_empty() and now - float((_track[0] as Array)[3]) > TRACK_LIFE:
+		_track.pop_front()
+		if not _track.is_empty():
+			(_track[0] as Array)[4] = true
+	var verts := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	for i in range(1, _track.size()):
+		var a: Array = _track[i - 1]
+		var b: Array = _track[i]
+		if bool(b[4]):
+			continue
+		var fa := 1.0 - smoothstep(TRACK_LIFE * 0.6, TRACK_LIFE, now - float(a[3]))
+		var fb := 1.0 - smoothstep(TRACK_LIFE * 0.6, TRACK_LIFE, now - float(b[3]))
+		# (A run begins and ends faint, not cut square.)
+		if bool(a[4]):
+			fa = 0.0
+		if i == _track.size() - 1:
+			fb *= 0.4
+		verts.append_array([a[0], a[1], b[1], a[0], b[1], b[0]])
+		uvs.append_array([Vector2(0, float(a[2])), Vector2(1, float(a[2])), Vector2(1, float(b[2])),
+				Vector2(0, float(a[2])), Vector2(1, float(b[2])), Vector2(0, float(b[2]))])
+		var ca := Color(1, 1, 1, fa)
+		var cb := Color(1, 1, 1, fb)
+		cols.append_array([ca, ca, cb, ca, cb, cb])
+	var mesh := _tracks.mesh as ArrayMesh
+	mesh.clear_surfaces()
+	if verts.is_empty():
+		return
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = cols
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+
 # ------------------------------------------------------------------ the boosters
 
 ## A jet at each booster's mouth (two layers: the hot core and the plume round
@@ -921,6 +1025,7 @@ func _blast(hard := true) -> void:
 func _process(delta: float) -> void:
 	if body == null:
 		return
+	_draw_tracks(delta)
 	_pose_strut()
 	if _driver:
 		_chase(delta)
@@ -1031,6 +1136,15 @@ func warm(stage: Node3D) -> void:
 	var copy := (load(MODEL) as PackedScene).instantiate() as Node3D
 	copy.scale = Vector3.ONE * 0.03
 	stage.add_child(copy)
+	# Its track's material, drawn once.
+	var strip := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.02, 0.02)
+	strip.mesh = quad
+	var track_mat := ShaderMaterial.new()
+	track_mat.shader = load("res://shaders/SHADER_tire_track.gdshader")
+	strip.material_override = track_mat
+	stage.add_child(strip)
 	# The jets, lit once, and what they throw up off the ground.
 	var jets := Node3D.new()
 	stage.add_child(jets)
