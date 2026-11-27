@@ -673,6 +673,7 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 			# the clumps the bed is not bare: short weed, thinly, everywhere.
 			var inward := maxf(1.0 - c.x / c.y, 0.0) if c.y > 0.0 else 0.0
 			var rich := c.z
+			var stand := false           # one of the wreck's own stands of weed
 			# ROUND THE WRECK THE WEED IS THICK: besides the bed's own clumps, a
 			# stand of it in most of the 9 m squares within WRECK_WEED of the
 			# shuttle, each a few metres across, tall at its heart.
@@ -694,6 +695,7 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 							if into > inward * rich:
 								inward = into
 								rich = 1.0
+								stand = true
 			if _hash(cx, cz, 113) > inward * (0.35 + inward) * 1.25 * rich * density + 0.07 * density:
 				continue
 			# THE SHUTTLE WENT THROUGH IT: none in its trench or on the berms, and
@@ -704,7 +706,8 @@ func _place_seaweed(f: IslandField, layer: Dictionary, key: Vector2i) -> Array:
 				var off: float = _crash.crash_swath(x, z)
 				if off < 1.9:
 					continue
-				swept = smoothstep(1.9, 4.5, off)
+				# (The stands that have grown up round the wreck since are whole.)
+				swept = 1.0 if stand else smoothstep(1.9, 4.5, off)
 				if _hash(cx, cz, 121) > 0.15 + 0.85 * swept:
 					continue
 			var ground := f.height_at(x, z, 1e9)

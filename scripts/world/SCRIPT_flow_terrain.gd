@@ -523,7 +523,9 @@ func crash_swath(x: float, z: float) -> float:
 	if _crash_out == Vector2.ZERO:
 		return 1e9
 	var d := Vector2(x, z) - _crash_at
-	var best := d.length() / CRASH_BOWL
+	# (Round the wreck itself only its own length of bed is swept: the weed stands
+	# thick about it, right up to the hull.)
+	var best := d.length() / 4.5
 	var along := d.dot(_crash_out)
 	if along > -4.0 and along < CRASH_GOUGE:
 		var g := _gouge_at(d)
