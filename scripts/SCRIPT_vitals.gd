@@ -85,6 +85,7 @@ const EDGE := Color(1, 1, 1, 0.14)
 const FOOD := Color(0.96, 0.66, 0.26)
 const WIND := Color(0.56, 0.86, 1.0)
 const AIR := Color(0.75, 0.95, 1.0)
+const BOOST := Color(0.8, 0.58, 1.0)
 const INK := Color(0.93, 0.95, 0.97)
 
 var health := 100.0
@@ -369,6 +370,20 @@ func _draw_view() -> void:
 		var air_at := Vector2(air.position.x + 2.0 * k, air.position.y - 7.0 * k)
 		_view.draw_string(_font, air_at + Vector2(1, 1) * k, "OXYGEN", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(0, 0, 0, 0.6))
 		_view.draw_string(_font, air_at, "OXYGEN", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(INK.r, INK.g, INK.b, 0.85))
+	# BOOST: the truck's jets, a bar of its own over the stamina's while it is
+	# driven (SCRIPT_uni_truck.gd's `boost_left`).
+	var truck := get_node_or_null(^"../UniTruck")
+	var boost := float(truck.call(&"boost_left")) if truck != null and truck.has_method(&"boost_left") else -1.0
+	if boost >= 0.0:
+		var jet := Rect2(Vector2(left + (wide + gap) * 2.0, top - 40.0 * k), Vector2(wide, 16.0 * k))
+		_box(jet, PANEL, 8.0 * k, EDGE, 1.5 * k)
+		var jet_in := jet.grow(-3.0 * k)
+		var jet_colour := BOOST.lerp(Color(1.0, 0.25, 0.2), pulse * 0.8) if boost < 0.2 else BOOST
+		if boost > 0.005:
+			_box(Rect2(jet_in.position, Vector2(jet_in.size.x * boost, jet_in.size.y)), jet_colour, 5.0 * k)
+		var jet_at := Vector2(jet.position.x + 2.0 * k, jet.position.y - 7.0 * k)
+		_view.draw_string(_font, jet_at + Vector2(1, 1) * k, "BOOST", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(0, 0, 0, 0.6))
+		_view.draw_string(_font, jet_at, "BOOST", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(INK.r, INK.g, INK.b, 0.85))
 	for side in 3:
 		var value: float = [health, hunger, stamina][side]
 		var colour: Color = [BLOOD, FOOD, WIND][side]

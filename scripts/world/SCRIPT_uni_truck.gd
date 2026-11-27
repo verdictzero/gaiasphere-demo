@@ -41,7 +41,8 @@ extends Node3D
 # and there is burn in the tank (`burn_time`; it fills again on the ground), and
 # they can be lit again in the air to hold a fall off or clear a gap. Each jet
 # is a blue-white core in an orange plume, with a light under the truck, and
-# near the ground they throw up a ring and dust. The view is from
+# near the ground they throw up a ring and dust. What is left in the tank is the
+# BOOST bar with the others at the foot of the screen; in god mode it never empties. The view is from
 # behind and above, swung round with the mouse or the right stick, and drifts
 # back behind the truck once it is moving and left alone.
 #
@@ -170,7 +171,6 @@ var _burning := false
 var _jets: Array[GPUParticles3D] = []
 var _jet_light: OmniLight3D
 var _jet_dust := 0.0
-var _tank: ProgressBar
 var _still := 0.0
 var _under := 0.0
 var _g := 9.8
@@ -262,6 +262,14 @@ func _build(at: Transform3D) -> void:
 	_cam.cull_mask = 0xFFFFF & ~(1 << (WorldReflection.MIRROR_LAYER - 1))
 	add_child(_cam)
 	body.freeze = true
+
+
+## What is left in the boosters' tank, 0 to 1, for the bar with the others at the
+## foot of the screen (SCRIPT_vitals.gd); under 0 when nobody is driving.
+func boost_left() -> float:
+	if not _driver or body == null:
+		return -1.0
+	return 1.0 if Vitals.debug else clampf(_burn / maxf(burn_time, 0.01), 0.0, 1.0)
 
 
 ## How big it is against the size it was first made at (0.28 to the metre).
@@ -598,7 +606,9 @@ func _physics_process(delta: float) -> void:
 		if _burning and (not Input.is_action_pressed(&"wv_up") or _burn <= 0.0 or _menus()):
 			_burning = false
 		if _burning:
-			_burn = maxf(_burn - delta, 0.0)
+			# (God mode: the tank does not empty.)
+			if not Vitals.debug:
+				_burn = maxf(_burn - delta, 0.0)
 			body.apply_central_force(body.global_basis.y * mass * _g * burn_lift)
 			_jet_dust -= delta
 			if _jet_dust <= 0.0:
@@ -887,9 +897,6 @@ func _show_jets(delta: float) -> void:
 	var want := (5.0 + randf() * 1.5) if _burning else 0.0
 	_jet_light.light_energy = lerpf(_jet_light.light_energy, want, clampf(delta * 18.0, 0.0, 1.0))
 	_jet_light.visible = _jet_light.light_energy > 0.05
-	if _tank != null:
-		_tank.value = _burn / maxf(burn_time, 0.01)
-		_tank.visible = _driver and _burn < burn_time - 0.01
 
 
 ## What the jets do to the ground under them, if it is near: a ring thrown out
@@ -1000,24 +1007,6 @@ func _make_prompts() -> void:
 			if DisplayServer.is_touchscreen_available() else \
 			"W S  drive      A D  steer      SPACE  jump, hold for jets      SHIFT  more power      L  lights      E  get out"
 	layer.add_child(_hint)
-	# What is left in the boosters' tank, while it is not full.
-	_tank = ProgressBar.new()
-	_tank.anchor_left = 0.44
-	_tank.anchor_right = 0.56
-	_tank.anchor_top = 0.115
-	_tank.anchor_bottom = 0.125
-	_tank.min_value = 0.0
-	_tank.max_value = 1.0
-	_tank.show_percentage = false
-	_tank.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color(1.0, 0.6, 0.2, 0.9)
-	var back := StyleBoxFlat.new()
-	back.bg_color = Color(0, 0, 0, 0.45)
-	_tank.add_theme_stylebox_override(&"fill", fill)
-	_tank.add_theme_stylebox_override(&"background", back)
-	_tank.visible = false
-	layer.add_child(_tank)
 
 
 func _label(font: Font, px: int, top: float, bottom: float) -> Label:
