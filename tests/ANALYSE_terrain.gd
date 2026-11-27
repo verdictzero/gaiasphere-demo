@@ -20,6 +20,7 @@ extends SceneTree
 # Prints a summary and writes it, with the worst places, to
 # renders/terrain_analysis.txt.
 
+const ChunkMesher := preload("res://scripts/world/SCRIPT_chunk_mesher.gd")
 const SIZE := 128.0
 const LEVELS := [64, 32, 16, 8, 4]
 const NEAR := [128, 256]
@@ -63,7 +64,7 @@ func _job(i: int) -> void:
 	var cells: int = job[2]
 	var f := _take()
 	var isl := f.island_in_cell(_isl.cell)
-	var res := ChunkMesher.build(f, isl, _base.x, _base.y, ci, cj, SIZE, cells, _pivot)
+	var res: Dictionary = ChunkMesher.build(f, isl, _base.x, _base.y, ci, cj, SIZE, cells, _pivot)
 	var out := {"empty": res.is_empty(), "ci": ci, "cj": cj, "cells": cells}
 	if not res.is_empty():
 		_inspect(f, res, out)

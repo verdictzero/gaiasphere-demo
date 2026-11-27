@@ -291,9 +291,8 @@ static func bubble_layers() -> Array:
 	return out
 
 
-## WHAT IT DUG UP IS STILL IN THE AIR AND THE WATER: silt hanging over the trench
-## it ploughed across the bed and down the shelf, and dust drifting over the skid
-## all the way up the hill.
+## WHAT IT DUG UP IS STILL IN THE AIR: dust drifting over the skid all the way up
+## the hill. (Nothing in the water: the silt over the trench there was taken out.)
 func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 	var holder := Node3D.new()
 	holder.name = "Dust"
@@ -301,64 +300,12 @@ func _dust(field: IslandField, at: Vector2, back: Vector2) -> void:
 	add_child(holder)
 	holder.global_transform = Transform3D.IDENTITY
 	var turn := Basis(Vector3.UP, atan2(-back.y, back.x))      # x along the skid
-	# IN THE WATER. Not blended (see `_bubbles`: nothing see-through shows under
-	# water): soft brown puffs drawn as a screen of dots, thick over the trench.
-	var silt := StandardMaterial3D.new()
-	silt.albedo_texture = load("res://assets/fx/puff_soft_03.webp")
-	silt.albedo_color = Color(0.7, 0.6, 0.42, 1.0)
-	silt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
-	silt.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	silt.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	silt.billboard_keep_scale = true
-	silt.alpha_hash_scale = 1.6
-	silt.vertex_color_use_as_albedo = true
-	silt.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var cloud := QuadMesh.new()
-	cloud.size = Vector2(3.2, 3.2)
-	cloud.material = silt
 	var seg := 16.0
 	var along := -4.0
 	while along < FlowTerrain.CRASH_GOUGE:
 		var mid := at + back * (along + seg * 0.5)
 		var ground := field.height_at(mid.x, mid.y, 0.0)
-		if ground < _level - 1.2:
-			var room := minf(_level - ground - 0.6, 5.0)
-			var p := GPUParticles3D.new()
-			p.amount = 26
-			p.lifetime = 11.0
-			p.preprocess = 11.0
-			p.randomness = 1.0
-			p.local_coords = false
-			p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			var m := ParticleProcessMaterial.new()
-			m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-			m.emission_box_extents = Vector3(seg * 0.5, room * 0.3, FlowTerrain.CRASH_WIDE * 1.3)
-			m.direction = Vector3.UP
-			m.spread = 80.0
-			m.initial_velocity_min = 0.02
-			m.initial_velocity_max = 0.12
-			m.gravity = Vector3.ZERO
-			m.turbulence_enabled = true
-			m.turbulence_noise_strength = 0.3
-			m.turbulence_noise_scale = 3.0
-			m.turbulence_influence_min = 0.02
-			m.turbulence_influence_max = 0.06
-			m.scale_min = 0.45
-			m.scale_max = 1.3
-			m.angle_min = 0.0
-			m.angle_max = 360.0
-			var g := Gradient.new()
-			g.offsets = PackedFloat32Array([0.0, 0.25, 0.7, 1.0])
-			g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 0.8), Color(1, 1, 1, 0)])
-			var ramp := GradientTexture1D.new()
-			ramp.gradient = g
-			m.color_ramp = ramp
-			p.process_material = m
-			p.draw_pass_1 = cloud
-			p.visibility_aabb = AABB(Vector3(-seg, -4, -12), Vector3(seg * 2.0, 10, 24))
-			holder.add_child(p)
-			p.global_transform = Transform3D(turn, Vector3(mid.x, ground + room * 0.4, mid.y))
-		elif ground > _level + 0.3:
+		if ground > _level + 0.3:
 			# IN THE AIR: a low haze of dust lying along the skid, lifting off it and
 			# thinning, and the finer stuff higher up.
 			for layer in [
