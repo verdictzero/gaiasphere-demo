@@ -62,14 +62,42 @@ const KINDS := {
 const SOCKET_WAYS := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]
 const LAMP_AT := Vector3(0, 10.3, 0)
 
-var devices: Array = []           # each a Dictionary: see `set_down`
-var cables: Array = []            # each a Dictionary: see `_new_cable`
+## A part standing in the world.
+class Dev extends RefCounted:
+	var kind := ""
+	var node: StaticBody3D
+	var sockets: Array = []       # each {"at", "way" (its own frame), "cable": the Line in it or null}
+	var charge := 0.0
+	var lit := 0.0
+	var state := ""
+	var net := -1
+	var lamp: OmniLight3D
+	var glow: Array = []
+	var glowing := true
+	var tilt: Node3D
+
+
+## A cable: its two ends (each {"dev", "socket"}, or {"hand"}, or {"at"} lying
+## loose), its points, its mesh and its two plugs.
+class Line extends RefCounted:
+	var ends: Array = [{"at": Transform3D.IDENTITY}, {"at": Transform3D.IDENTITY}]
+	var pts := PackedVector3Array()
+	var old := PackedVector3Array()
+	var node: MeshInstance3D
+	var plugs: Array = []
+	var live := true
+	var still := 0.0
+	var age := 0.0
+
+
+var devices: Array = []           # of Dev
+var cables: Array = []            # of Line
 
 var _explorer: Node3D
 var _bag: Inventory
 var _world: Node
 var _enviro: Node
-var _carry: Dictionary = {}       # the cable an end of which is in hand, and which end
+var _carry: Line                  # the cable an end of which is in hand, and which end
 var _carry_end := -1
 var _turns := 0
 var _ghost: Node3D
@@ -121,7 +149,7 @@ func _menus() -> bool:
 
 ## The part in hand to be set down, or "".
 func holding() -> String:
-	if _bag == null or _bag.slots[_bag.selected] == null or not _carry.is_empty():
+	if _bag == null or _bag.slots[_bag.selected] == null or _carry != null:
 		return ""
 	var id := String(_bag.slots[_bag.selected][0])
 	return id if KINDS.has(id) else ""
@@ -133,7 +161,7 @@ func _holding_cable() -> bool:
 
 ## A plug is in hand.
 func carrying() -> bool:
-	return not _carry.is_empty()
+	return _carry != null
 
 
 func _input(event: InputEvent) -> void:
@@ -233,7 +261,7 @@ func _socket_list(kind: String) -> Array:
 
 
 ## Stand a part at `at` (its foot). Returns its record.
-func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dictionary:
+func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 	var body := StaticBody3D.new()
 	body.name = kind
 	body.add_child(model(kind))
@@ -244,7 +272,11 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dictionary:
 	shape.shape = bs
 	shape.position = Vector3(0, float(KINDS[kind]["stand"]), 0) + (box[1] as Vector3)
 	body.add_child(shape)
-	var dev := {"kind": kind, "node": body, "sockets": _socket_list(kind), "charge": charge, "lit": 0.0, "state": "", "net": -1}
+	var dev := Dev.new()
+	dev.kind = kind
+	dev.node = body
+	dev.sockets = _socket_list(kind)
+	dev.charge = charge
 	if kind == "light_pole":
 		# The post, to walk into; and the light itself.
 		var post := CollisionShape3D.new()
@@ -265,11 +297,11 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dictionary:
 		lamp.distance_fade_length = 50.0
 		lamp.visible = false
 		body.add_child(lamp)
-		dev["lamp"] = lamp
-		dev["glow"] = _lamp_surfaces(body)
+		dev.lamp = lamp
+		dev.glow = _lamp_surfaces(body)
 		_set_glow(dev, false)
 	elif kind == "solar_panel":
-		dev["tilt"] = body.find_child("Tilt", true, false)
+		dev.tilt = body.find_child("Tilt", true, false) as Node3D
 	add_child(body)
 	body.global_transform = at
 	body.set_meta(&"power_device", true)
@@ -299,22 +331,22 @@ func _lamp_surfaces(body: Node) -> Array:
 	return out
 
 
-func _set_glow(dev: Dictionary, on: bool) -> void:
-	if bool(dev.get("glowing", true)) == on:
+func _set_glow(dev: Dev, on: bool) -> void:
+	if dev.glowing == on:
 		return
-	dev["glowing"] = on
-	for entry: Array in dev.get("glow", []):
+	dev.glowing = on
+	for entry: Array in dev.glow:
 		(entry[0] as MeshInstance3D).set_surface_override_material(int(entry[1]), null if on else _dark_lamp[entry[2]])
 
 
-func _device_of(body: Object) -> Dictionary:
-	for dev: Dictionary in devices:
-		if dev["node"] == body:
+func _device_of(body: Object) -> Dev:
+	for dev: Dev in devices:
+		if dev.node == body:
 			return dev
-	return {}
+	return null
 
 
-func _socket_world(dev: Dictionary, i: int) -> Transform3D:
+func _socket_world(dev: Dev, i: int) -> Transform3D:
 	var s: Dictionary = dev["sockets"][i]
 	var frame := (dev["node"] as Node3D).global_transform
 	var out: Vector3 = (frame.basis * (s["way"] as Vector3)).normalized()
@@ -326,14 +358,14 @@ func _socket_world(dev: Dictionary, i: int) -> Transform3D:
 
 ## Take a part down: it goes back in the bag, and whatever was plugged into it
 ## falls out where it was.
-func remove(dev: Dictionary) -> void:
+func remove(dev: Dev) -> void:
 	for i in (dev["sockets"] as Array).size():
 		var cable: Variant = dev["sockets"][i]["cable"]
 		if cable != null:
-			var c: Dictionary = cable
+			var c: Line = cable
 			for e in 2:
 				var end: Dictionary = c["ends"][e]
-				if end.get("dev") != null and end["dev"] == dev and int(end["socket"]) == i:
+				if end.get("dev") == dev and int(end["socket"]) == i:
 					var where := _socket_world(dev, i)
 					c["ends"][e] = {"at": where}
 					_wake(c)
@@ -348,7 +380,7 @@ func strike(from: Vector3, dir: Vector3) -> bool:
 	if hit.is_empty():
 		return false
 	var dev := _device_of(hit["collider"])
-	if dev.is_empty():
+	if dev == null:
 		return false
 	if _bag != null:
 		_bag.add(String(dev["kind"]), 1)
@@ -371,9 +403,9 @@ func _aim(from: Vector3, dir: Vector3) -> Dictionary:
 	if _menus():
 		return {}
 	var hit := _ray(from, dir, plug_reach)
-	var dev: Dictionary = _device_of(hit["collider"]) if not hit.is_empty() else {}
+	var dev: Dev = _device_of(hit["collider"]) if not hit.is_empty() else null
 	var socket := -1
-	if not dev.is_empty():
+	if dev != null:
 		var nearest := 2.4
 		for i in (dev["sockets"] as Array).size():
 			if dev["sockets"][i]["cable"] != null:
@@ -391,7 +423,7 @@ func _aim(from: Vector3, dir: Vector3) -> Dictionary:
 	# A plug looked at: in a socket, or lying loose.
 	var best := {}
 	var best_dot := 0.965
-	for cable: Dictionary in cables:
+	for cable: Line in cables:
 		for e in 2:
 			var plug := (cable["plugs"][e] as Node3D).global_position
 			var to := plug - from
@@ -430,29 +462,29 @@ func try_use(from: Vector3, dir: Vector3) -> bool:
 			if not Vitals.debug and not _bag.take_selected():
 				return false
 			var cable := _new_cable()
-			_plug(cable, 0, plan["dev"], int(plan["socket"]))
+			_plug(cable, 0, plan["dev"] as Dev, int(plan["socket"]))
 			_take_up(cable, 1)
 			var start := _end_point(cable, 0)
 			cable["pts"] = PackedVector3Array([start, start])
 			cable["old"] = PackedVector3Array([start, start])
 			return true
 		"plug":
-			_plug(_carry, _carry_end, plan["dev"], int(plan["socket"]))
-			_carry = {}
+			_plug(_carry, _carry_end, plan["dev"] as Dev, int(plan["socket"]))
+			_carry = null
 			_carry_end = -1
 			return true
 		"drop":
 			drop()
 			return true
 		"take":
-			_take_up(plan["cable"], int(plan["end"]))
+			_take_up(plan["cable"] as Line, int(plan["end"]))
 			return true
 	return false
 
 
 # ------------------------------------------------------------------ cables
 
-func _new_cable() -> Dictionary:
+func _new_cable() -> Line:
 	var node := MeshInstance3D.new()
 	node.mesh = ArrayMesh.new()
 	node.material_override = _rubber
@@ -464,20 +496,21 @@ func _new_cable() -> Dictionary:
 		var plug := part("plug_end")
 		add_child(plug)
 		plugs.append(plug)
-	var cable := {"ends": [{"at": Transform3D.IDENTITY}, {"at": Transform3D.IDENTITY}], "pts": PackedVector3Array(),
-		"old": PackedVector3Array(), "node": node, "plugs": plugs, "live": true, "still": 0.0, "age": 0.0}
+	var cable := Line.new()
+	cable.node = node
+	cable.plugs = plugs
 	cables.append(cable)
 	return cable
 
 
-func _plug(cable: Dictionary, e: int, dev: Dictionary, socket: int) -> void:
+func _plug(cable: Line, e: int, dev: Dev, socket: int) -> void:
 	cable["ends"][e] = {"dev": dev, "socket": socket}
 	dev["sockets"][socket]["cable"] = cable
 	_wake(cable)
 	_tick = 0.0
 
 
-func _unplug(cable: Dictionary, e: int) -> void:
+func _unplug(cable: Line, e: int) -> void:
 	var end: Dictionary = cable["ends"][e]
 	if end.get("dev") != null:
 		end["dev"]["sockets"][int(end["socket"])]["cable"] = null
@@ -485,7 +518,7 @@ func _unplug(cable: Dictionary, e: int) -> void:
 
 
 ## An end into the hand.
-func _take_up(cable: Dictionary, e: int) -> void:
+func _take_up(cable: Line, e: int) -> void:
 	if carrying():
 		drop()
 	_unplug(cable, e)
@@ -518,16 +551,16 @@ func drop() -> void:
 	back = back.normalized() if back.length() > 0.01 else Vector3.FORWARD
 	_carry["ends"][_carry_end] = {"at": Transform3D(Basis(back, Vector3.UP, back.cross(Vector3.UP)), foot)}
 	_wake(_carry)
-	_carry = {}
+	_carry = null
 	_carry_end = -1
 
 
 ## The whole cable back into the bag.
-func coil(cable: Dictionary) -> void:
+func coil(cable: Line) -> void:
 	for e in 2:
 		_unplug(cable, e)
 	if cable == _carry:
-		_carry = {}
+		_carry = null
 		_carry_end = -1
 	(cable["node"] as Node).queue_free()
 	for plug: Node in cable["plugs"]:
@@ -537,14 +570,14 @@ func coil(cable: Dictionary) -> void:
 		_bag.add(CABLE, 1)
 
 
-func _wake(cable: Dictionary) -> void:
+func _wake(cable: Line) -> void:
 	cable["live"] = true
 	cable["still"] = 0.0
 	cable["age"] = 0.0
 
 
 ## Where an end's plug is, in the world.
-func _end_frame(cable: Dictionary, e: int) -> Transform3D:
+func _end_frame(cable: Line, e: int) -> Transform3D:
 	var end: Dictionary = cable["ends"][e]
 	if end.get("dev") != null:
 		return _socket_world(end["dev"], int(end["socket"]))
@@ -557,7 +590,7 @@ func _end_frame(cable: Dictionary, e: int) -> Transform3D:
 	return end.get("at", Transform3D.IDENTITY)
 
 
-func _end_point(cable: Dictionary, e: int) -> Vector3:
+func _end_point(cable: Line, e: int) -> Vector3:
 	var f := _end_frame(cable, e)
 	return f.origin + f.basis.x * PLUG_OUT
 
@@ -570,7 +603,7 @@ func _ground(at: Vector3) -> float:
 
 ## The cable worked out for one step: a string of points each a fixed way from the
 ## next, falling, lying on the ground, its two ends where its plugs are.
-func _step_cable(cable: Dictionary, dt: float) -> float:
+func _step_cable(cable: Line, dt: float) -> float:
 	var pts: PackedVector3Array = cable["pts"]
 	var old: PackedVector3Array = cable["old"]
 	var a := _end_point(cable, 0)
@@ -644,7 +677,7 @@ func _step_cable(cable: Dictionary, dt: float) -> float:
 
 
 ## The cable's mesh from its points: a tube.
-func _draw_cable(cable: Dictionary) -> void:
+func _draw_cable(cable: Line) -> void:
 	var pts: PackedVector3Array = cable["pts"]
 	var mesh := (cable["node"] as MeshInstance3D).mesh as ArrayMesh
 	mesh.clear_surfaces()
@@ -692,7 +725,7 @@ func _run_cables(delta: float) -> void:
 	while _step_left >= 1.0 / 60.0:
 		_step_left -= 1.0 / 60.0
 		steps += 1
-	for cable: Dictionary in cables.duplicate():
+	for cable: Line in cables.duplicate():
 		if not bool(cable["live"]):
 			continue
 		var speed := 0.0
@@ -732,25 +765,22 @@ func capacity() -> float:
 
 func _circuits(dt: float) -> void:
 	# Which parts are joined: each cable with both ends in sockets joins two.
-	var group := {}
 	for i in devices.size():
-		group[devices[i]] = i
+		(devices[i] as Dev).net = i
 	var changed := true
 	while changed:
 		changed = false
-		for cable: Dictionary in cables:
-			var d0: Variant = cable["ends"][0].get("dev")
-			var d1: Variant = cable["ends"][1].get("dev")
-			if d0 == null or d1 == null:
+		for cable: Line in cables:
+			var d0 := cable.ends[0].get("dev") as Dev
+			var d1 := cable.ends[1].get("dev") as Dev
+			if d0 == null or d1 == null or d0.net == d1.net:
 				continue
-			var low := mini(int(group[d0]), int(group[d1]))
-			if int(group[d0]) != low or int(group[d1]) != low:
-				group[d0] = low
-				group[d1] = low
-				changed = true
+			var low := mini(d0.net, d1.net)
+			d0.net = low
+			d1.net = low
+			changed = true
 	var nets := {}
-	for dev: Dictionary in devices:
-		dev["net"] = int(group[dev])
+	for dev: Dev in devices:
 		if not nets.has(dev["net"]):
 			nets[dev["net"]] = []
 		(nets[dev["net"]] as Array).append(dev)
@@ -763,7 +793,7 @@ func _circuits(dt: float) -> void:
 		var stored := 0.0
 		var batteries: Array = []
 		var lamps: Array = []
-		for dev: Dictionary in nets[key]:
+		for dev: Dev in nets[key]:
 			match String(dev["kind"]):
 				"solar_panel":
 					made += solar_power * sun
@@ -785,27 +815,27 @@ func _circuits(dt: float) -> void:
 			# Shared between them, as each has room (or has any).
 			for round_i in 3:
 				var open: Array = []
-				for b: Dictionary in batteries:
+				for b: Dev in batteries:
 					if (flow > 0.0 and float(b["charge"]) < full) or (flow < 0.0 and float(b["charge"]) > 0.0):
 						open.append(b)
 				if open.is_empty() or absf(flow) < 1e-6:
 					break
 				var each := flow / float(open.size())
-				for b: Dictionary in open:
+				for b: Dev in open:
 					var to := clampf(float(b["charge"]) + each, 0.0, full)
 					flow -= to - float(b["charge"])
 					b["charge"] = to
-			for b: Dictionary in batteries:
+			for b: Dev in batteries:
 				var rate := made - wanted * share
 				b["state"] = "%d%%%s" % [int(round(float(b["charge"]) / full * 100.0)),
 						"  charging" if rate > 0.01 and float(b["charge"]) < full else ("  in use" if rate < -0.01 else "")]
-		for lamp: Dictionary in lamps:
+		for lamp: Dev in lamps:
 			lamp["lit"] = share if dark else 0.0
 			lamp["state"] = ("lit" if share > 0.99 else ("dim: short of power" if share > 0.01 else "no power")) if dark \
 					else ("waiting for dark" if (made > 0.0 or stored > 0.0) else "no power")
 
 
-func _in_use(dev: Dictionary) -> int:
+func _in_use(dev: Dev) -> int:
 	var n := 0
 	for s: Dictionary in dev["sockets"]:
 		if s["cable"] != null:
@@ -816,14 +846,14 @@ func _in_use(dev: Dictionary) -> int:
 func _show_power(delta: float) -> void:
 	var sun_dir: Vector3 = _enviro.get("sun_dir") if _enviro != null else Vector3.UP
 	var sun := _daylight()
-	for dev: Dictionary in devices:
-		if dev.has("lamp"):
+	for dev: Dev in devices:
+		if dev.lamp != null:
 			var lamp := dev["lamp"] as OmniLight3D
 			var to := float(dev["lit"]) * 7.0
 			lamp.light_energy = move_toward(lamp.light_energy, to, delta * 9.0)
 			lamp.visible = lamp.light_energy > 0.01
 			_set_glow(dev, lamp.light_energy > 0.5)
-		elif dev.has("tilt") and dev["tilt"] != null:
+		elif dev.tilt != null:
 			# The panel's face to the sun, as far over as the actuator goes; flat by night.
 			var tilt := dev["tilt"] as Node3D
 			var want := Vector3.UP
@@ -890,9 +920,9 @@ func aim(kind: String, from: Vector3, dir: Vector3) -> Dictionary:
 		return {}
 	var at: Vector3 = hit["position"]
 	var level: bool = (hit["normal"] as Vector3).y > 0.8
-	var clear := _device_of(hit["collider"]).is_empty()
+	var clear := _device_of(hit["collider"]) == null
 	var wide := maxf((KINDS[kind]["box"][0] as Vector3).x, (KINDS[kind]["box"][0] as Vector3).z)
-	for dev: Dictionary in devices:
+	for dev: Dev in devices:
 		var other: Vector3 = (KINDS[dev["kind"]]["box"][0] as Vector3)
 		if ((dev["node"] as Node3D).global_position - at).length() < (wide + maxf(other.x, other.z)) * 0.5 + 0.3:
 			clear = false
@@ -916,8 +946,8 @@ func _say() -> void:
 				text = "PUT THE PLUG DOWN   ·   TURN: COIL THE CABLE UP"
 		if text == "" or String(plan.get("do", "")) in ["start", "plug"]:
 			var hit := _ray(from, dir, plug_reach + 4.0)
-			var dev: Dictionary = _device_of(hit["collider"]) if not hit.is_empty() else {}
-			if not dev.is_empty() and String(dev["state"]) != "":
+			var dev: Dev = _device_of(hit["collider"]) if not hit.is_empty() else null
+			if dev != null and String(dev["state"]) != "":
 				var about := "%s: %s" % [String(KINDS[dev["kind"]]["name"]), String(dev["state"])]
 				text = about if text == "" else "%s   ·   %s" % [text, about]
 	_hint.text = text
@@ -928,10 +958,10 @@ func _say() -> void:
 
 func saved() -> Dictionary:
 	var parts: Array = []
-	for dev: Dictionary in devices:
+	for dev: Dev in devices:
 		parts.append({"kind": dev["kind"], "at": (dev["node"] as Node3D).global_transform, "charge": dev["charge"]})
 	var lines: Array = []
-	for cable: Dictionary in cables:
+	for cable: Line in cables:
 		var ends: Array = []
 		for e in 2:
 			var end: Dictionary = cable["ends"][e]
@@ -945,14 +975,14 @@ func saved() -> Dictionary:
 
 
 func restore(data: Dictionary) -> void:
-	_carry = {}
+	_carry = null
 	_carry_end = -1
-	for cable: Dictionary in cables:
+	for cable: Line in cables:
 		(cable["node"] as Node).queue_free()
 		for plug: Node in cable["plugs"]:
 			plug.queue_free()
 	cables.clear()
-	for dev: Dictionary in devices:
+	for dev: Dev in devices:
 		(dev["node"] as Node).queue_free()
 	devices.clear()
 	for p: Dictionary in data.get("parts", []):

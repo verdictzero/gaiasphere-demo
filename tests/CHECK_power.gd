@@ -11,7 +11,7 @@ var _scene: Node
 var _step := 0
 var _fails := 0
 var _spot := Vector3.ZERO
-var _line: Dictionary
+var _line: Power.Line
 var _was := 0.0
 
 
@@ -26,14 +26,14 @@ func _check(what: String, ok: bool, detail := "") -> void:
 		_fails += 1
 
 
-func _stand(power: Power, kind: String, off: Vector3) -> Dictionary:
+func _stand(power: Power, kind: String, off: Vector3) -> Power.Dev:
 	var at := _spot + off
 	at.y = float(_scene.get_node("GaiaSphere").call(&"height_at", at))
 	return power.set_down(kind, Transform3D(Basis(), at))
 
 
-func _join(power: Power, a: Dictionary, sa: int, b: Dictionary, sb: int) -> Dictionary:
-	var cable: Dictionary = power.call(&"_new_cable")
+func _join(power: Power, a: Power.Dev, sa: int, b: Power.Dev, sb: int) -> Power.Line:
+	var cable: Power.Line = power.call(&"_new_cable")
 	power.call(&"_plug", cable, 0, a, sa)
 	power.call(&"_plug", cable, 1, b, sb)
 	var p0: Vector3 = power.call(&"_end_point", cable, 0)
@@ -70,7 +70,7 @@ func _process(_d: float) -> bool:
 	if _step == 400:
 		var set_all := true
 		var under := 0
-		for cable: Dictionary in power.cables:
+		for cable: Power.Line in power.cables:
 			set_all = set_all and not bool(cable["live"])
 			for p: Vector3 in cable["pts"]:
 				if p.y < float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - 0.02:
@@ -82,7 +82,7 @@ func _process(_d: float) -> bool:
 		for i in pts.size() - 1:
 			longest = maxf(longest, pts[i].distance_to(pts[i + 1]))
 		_check("a cable's points keep their distance", longest < Power.SEG * 1.2, "(longest %.2f of %.2f)" % [longest, Power.SEG])
-		var battery: Dictionary = power.devices[1]
+		var battery: Power.Dev = power.devices[1]
 		_check("noon: the battery charges", float(battery["charge"]) > 0.0, "(%s)" % battery["state"])
 		_check("noon: the pole is dark", float(power.devices[3]["lit"]) == 0.0, "(%s)" % power.devices[3]["state"])
 		print("power: panel %s, junction %s, one circuit %s" % [power.devices[0]["state"], power.devices[2]["state"],
@@ -90,7 +90,7 @@ func _process(_d: float) -> bool:
 		_was = float(battery["charge"])
 		enviro.set("hour", 0.5)
 	if _step == 520:
-		var battery: Dictionary = power.devices[1]
+		var battery: Power.Dev = power.devices[1]
 		_check("night: the pole is lit from the battery", float(power.devices[3]["lit"]) > 0.99 and float(battery["charge"]) < _was,
 				"(%s, battery %s)" % [power.devices[3]["state"], battery["state"]])
 		_check("the lamp shines", (power.devices[3]["lamp"] as OmniLight3D).light_energy > 3.0)
@@ -116,7 +116,7 @@ func _process(_d: float) -> bool:
 		_check("back: four parts, three cables, the charge", power.devices.size() == 4 and power.cables.size() == 3
 				and absf(float(power.devices[1]["charge"]) - _was) < 0.01)
 		var loose := 0
-		for cable: Dictionary in power.cables:
+		for cable: Power.Line in power.cables:
 			for e in 2:
 				if cable["ends"][e].get("dev") == null:
 					loose += 1
@@ -124,7 +124,7 @@ func _process(_d: float) -> bool:
 		_check("the axe: a part comes down and its cables fall out", true)
 		power.remove(power.devices[2])
 		var held := 0
-		for cable: Dictionary in power.cables:
+		for cable: Power.Line in power.cables:
 			for e in 2:
 				if cable["ends"][e].get("dev") != null:
 					held += 1
