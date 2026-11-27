@@ -3,7 +3,8 @@ extends SceneTree
 # START, PRESSED AS A PLAYER PRESSES IT: a real click (and then a real touch) at
 # the middle of the title's START button, sent in as input, not called.
 #
-#   VES_TITLE=1 godot --headless --path . --script res://tests/CHECK_title_click.gd
+#   VES_TITLE=1 godot --path . --resolution 1280x720 --script res://tests/CHECK_title_click.gd
+# (In a real window: headless, the window is 64 pixels square and no click lands in it.)
 
 var _scene: Node
 var _step := 0
@@ -30,6 +31,14 @@ func _move(at: Vector2) -> void:
 	Input.parse_input_event(e)
 
 
+func _touch(at: Vector2, down: bool) -> void:
+	var e := InputEventScreenTouch.new()
+	e.index = 0
+	e.pressed = down
+	e.position = at
+	Input.parse_input_event(e)
+
+
 func _process(_d: float) -> bool:
 	var title: TitleMenu = _scene.get_node("TitleMenu")
 	if not bool(title.get("_ready_to_play")):
@@ -40,26 +49,19 @@ func _process(_d: float) -> bool:
 	var at := r.get_center()
 	match _step:
 		5:
-			print("click: window %s, view %s, START at %s, paused %s, mouse mode %d" % [root.size, view.size, r, paused, Input.mouse_mode])
-			_move(at)
-		8:
-			print("click: A  paused, under the pointer: %s; the title's hover %d" % [root.gui_get_hovered_control(), int(title.get("_hover"))])
+			print("click: window %s, view %s, START at %s, paused %s" % [root.size, view.size, r, paused])
 			_click(at, true)
-		10:
+		7:
 			_click(at, false)
-		14:
-			print("click: A  after a click: menu_open %s" % TitleMenu.menu_open)
-			if TitleMenu.menu_open:
-				paused = false
-				title.set_process(false)          # (or it stops the game again at once)
-				_move(at + Vector2(3, 0))
-		17:
-			print("click: B  not paused, under the pointer: %s; hover %d" % [root.gui_get_hovered_control(), int(title.get("_hover"))])
-			_click(at, true)
-		19:
-			_click(at, false)
-		23:
-			print("click: B  after a click: menu_open %s" % TitleMenu.menu_open)
+		12:
+			print("click: a mouse click on START while the game is stopped: %s" % ("STARTS" if not TitleMenu.menu_open else "NOTHING"))
+			title.show_menu()
+		16:
+			_touch(at, true)
+		18:
+			_touch(at, false)
+		24:
+			print("click: a finger on RESUME while the game is stopped: %s" % ("RESUMES" if not TitleMenu.menu_open else "NOTHING"))
 			print("click: done")
 			quit(0)
 			return true

@@ -113,7 +113,7 @@ func _exit_tree() -> void:
 
 func _loaded() -> bool:
 	var explorer := get_node_or_null(^"../Explorer")
-	return explorer != null and bool(explorer.get("arrived")) and not get_parent().has_node(^"LoadingCover")
+	return explorer != null and bool(explorer.get("arrived"))
 
 
 func _process(delta: float) -> void:
@@ -200,6 +200,31 @@ func _leave_options() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# A PRESS ON A BUTTON IS TAKEN HERE, as raw input (a mouse button, or a finger),
+	# and not left to the panel's own `gui_input`: this is the one screen that must
+	# not fail to answer, and here nothing can stand between it and the press.
+	if menu_open and not _options:
+		var at := Vector2.INF
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+				and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			at = (event as InputEventMouseButton).position
+		elif event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+			at = (event as InputEventScreenTouch).position
+		elif event is InputEventMouseMotion:
+			_hover_at((event as InputEventMouseMotion).position)
+		if at != Vector2.INF:
+			# (A finger also arrives as a mouse press a moment later: one of the two.)
+			var now := Time.get_ticks_msec()
+			if now - _pressed_at < 250:
+				get_viewport().set_input_as_handled()
+				return
+			var buttons := _buttons()
+			for i in buttons.size():
+				if _button_rect(i, buttons.size()).has_point(at) and bool(buttons[i][2]):
+					_pressed_at = now
+					get_viewport().set_input_as_handled()
+					_press(String(buttons[i][1]))
+					return
 	if not event.is_action_pressed(&"wv_menu"):
 		return
 	if menu_open:
@@ -242,24 +267,21 @@ func _button_rect(i: int, n: int) -> Rect2:
 	return Rect2(Vector2((_view.size.x - size.x) * 0.5, top + (size.y + 16.0 * k) * float(i)), size)
 
 
-func _on_gui_input(event: InputEvent) -> void:
-	if not menu_open or _options:
-		return
-	if event is InputEventMouseMotion:
-		_hover = -1
-		var list := _buttons()
-		for i in list.size():
-			if _button_rect(i, list.size()).has_point((event as InputEventMouseMotion).position):
-				_hover = i
-		return
-	var mb := event as InputEventMouseButton
-	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
-		return
-	var buttons := _buttons()
-	for i in buttons.size():
-		if _button_rect(i, buttons.size()).has_point(mb.position) and bool(buttons[i][2]):
-			_press(String(buttons[i][1]))
-			return
+var _pressed_at := -1000
+
+
+func _hover_at(at: Vector2) -> void:
+	_hover = -1
+	var list := _buttons()
+	for i in list.size():
+		if _button_rect(i, list.size()).has_point(at):
+			_hover = i
+
+
+## (Presses are taken in `_input`; this only keeps them from going on through to
+## the game behind.)
+func _on_gui_input(_event: InputEvent) -> void:
+	pass
 
 
 func _press(what: String) -> void:
@@ -382,7 +404,9 @@ func _draw_view() -> void:
 	if _note_left > 0.0:
 		_label(foot, _note, 24.0, Color(1.0, 0.86, 0.4, minf(_note_left, 1.0)))
 	elif not _ready_to_play:
-		_label(foot, "THE ISLAND IS LOADING ...", 22.0, Color(INK.r, INK.g, INK.b, 0.7))
+		var cover := get_parent().get_node_or_null(^"LoadingCover")
+		var how := String((cover.get("_label") as Label).text) if cover != null and cover.get("_label") is Label else "LOADING"
+		_label(foot, "THE ISLAND: %s" % how, 22.0, Color(INK.r, INK.g, INK.b, 0.7))
 	else:
 		_label(foot, "%s" % String(ProjectSettings.get_setting("application/config/version", "")), 18.0, Color(INK.r, INK.g, INK.b, 0.45))
 
