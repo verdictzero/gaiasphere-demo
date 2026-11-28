@@ -43,6 +43,7 @@ const ITEMS := {
 	"junction": {"name": "Junction Box", "icon": "res://assets/ui/item_junction.png"},
 	"light_pole": {"name": "Light Pole", "icon": "res://assets/ui/item_light_pole.png"},
 	"cable": {"name": "Cable", "icon": "res://assets/ui/item_cable.png"},
+	"laser_ciws": {"name": "Laser CIWS", "icon": "res://assets/ui/item_laser_ciws.png"},
 }
 
 ## What can be made, in the order the list shows it, and what each takes.
@@ -63,6 +64,7 @@ const RECIPES := [
 	{"makes": "junction", "needs": {"log": 2, "stone": 6}},
 	{"makes": "light_pole", "needs": {"log": 6, "stone": 6}},
 	{"makes": "cable", "needs": {"log": 1, "stone": 2}},
+	{"makes": "laser_ciws", "needs": {"log": 8, "stone": 20}},
 ]
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.9)
@@ -285,7 +287,7 @@ func _panel_rect() -> Rect2:
 
 const CRAFT_W := 430.0
 const CRAFT_GAP := 22.0
-const CRAFT_ROW := 44.0
+const CRAFT_ROW := 41.0
 
 
 func _craft_rect() -> Rect2:
@@ -498,9 +500,9 @@ func _draw_crafting(fade: float) -> void:
 			fill = Color(1, 1, 1, 0.16)
 		_box(r, Color(fill.r, fill.g, fill.b, fill.a * fade), 12.0, ACCENT if (able and i == _craft_hover) else EDGE, 1.5)
 		var id := String(RECIPES[i]["makes"])
-		var icon := Rect2(r.position + Vector2(6.0, 0.5) * k, Vector2(37.0, 37.0) * k)
+		var icon := Rect2(r.position + Vector2(6.0, 0.5) * k, Vector2(34.0, 34.0) * k)
 		_view.draw_texture_rect(_icons[id], icon, false, Color(1, 1, 1, dim))
-		_label(r.position + Vector2(52.0, 27.0) * k, ITEMS[id]["name"], 20.0, Color(INK.r, INK.g, INK.b, 0.95 * dim))
+		_label(r.position + Vector2(50.0, 25.0) * k, ITEMS[id]["name"], 20.0, Color(INK.r, INK.g, INK.b, 0.95 * dim))
 		# What it takes, laid out from the right: a small picture and "have / want".
 		var x := r.end.x - 10.0 * k
 		var needs: Dictionary = RECIPES[i]["needs"]
@@ -514,9 +516,9 @@ func _draw_crafting(fade: float) -> void:
 			x -= w
 			var enough := have >= int(needs[need])
 			var ink := INK if enough else Color(1.0, 0.45, 0.4)
-			_view.draw_string(_font, Vector2(x, r.position.y + 27.0 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+			_view.draw_string(_font, Vector2(x, r.position.y + 25.0 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
 					Color(ink.r, ink.g, ink.b, (0.9 if enough else 0.95) * fade * (1.0 if able or not enough else 0.6)))
 			x -= 34.0 * k
-			_view.draw_texture_rect(_icons[need], Rect2(Vector2(x, r.position.y + 4.0 * k), Vector2(30.0, 30.0) * k), false,
+			_view.draw_texture_rect(_icons[need], Rect2(Vector2(x, r.position.y + 3.0 * k), Vector2(29.0, 29.0) * k), false,
 					Color(1, 1, 1, fade * (1.0 if enough else 0.55)))
 			x -= 14.0 * k

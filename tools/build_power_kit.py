@@ -38,16 +38,28 @@ STEPS = [(0.55, 0.01), (0.3, 0.03), (0.16, 0.07), (0.085, 0.14), (0.045, 0.28), 
 FLAT_STEPS = [(0.3, 0.04), (0.16, 0.08), (0.08, 0.15), (0.04, 0.3), (0.02, 0.5), (0.01, 1.0)]
 FEWEST = 10                 # no level under this many triangles
 # What each of the set's images is called here (in the order the set has them).
-TEXTURES = ["power_parts_emission", "power_parts_basecolor", "power_parts_orm",
-            "power_panel_normal", "power_panel_basecolor", "power_panel_orm"]
-NAMES = {"4wayJunctionBox": "junction_box", "light_pole": "light_pole", "batteryBox": "battery_box", "plugEnd": "plug_end",
+# EACH SET THAT HAS BEEN HANDED OVER (by its file's name): what its images are
+# called here, in the order it has them, and what each of its parts is.
+SETS = {
+    "power_stuff_set_1": (
+        ["power_parts_emission", "power_parts_basecolor", "power_parts_orm",
+         "power_panel_normal", "power_panel_basecolor", "power_panel_orm"],
+        {"4wayJunctionBox": "junction_box", "light_pole": "light_pole", "batteryBox": "battery_box", "plugEnd": "plug_end",
          "solarPanel": "solar_panel", "solarPanelAngleActuator": "solar_actuator",
-         "solarPanelActuatorSupport": "solar_support", "solarPanelBox": "solar_box"}
+         "solarPanelActuatorSupport": "solar_support", "solarPanelBox": "solar_box"}),
+    "laser_ciws": (
+        ["power_ciws_basecolor", "power_ciws_orm"],
+        {"laser_CIWS_base": "ciws_base", "laser_CIWS_riser": "ciws_riser", "laser_CIWS_emitter": "ciws_emitter"}),
+}
+TEXTURES = []
+NAMES = {}
 COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 WIDTH = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
 
 
 def main(src):
+    global TEXTURES, NAMES
+    TEXTURES, NAMES = SETS[Path(src).stem]
     data = open(src, "rb").read()
     n = struct.unpack_from("<I", data, 12)[0]
     doc = json.loads(data[20:20 + n])
@@ -221,7 +233,12 @@ def main(src):
         manifest.append({"name": name, "size_m": [round(float(v), 3) for v in (hi - lo)],
                          "low": [round(float(v), 3) for v in lo], "levels": len(levels), "textured": textured, "triangles": counts})
         print("%-16s %s" % (name, counts))
-    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
+    # (The other sets' parts stay in the list as they are.)
+    listed = OUT / "manifest.json"
+    names = {m["name"] for m in manifest}
+    if listed.exists():
+        manifest = [m for m in json.loads(listed.read_text()) if m["name"] not in names] + manifest
+    listed.write_text(json.dumps(manifest, indent=1) + "\n")
 
 
 def write(path, name, parts, level, materials, images, textures):

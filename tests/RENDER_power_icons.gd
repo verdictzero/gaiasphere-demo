@@ -6,7 +6,7 @@ extends SceneTree
 #   godot --path . --script res://tests/RENDER_power_icons.gd
 # Writes assets/ui/item_<part>.png (256 square).
 
-const ITEMS := ["solar_panel", "battery", "junction", "light_pole", "cable"]
+const ITEMS := ["solar_panel", "battery", "junction", "light_pole", "cable", "laser_ciws"]
 
 var _i := 0
 var _port: SubViewport

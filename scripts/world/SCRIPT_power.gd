@@ -10,6 +10,11 @@ extends Node3D
 #   battery       takes what is to spare and gives it back when there is none
 #   junction box  nothing but four sockets: where lines meet
 #   light pole    lights when it is dark, if power reaches it
+#   laser CIWS    a turret: draws power day and night, and while it has it stands
+#                 armed, its head sweeping round. (It has nothing to shoot at
+#                 yet: what it defends against is still to come. Where its beam
+#                 leaves the head, and the arc it can fire through, are kept
+#                 here for that: `muzzle`, CIWS_ARC.)
 #
 # Each is made in the bag and set down where you point with it in hand (the turn
 # key turns it), as a cooking fire is; the axe takes one down again.
@@ -47,6 +52,8 @@ extends Node3D
 ## What a panel makes in full sun, and what a light draws, a second.
 @export var solar_power := 6.0
 @export var lamp_draw := 1.0
+## What a turret draws, armed, day and night.
+@export var ciws_draw := 2.0
 ## Nights of one light that a full battery holds.
 @export var battery_nights := 2.0
 
@@ -65,6 +72,8 @@ const KINDS := {
 	"battery": {"name": "BATTERY", "stand": 0.5065, "sockets": 2, "box": [Vector3(1.01, 1.51, 2.01), Vector3(0, 0.25, 0)]},
 	"junction": {"name": "JUNCTION BOX", "stand": 0.5, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
 	"light_pole": {"name": "LIGHT POLE", "stand": 1.034, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
+	# (Its base is twice as wide as a box, with two sockets a side.)
+	"laser_ciws": {"name": "LASER CIWS", "stand": 0.4985, "sockets": 8, "box": [Vector3(2, 1, 2), Vector3.ZERO]},
 }
 ## How far out from a box's middle the floor of a socket is: the face is a metre
 ## out as the kit was made, the socket's well 0.2 deep, and the prongs' own holes
@@ -72,6 +81,15 @@ const KINDS := {
 const SOCKET_IN := 0.8 * SCALE
 const SOCKET_WAYS := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]
 const LAMP_AT := Vector3(0, 10.3, 0) * SCALE
+## THE TURRET, as it was made: the riser stands this far up from the middle of the
+## base and the head this far up from the riser; the beam leaves the head HERE
+## (in the head's own frame) and goes out along the head's -X; and the head may
+## turn right round, the beam itself swinging a further CIWS_ARC degrees (the whole
+## arc, up and down and side to side) about that line.
+const CIWS_RISER := Vector3(0, 0.4013, 0)
+const CIWS_HEAD := Vector3(0, 1.9895, 0)
+const CIWS_MUZZLE := Vector3(-1.3992, 1.1541, 0)
+const CIWS_ARC := 75.0
 
 ## A part standing in the world.
 class Dev extends RefCounted:
@@ -87,6 +105,7 @@ class Dev extends RefCounted:
 	var glowing := true
 	var tilt: Node3D
 	var shaft: Node3D
+	var turn: Node3D              # the turret's riser and head
 	var sun := 1.0                # how much of the panel the sun reaches, 0..1
 
 
@@ -252,10 +271,23 @@ static func model(kind: String, plain := false) -> Node3D:
 			pieces = [["junction_box", Vector3.ZERO, true]]
 		"light_pole":
 			pieces = [["light_pole", Vector3.ZERO, true]]
+		"laser_ciws":
+			pieces = [["ciws_base", Vector3.ZERO, true]]
 	for p: Array in pieces:
 		var node := _piece(String(p[0]), bool(p[2]), plain)
 		node.position = p[1]
 		body.add_child(node)
+	if kind == "laser_ciws":
+		# The riser and the head on it turn together about the upright.
+		var turn := Node3D.new()
+		turn.name = "Turn"
+		turn.position = CIWS_RISER
+		body.add_child(turn)
+		turn.add_child(_piece("ciws_riser", false, plain))
+		var head := _piece("ciws_emitter", true, plain)
+		head.name = "Head"
+		head.position = CIWS_HEAD
+		turn.add_child(head)
 	if kind == "solar_panel":
 		# AS THE PART IS LAYERED: the box; on it the SHAFT (the support), which turns
 		# about the upright; on the shaft the actuator, and on that the panel, which
@@ -288,6 +320,14 @@ static func _piece(piece: String, with_impostor: bool, plain: bool) -> Node3D:
 func _socket_list(kind: String) -> Array:
 	var out: Array = []
 	var box: Array = KINDS[kind]["box"]
+	if kind == "laser_ciws":
+		# Two a side, a metre (as made) either way of the side's middle; the wells
+		# as deep as a box's, in a face twice as far out.
+		for way: Vector3 in SOCKET_WAYS:
+			for along: float in [-1.0, 1.0]:
+				out.append({"at": Vector3(0, float(KINDS[kind]["stand"]), 0) + (way * 1.8 + way.cross(Vector3.UP) * along) * SCALE,
+					"way": way, "cable": null})
+		return out
 	for i in int(KINDS[kind]["sockets"]):
 		var way: Vector3 = SOCKET_WAYS[i]
 		out.append({"at": Vector3(0, float(KINDS[kind]["stand"]), 0) + way * SOCKET_IN, "way": way, "cable": null})
@@ -334,6 +374,15 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 		dev.lamp = lamp
 		dev.glow = _lamp_surfaces(body)
 		_set_glow(dev, false)
+	elif kind == "laser_ciws":
+		dev.turn = body.find_child("Turn", true, false) as Node3D
+		# The head, to walk into.
+		var head := CollisionShape3D.new()
+		var hs := BoxShape3D.new()
+		hs.size = Vector3(2.4, 5.6, 2.4) * SCALE
+		head.shape = hs
+		head.position = Vector3(0, 0.4985, 0) + Vector3(0, 1.0 + 2.8, 0) * SCALE
+		body.add_child(head)
 	elif kind == "solar_panel":
 		dev.sun = sun_share(at)
 		dev.tilt = body.find_child("Tilt", true, false) as Node3D
@@ -429,6 +478,14 @@ func _ray(from: Vector3, dir: Vector3, far: float) -> Dictionary:
 	if _explorer is CollisionObject3D:
 		q.exclude = [(_explorer as CollisionObject3D).get_rid()]
 	return get_world_3d().direct_space_state.intersect_ray(q)
+
+
+## Where a turret's beam leaves it, and which way: the origin is the place, -Z the
+## way out (for whatever comes to aim and fire it).
+func muzzle(dev: Dev) -> Transform3D:
+	var head := dev.turn.get_node(^"Head") as Node3D
+	var frame := head.global_transform.orthonormalized()
+	return Transform3D(Basis(-frame.basis.z, frame.basis.y, frame.basis.x).orthonormalized(), head.global_transform * CIWS_MUZZLE)
 
 
 # ------------------------------------------------------------------ what the use button would do
@@ -1028,6 +1085,7 @@ func _circuits(dt: float) -> void:
 		var stored := 0.0
 		var batteries: Array = []
 		var lamps: Array = []
+		var turrets: Array = []
 		for dev: Dev in nets[key]:
 			match String(dev["kind"]):
 				"solar_panel":
@@ -1042,6 +1100,9 @@ func _circuits(dt: float) -> void:
 					lamps.append(dev)
 					if dark:
 						wanted += lamp_draw
+				"laser_ciws":
+					turrets.append(dev)
+					wanted += ciws_draw
 				"junction":
 					dev["state"] = "%d of 4 in use" % _in_use(dev)
 		var can := made + stored / maxf(dt, 1e-4)
@@ -1065,6 +1126,9 @@ func _circuits(dt: float) -> void:
 				var rate := made - wanted * share
 				b["state"] = "%d%%%s" % [int(round(float(b["charge"]) / full * 100.0)),
 						"  charging" if rate > 0.01 and float(b["charge"]) < full else ("  in use" if rate < -0.01 else "")]
+		for turret: Dev in turrets:
+			turret.lit = share
+			turret.state = "armed" if share > 0.99 else ("short of power" if share > 0.01 else "no power")
 		for lamp: Dev in lamps:
 			lamp["lit"] = share if dark else 0.0
 			lamp["state"] = ("lit" if share > 0.99 else ("dim: short of power" if share > 0.01 else "no power")) if dark \
@@ -1089,6 +1153,10 @@ func _show_power(delta: float) -> void:
 			lamp.light_energy = move_toward(lamp.light_energy, to, delta * 20.0)
 			lamp.visible = lamp.light_energy > 0.01
 			_set_glow(dev, lamp.light_energy > 0.5)
+		elif dev.turn != null:
+			# Armed, the head sweeps slowly round, looking; without power it stops.
+			if dev.lit > 0.99:
+				dev.turn.rotation.y = wrapf(dev.turn.rotation.y + delta * 0.35, -PI, PI)
 		elif dev.tilt != null:
 			# The shaft turned to where the sun stands round the sky, the panel tilted
 			# over toward it (as far as the actuator goes); flat by night, the shaft
