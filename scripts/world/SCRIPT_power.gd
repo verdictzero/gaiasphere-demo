@@ -64,6 +64,10 @@ const KINDS := {
 	"junction": {"name": "JUNCTION BOX", "stand": 0.5, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
 	"light_pole": {"name": "LIGHT POLE", "stand": 1.034, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
 }
+## How far out from a box's middle the floor of a socket is: the face is a metre
+## out as the kit was made, the socket's well 0.2 deep, and the prongs' own holes
+## go on in from there. A plug's shoulder sits on that floor, its prongs in the holes.
+const SOCKET_IN := 0.8 * SCALE
 const SOCKET_WAYS := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]
 const LAMP_AT := Vector3(0, 10.3, 0) * SCALE
 
@@ -279,7 +283,7 @@ func _socket_list(kind: String) -> Array:
 	var box: Array = KINDS[kind]["box"]
 	for i in int(KINDS[kind]["sockets"]):
 		var way: Vector3 = SOCKET_WAYS[i]
-		out.append({"at": Vector3(0, float(KINDS[kind]["stand"]), 0) + way * (absf(way.dot(box[0] as Vector3)) * 0.5), "way": way, "cable": null})
+		out.append({"at": Vector3(0, float(KINDS[kind]["stand"]), 0) + way * SOCKET_IN, "way": way, "cable": null})
 	return out
 
 
@@ -844,7 +848,7 @@ func _draw_cable(cable: Line) -> void:
 			var a1 := i * SIDES + (s + 1) % SIDES
 			var b0 := a0 + SIDES
 			var b1 := a1 + SIDES
-			indices.append_array([a0, a1, b0, a1, b1, b0])
+			indices.append_array([a0, b0, a1, a1, b0, b1])
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
