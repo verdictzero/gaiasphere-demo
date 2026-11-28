@@ -80,6 +80,7 @@ class Dev extends RefCounted:
 	var glow: Array = []
 	var glowing := true
 	var tilt: Node3D
+	var shaft: Node3D
 
 
 ## A cable: its two ends (each {"dev", "socket"}, or {"hand"}, or {"at"} lying
@@ -233,8 +234,7 @@ static func model(kind: String, plain := false) -> Node3D:
 	var pieces: Array = []
 	match kind:
 		"solar_panel":
-			pieces = [["solar_box", Vector3.ZERO, true], ["solar_support", Vector3(0, 1, 0), false],
-				["solar_actuator", Vector3(0, 2, 0), false]]
+			pieces = [["solar_box", Vector3.ZERO, true]]
 		"battery":
 			pieces = [["battery_box", Vector3.ZERO, true]]
 		"junction":
@@ -246,11 +246,20 @@ static func model(kind: String, plain := false) -> Node3D:
 		node.position = p[1]
 		body.add_child(node)
 	if kind == "solar_panel":
-		# The panel on its actuator: this is what turns to the sun.
+		# AS THE PART IS LAYERED: the box; on it the SHAFT (the support), which turns
+		# about the upright; on the shaft the actuator, and on that the panel, which
+		# TILT about the one level axis along the panel's length. Two turns at two
+		# places, one axis each.
+		var shaft := Node3D.new()
+		shaft.name = "Shaft"
+		shaft.position = Vector3(0, 1, 0)
+		body.add_child(shaft)
+		shaft.add_child(_piece("solar_support", false, plain))
 		var tilt := Node3D.new()
 		tilt.name = "Tilt"
-		tilt.position = Vector3(0, 2, 0)
-		body.add_child(tilt)
+		tilt.position = Vector3(0, 1, 0)
+		shaft.add_child(tilt)
+		tilt.add_child(_piece("solar_actuator", false, plain))
 		tilt.add_child(_piece("solar_panel", true, plain))
 	return root
 
@@ -316,6 +325,7 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 		_set_glow(dev, false)
 	elif kind == "solar_panel":
 		dev.tilt = body.find_child("Tilt", true, false) as Node3D
+		dev.shaft = body.find_child("Shaft", true, false) as Node3D
 	add_child(body)
 	body.global_transform = at
 	body.set_meta(&"power_device", true)
@@ -981,17 +991,16 @@ func _show_power(delta: float) -> void:
 			lamp.visible = lamp.light_energy > 0.01
 			_set_glow(dev, lamp.light_energy > 0.5)
 		elif dev.tilt != null:
-			# The panel's face to the sun, as far over as the actuator goes; flat by night.
-			var tilt := dev["tilt"] as Node3D
-			var want := Vector3.UP
+			# The shaft turned to where the sun stands round the sky, the panel tilted
+			# over toward it (as far as the actuator goes); flat by night, the shaft
+			# left where it was.
+			var lean := 0.0
 			if sun > 0.05:
-				var local := (dev["node"] as Node3D).global_basis.inverse() * sun_dir
-				local.y = maxf(local.y, 0.55)
-				want = local.normalized()
-			var now := tilt.basis.y.slerp(want, clampf(delta * 0.6, 0.0, 1.0)).normalized()
-			var x := Vector3.RIGHT - now * now.x
-			x = x.normalized() if x.length() > 0.01 else Vector3.RIGHT
-			tilt.basis = Basis(x, now, x.cross(now))
+				var local := (dev.node.global_basis.inverse() * sun_dir).normalized()
+				if Vector2(local.x, local.z).length() > 0.05:
+					dev.shaft.rotation.y = lerp_angle(dev.shaft.rotation.y, atan2(local.x, local.z), clampf(delta * 0.5, 0.0, 1.0))
+				lean = minf(acos(clampf(local.y, -1.0, 1.0)), deg_to_rad(58.0))
+			dev.tilt.rotation.x = lerp_angle(dev.tilt.rotation.x, lean, clampf(delta * 0.5, 0.0, 1.0))
 
 
 # ------------------------------------------------------------------ every frame
