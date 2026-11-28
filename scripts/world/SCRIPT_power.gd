@@ -47,20 +47,23 @@ extends Node3D
 @export var battery_nights := 2.0
 
 const CABLE := "cable"
-const SEG := 0.38                 # metres of cable between two of its points
-const THICK := 0.055              # its radius
+## THE KIT IS DRAWN AT HALF THE SIZE IT WAS MADE: a junction box a metre across.
+const SCALE := 0.5
+const SEG := 0.3                  # metres of cable between two of its points
+const THICK := 0.03               # its radius
 const SIDES := 6
-const PLUG_OUT := 0.394           # where the cable leaves a plug, along the plug's +X
+const PLUG_OUT := 0.394 * SCALE           # where the cable leaves a plug, along the plug's +X
 ## Each kind: the item, what stands there, its sockets (in its own frame: where,
 ## and facing which way), the box that is its body.
 const KINDS := {
-	"solar_panel": {"name": "SOLAR PANEL", "stand": 1.0, "sockets": 4, "box": [Vector3(2, 2, 2), Vector3.ZERO]},
-	"battery": {"name": "BATTERY", "stand": 1.013, "sockets": 2, "box": [Vector3(2.02, 3.02, 4.02), Vector3(0, 0.5, 0)]},
-	"junction": {"name": "JUNCTION BOX", "stand": 1.0, "sockets": 4, "box": [Vector3(2, 2, 2), Vector3.ZERO]},
-	"light_pole": {"name": "LIGHT POLE", "stand": 2.068, "sockets": 4, "box": [Vector3(2, 2, 2), Vector3.ZERO]},
+	# (In metres as it stands, at SCALE.)
+	"solar_panel": {"name": "SOLAR PANEL", "stand": 0.5, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
+	"battery": {"name": "BATTERY", "stand": 0.5065, "sockets": 2, "box": [Vector3(1.01, 1.51, 2.01), Vector3(0, 0.25, 0)]},
+	"junction": {"name": "JUNCTION BOX", "stand": 0.5, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
+	"light_pole": {"name": "LIGHT POLE", "stand": 1.034, "sockets": 4, "box": [Vector3(1, 1, 1), Vector3.ZERO]},
 }
 const SOCKET_WAYS := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]
-const LAMP_AT := Vector3(0, 10.3, 0)
+const LAMP_AT := Vector3(0, 10.3, 0) * SCALE
 
 ## A part standing in the world.
 class Dev extends RefCounted:
@@ -181,7 +184,9 @@ static func part(piece: String, with_impostor := true) -> Node3D:
 	var holder := Node3D.new()
 	holder.name = piece
 	var meshes := PowerKit.lods(piece)
-	var far := PowerKit.distances(piece)
+	var far: Array = []
+	for d: float in PowerKit.distances(piece):
+		far.append(d * maxf(SCALE, 0.6))
 	var from := 0.0
 	for k in meshes.size():
 		var mi := MeshInstance3D.new()
@@ -215,6 +220,7 @@ static func model(kind: String, plain := false) -> Node3D:
 	var body := Node3D.new()
 	body.name = "Body"
 	body.position = Vector3(0, float(KINDS[kind]["stand"]), 0)
+	body.scale = Vector3.ONE * SCALE
 	root.add_child(body)
 	var pieces: Array = []
 	match kind:
@@ -281,13 +287,13 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 		# The post, to walk into; and the light itself.
 		var post := CollisionShape3D.new()
 		var ps := BoxShape3D.new()
-		ps.size = Vector3(0.45, 8.6, 0.45)
+		ps.size = Vector3(0.45, 8.6, 0.45) * SCALE
 		post.shape = ps
-		post.position = Vector3(0, 2.068 + 1.0 + 4.3, 0)
+		post.position = Vector3(0, 2.068 + 1.0 + 4.3, 0) * SCALE
 		body.add_child(post)
 		var lamp := OmniLight3D.new()
-		lamp.position = Vector3(0, 2.068, 0) + LAMP_AT - Vector3(0, 0.9, 0)
-		lamp.omni_range = 42.0
+		lamp.position = Vector3(0, 1.034, 0) + LAMP_AT - Vector3(0, 0.5, 0)
+		lamp.omni_range = 30.0
 		lamp.omni_attenuation = 0.7
 		lamp.light_color = Color(1.0, 0.93, 0.8)
 		lamp.light_energy = 0.0
@@ -308,7 +314,7 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 	devices.append(dev)
 	for grower in [get_node_or_null(^"../Flora"), get_node_or_null(^"../BerryBushes")]:
 		if grower != null:
-			grower.call(&"clear_ground", at, Vector2(1.6, 1.6))
+			grower.call(&"clear_ground", at, Vector2(0.9, 0.9))
 	_tick = 0.0
 	return dev
 
@@ -406,7 +412,7 @@ func _aim(from: Vector3, dir: Vector3) -> Dictionary:
 	var dev: Dev = _device_of(hit["collider"]) if not hit.is_empty() else null
 	var socket := -1
 	if dev != null:
-		var nearest := 2.4
+		var nearest := 1.5
 		for i in (dev["sockets"] as Array).size():
 			if dev["sockets"][i]["cable"] != null:
 				continue
@@ -541,7 +547,7 @@ func drop() -> void:
 		var hit := _ray(cam.global_position, -cam.global_basis.z, 4.0)
 		if not hit.is_empty() and (hit["normal"] as Vector3).y > 0.5:
 			foot = hit["position"]
-	foot.y = maxf(foot.y, _ground(foot)) + 0.19
+	foot.y = maxf(foot.y, _ground(foot)) + 0.19 * SCALE
 	# Lying on its side, the cable leaving it back toward the rest of the line.
 	var pts: PackedVector3Array = _carry["pts"]
 	var back := Vector3.FORWARD
@@ -586,7 +592,7 @@ func _end_frame(cable: Line, e: int) -> Transform3D:
 		if cam != null:
 			# In the right hand, prongs forward, the cable out behind and down.
 			var b := cam.global_basis
-			return Transform3D(Basis(b.z, b.y, -b.x), cam.global_position + b.x * 0.62 - b.y * 0.5 - b.z * 1.25)
+			return Transform3D(Basis(b.z, b.y, -b.x), cam.global_position + b.x * 0.4 - b.y * 0.34 - b.z * 0.85)
 	return end.get("at", Transform3D.IDENTITY)
 
 
@@ -717,7 +723,7 @@ func _draw_cable(cable: Line) -> void:
 	arrays[Mesh.ARRAY_INDEX] = indices
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	for e in 2:
-		(cable["plugs"][e] as Node3D).global_transform = _end_frame(cable, e)
+		(cable["plugs"][e] as Node3D).global_transform = _end_frame(cable, e).scaled_local(Vector3.ONE * SCALE)
 
 
 func _run_cables(delta: float) -> void:
@@ -850,7 +856,7 @@ func _show_power(delta: float) -> void:
 	for dev: Dev in devices:
 		if dev.lamp != null:
 			var lamp := dev["lamp"] as OmniLight3D
-			var to := float(dev["lit"]) * 16.0
+			var to := float(dev["lit"]) * 10.0
 			lamp.light_energy = move_toward(lamp.light_energy, to, delta * 20.0)
 			lamp.visible = lamp.light_energy > 0.01
 			_set_glow(dev, lamp.light_energy > 0.5)
