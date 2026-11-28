@@ -1344,6 +1344,51 @@ func tree_on(from: Vector3, dir: Vector3, reach: float, slack := 0.35) -> Dictio
 	return best
 
 
+## Is a line from `from` along `dir` (toward the sun, say) cut off by a tree's
+## crown within `reach` metres? Each tree round `from` taken as a cone: its point
+## at the tree's top, as wide as the tree at a sixth of the way up, bare trunk
+## below that. By the placed trees themselves, as `tree_on` is; a few hundred
+## multiplications, no physics.
+func tree_shade(from: Vector3, dir: Vector3, reach := 70.0) -> bool:
+	var layer := _tree_layer()
+	if layer.is_empty() or dir.y <= 0.01:
+		return false
+	var tile := float(layer["tile"])
+	var cache: Dictionary = layer["cache"]
+	var kinds: Array = layer["kinds"]
+	var wide := PackedFloat32Array()
+	var tall := PackedFloat32Array()
+	for kind: Dictionary in kinds:
+		var box := (kind["lods"][0] as Mesh).get_aabb()
+		wide.append(maxf(box.size.x, box.size.z) * 0.5)
+		tall.append(box.size.y)
+	var a := Vector2(from.x, from.z)
+	var flat := Vector2(dir.x, dir.z)
+	var d := flat.normalized() if flat.length() > 0.001 else Vector2.ZERO
+	var rise := dir.y / maxf(flat.length(), 0.001)        # metres up for a metre along
+	var span := int(ceil(reach / tile))
+	var at_tile := Vector2i(int(floor(from.x / tile)), int(floor(from.z / tile)))
+	for dz in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			var bufs: Variant = cache.get(at_tile + Vector2i(dx, dz))
+			if bufs == null:
+				continue
+			for k in kinds.size():
+				var buf: PackedFloat32Array = bufs[k]
+				for i in range(0, buf.size(), STRIDE):
+					var p := Vector2(buf[i + 3], buf[i + 11])
+					var t := (p - a).dot(d)
+					if t < 0.0 or t > reach:
+						continue
+					var size := Vector3(buf[i + 1], buf[i + 5], buf[i + 9]).length()
+					var up := (from.y + rise * t - buf[i + 7]) / (tall[k] * size)
+					if up < 0.16 or up > 1.0:
+						continue
+					if (a + d * t).distance_to(p) < wide[k] * size * (1.0 - up) / 0.84:
+						return true
+	return false
+
+
 ## The full mesh of a kind of tree (`tree_on`'s "kind"), for a tree that has
 ## left the instance buffers and is drawn on its own while it falls.
 func tree_mesh(kind: int) -> Mesh:

@@ -4,7 +4,9 @@ extends Node3D
 # POWER: solar panels, batteries, junction boxes and light poles (the power kit,
 # SCRIPT_power_kit.gd), set down in the world and joined by CABLES you run by hand.
 #
-#   solar panel   makes power while the sun is up (the panel turns to follow it)
+#   solar panel   makes power while the sun is up (the panel turns to follow it),
+#                 by HOW MUCH OF IT THE SUN REACHES: under trees, behind a hill
+#                 or a wall it makes less, in the open all it can (`sun_share`)
 #   battery       takes what is to spare and gives it back when there is none
 #   junction box  nothing but four sockets: where lines meet
 #   light pole    lights when it is dark, if power reaches it
@@ -85,6 +87,7 @@ class Dev extends RefCounted:
 	var glowing := true
 	var tilt: Node3D
 	var shaft: Node3D
+	var sun := 1.0                # how much of the panel the sun reaches, 0..1
 
 
 ## A cable: its two ends (each {"dev", "socket"}, or {"hand"}, or {"at"} lying
@@ -121,6 +124,10 @@ var _rubber: StandardMaterial3D
 var _tick := 0.0
 var _dark_lamp := {}              # a lit material -> the same with its glow off
 var _step_left := 0.0
+var _sun_wait := 0.0
+var _sun_turn := 0
+var _ghost_sun := 1.0             # the share of sun where the panel in hand would stand
+var _ghost_sun_wait := 0.0
 var _query: PhysicsRayQueryParameters3D
 var _other := {}                  # the cables that have set, by cell: see `_others`
 var _other_of: Line
@@ -328,6 +335,7 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 		dev.glow = _lamp_surfaces(body)
 		_set_glow(dev, false)
 	elif kind == "solar_panel":
+		dev.sun = sun_share(at)
 		dev.tilt = body.find_child("Tilt", true, false) as Node3D
 		dev.shaft = body.find_child("Shaft", true, false) as Node3D
 	add_child(body)
@@ -984,8 +992,9 @@ func _circuits(dt: float) -> void:
 		for dev: Dev in nets[key]:
 			match String(dev["kind"]):
 				"solar_panel":
-					made += solar_power * sun
-					dev["state"] = "%.1f kW" % (solar_power * sun) if sun > 0.02 else "no sun"
+					made += solar_power * sun * dev.sun
+					dev["state"] = "no sun" if sun <= 0.02 else ("%.1f kW%s" % [solar_power * sun * dev.sun,
+							"" if dev.sun > 0.99 else ("   ·   all in shade" if dev.sun < 0.01 else "   ·   %d%% in shade" % int(round((1.0 - dev.sun) * 100.0)))])
 				"battery":
 					dev["charge"] = clampf(float(dev["charge"]), 0.0, full)
 					batteries.append(dev)
@@ -1054,6 +1063,51 @@ func _show_power(delta: float) -> void:
 			dev.tilt.rotation.x = lerp_angle(dev.tilt.rotation.x, lean, clampf(delta * 0.5, 0.0, 1.0))
 
 
+## HOW MUCH OF A PANEL THE SUN REACHES, 0..1, for one standing at `frame` (its
+## foot): five places on the panel (its middle and toward its four corners), and
+## from each a line to the sun, cut off by a hill (the island's own height, looked
+## at ten times along the line), by anything solid (one ray), or by a tree's crown
+## (Flora.tree_shade). Fifteen-odd lookups a panel, asked once every few seconds.
+func sun_share(frame: Transform3D) -> float:
+	var sun_dir: Vector3 = _enviro.get("sun_dir") if _enviro != null else Vector3.UP
+	if sun_dir.y <= 0.02:
+		return 0.0
+	var flora := get_node_or_null(^"../Flora")
+	var lit := 0
+	for off: Vector3 in [Vector3.ZERO, Vector3(2.2, 0, 1.4), Vector3(-2.2, 0, 1.4), Vector3(2.2, 0, -1.4), Vector3(-2.2, 0, -1.4)]:
+		var from := frame * ((Vector3(0, 3.6, 0) + off) * SCALE)
+		var dark := false
+		if _world != null:
+			for far: float in [3.0, 6.0, 10.0, 15.0, 22.0, 30.0, 42.0, 58.0, 80.0, 110.0]:
+				var p := from + sun_dir * far
+				if float(_world.call(&"height_at", p, -1e9)) > p.y:
+					dark = true
+					break
+		if not dark:
+			var hit := _solid(from, from + sun_dir * 60.0)
+			# (The ground has been looked at already; its collision is not everywhere.)
+			dark = not hit.is_empty() and not (_world != null and hit["collider"] is Node and _world.is_ancestor_of(hit["collider"] as Node))
+		if not dark and flora != null and flora.has_method(&"tree_shade"):
+			dark = bool(flora.call(&"tree_shade", from, sun_dir))
+		if not dark:
+			lit += 1
+	return float(lit) / 5.0
+
+
+## One panel's share of sun looked at again, in turn: each every few seconds.
+func _look_at_sun(delta: float) -> void:
+	_sun_wait -= delta
+	if _sun_wait > 0.0 or devices.is_empty():
+		return
+	_sun_wait = 0.35
+	for tries in devices.size():
+		_sun_turn = (_sun_turn + 1) % devices.size()
+		var dev: Dev = devices[_sun_turn]
+		if dev.kind == "solar_panel":
+			dev.sun = sun_share(dev.node.global_transform)
+			return
+
+
 # ------------------------------------------------------------------ every frame
 
 func _process(delta: float) -> void:
@@ -1065,6 +1119,7 @@ func _process(delta: float) -> void:
 		_circuits(0.5)
 		_tick = 0.5
 	_show_power(delta)
+	_look_at_sun(delta)
 	_place()
 	_say()
 
@@ -1137,6 +1192,13 @@ func _say() -> void:
 			if dev != null and String(dev["state"]) != "":
 				var about := "%s: %s" % [String(KINDS[dev["kind"]]["name"]), String(dev["state"])]
 				text = about if text == "" else "%s   ·   %s" % [text, about]
+	# A panel in hand: how much sun there is where it would stand.
+	if text == "" and holding() == "solar_panel" and not _plan.is_empty() and bool(_plan["free"]):
+		_ghost_sun_wait -= get_process_delta_time()
+		if _ghost_sun_wait <= 0.0:
+			_ghost_sun_wait = 0.3
+			_ghost_sun = sun_share(_plan["at"])
+		text = "NO SUN NOW" if _daylight() <= 0.02 else "SUN HERE: %d%%" % int(round(_ghost_sun * 100.0))
 	_hint.text = text
 	_hint.visible = text != ""
 

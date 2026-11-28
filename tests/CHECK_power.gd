@@ -97,6 +97,24 @@ func _process(_d: float) -> bool:
 		var sun: Power.Dev = power.devices[0]
 		var store: Power.Dev = power.devices[1]
 		_cross = _join(power, sun, 2, power.devices[2], 2)
+	if _step == 940:
+		enviro.set("hour", 9.0)
+	if _step == 945:
+		# THE SUN'S SHARE, at mid-morning, over the ground round the truck (meadow and
+		# wood): some places in the open, some in the trees' shade.
+		var truck := (_scene.get_node("UniTruck").get("body") as Node3D).global_position
+		var counts := [0, 0, 0]
+		var started := Time.get_ticks_usec()
+		for gx in range(-6, 7):
+			for gz in range(-6, 7):
+				var at := truck + Vector3(gx * 9.0, 0, gz * 9.0)
+				at.y = float(_scene.get_node("GaiaSphere").call(&"height_at", at))
+				var share := power.sun_share(Transform3D(Basis(), at))
+				counts[0 if share >= 0.8 else (2 if share <= 0.2 else 1)] += 1
+		var each := float(Time.get_ticks_usec() - started) / 169.0 / 1000.0
+		_check("the sun's share: open ground and shade both found", counts[0] > 5 and counts[2] > 5,
+				"(of 169 places: %d in the sun, %d part shaded, %d in shade; %.2f ms a look)" % [counts[0], counts[1], counts[2], each])
+		enviro.set("hour", 12.0)
 	if _step == 950:
 		var set_all := true
 		var under := 0
