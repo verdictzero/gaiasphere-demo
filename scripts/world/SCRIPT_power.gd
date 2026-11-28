@@ -17,7 +17,9 @@ extends Node3D
 # hand, look at a part and use it: one plug goes into the nearest free socket and
 # the other is in your hand, the cable running out behind you as you walk (up to
 # `cable_most` metres). The cable is a real hanging line while this goes on: it
-# sags, lies along the ground, drags after you. Use another part to plug the
+# sags, drags after you, lies along the ground AND ON WHATEVER IS SOLID (a roof, a
+# wall's top, a part, the truck: every collision layer), goes round a corner and
+# pulls tight against it, and lies over the cables that are already there. Use another part to plug the
 # second end in; use anything else to put the plug down where you stand (it can be
 # picked up again); the turn key coils the whole cable back into the bag. A plug
 # that is in a socket, or lying loose, is taken in hand again by using it.
@@ -113,6 +115,12 @@ var _rubber: StandardMaterial3D
 var _tick := 0.0
 var _dark_lamp := {}              # a lit material -> the same with its glow off
 var _step_left := 0.0
+var _query: PhysicsRayQueryParameters3D
+var _other := {}                  # the cables that have set, by cell: see `_others`
+var _other_of: Line
+var _other_stamp := -1
+var _stamp := 0                   # goes up whenever a cable sets, wakes or goes
+var _phase := 0
 
 
 func _ready() -> void:
@@ -572,11 +580,13 @@ func coil(cable: Line) -> void:
 	for plug: Node in cable["plugs"]:
 		plug.queue_free()
 	cables.erase(cable)
+	_stamp += 1
 	if _bag != null and not Vitals.debug:
 		_bag.add(CABLE, 1)
 
 
 func _wake(cable: Line) -> void:
+	_stamp += 1
 	cable["live"] = true
 	cable["still"] = 0.0
 	cable["age"] = 0.0
@@ -607,38 +617,117 @@ func _ground(at: Vector3) -> float:
 	return -1e9
 
 
+## What a cable can lie on, hang over and be pulled round: everything solid there
+## is (every layer: the ground's own collision, what is built, the parts, the
+## truck, trunks and rocks where they have bodies), but not you.
+func _solid(from: Vector3, to: Vector3) -> Dictionary:
+	if _query == null:
+		_query = PhysicsRayQueryParameters3D.new()
+		_query.collision_mask = 0xFFFFFFFF
+		_query.collide_with_areas = false
+		_query.hit_back_faces = false
+		_query.hit_from_inside = false
+	_query.from = from
+	_query.to = to
+	_query.exclude = [(_explorer as CollisionObject3D).get_rid()] if _explorer is CollisionObject3D else []
+	return get_world_3d().direct_space_state.intersect_ray(_query)
+
+
+const CELL := 0.6
+
+
+## THE OTHER CABLES, as a cable being worked out meets them: every length of every
+## cable that has set, filed by the 60 cm cells it passes through. Made again only
+## when a cable sets, wakes or goes.
+func _others(but: Line) -> Dictionary:
+	if _other_of == but and _other_stamp == _stamp:
+		return _other
+	_other = {}
+	_other_of = but
+	_other_stamp = _stamp
+	var reach := Vector3.ONE * (THICK * 2.0)
+	for cable: Line in cables:
+		if cable == but or cable.live:
+			continue
+		var pts := cable.pts
+		for i in pts.size() - 1:
+			var lo := ((pts[i].min(pts[i + 1]) - reach) / CELL).floor()
+			var hi := ((pts[i].max(pts[i + 1]) + reach) / CELL).floor()
+			for x in range(int(lo.x), int(hi.x) + 1):
+				for y in range(int(lo.y), int(hi.y) + 1):
+					for z in range(int(lo.z), int(hi.z) + 1):
+						var key := Vector3i(x, y, z)
+						if not _other.has(key):
+							_other[key] = PackedVector3Array()
+						(_other[key] as PackedVector3Array).append_array([pts[i], pts[i + 1]])
+	return _other
+
+
+## A point kept off the other cables: out of any it is in, and that mostly upward,
+## so the one that comes later lies over the one that was there.
+func _off_cables(p: Vector3, others: Dictionary) -> Vector3:
+	var lengths: Variant = others.get(Vector3i((p / CELL).floor()))
+	if lengths == null:
+		return p
+	var list: PackedVector3Array = lengths
+	for k in range(0, list.size(), 2):
+		var a := list[k]
+		var ab := list[k + 1] - a
+		var t := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-8), 0.0, 1.0)
+		var away := p - (a + ab * t)
+		var d := away.length()
+		if d < THICK * 2.0:
+			away = (away / d if d > 1e-4 else Vector3.UP) + Vector3.UP * 0.6
+			p += away.normalized() * (THICK * 2.0 - d)
+	return p
+
+
 ## The cable worked out for one step: a string of points each a fixed way from the
-## next, falling, lying on the ground, its two ends where its plugs are.
+## next, falling; lying on the ground and on whatever is solid, bent round what is
+## in its way, over the cables already there; its two ends where its plugs are.
 func _step_cable(cable: Line, dt: float) -> float:
 	var pts: PackedVector3Array = cable["pts"]
 	var old: PackedVector3Array = cable["old"]
 	var a := _end_point(cable, 0)
 	var b := _end_point(cable, 1)
 	var held := cable == _carry
-	# PAID OUT AND TAKEN IN at the end in hand, as that end goes off or comes back:
-	# always a little more cable than the straight line between the two ends.
-	if held:
-		var want := clampi(int(ceil((a.distance_to(b) * 1.12 + 1.2) / SEG)) + 1, 4, int(cable_most / SEG))
-		var at_end := _carry_end == 1
-		while pts.size() < want:
-			if at_end:
-				pts.append(b)
-				old.append(b)
-			else:
-				pts.insert(0, a)
-				old.insert(0, a)
-		# (Taken in only when there is a good deal over: no flicker at the edge.)
-		while pts.size() > want + 6 and pts.size() > 4:
-			if at_end:
-				pts.remove_at(pts.size() - 1)
-				old.remove_at(old.size() - 1)
-			else:
-				pts.remove_at(0)
-				old.remove_at(0)
 	var n := pts.size()
+	# PAID OUT AND TAKEN IN at the end in hand, by how the cable itself is doing and
+	# not by how far apart its ends are (it may be round a corner): more when it is
+	# pulled tight, less when what is nearest the hand has gone slack.
+	if held:
+		var total := 0.0
+		for i in n - 1:
+			total += pts[i].distance_to(pts[i + 1])
+		var at_end := _carry_end == 1
+		var tight := total > float(n - 1) * SEG * 1.025
+		if n < 5 or (tight and float(n) * SEG < cable_most):
+			for k in (3 if n >= 5 else 5 - n):
+				if at_end:
+					pts.append(b)
+					old.append(b)
+				else:
+					pts.insert(0, a)
+					old.insert(0, a)
+		elif tight and total > float(n - 1) * SEG * 1.1:
+			# No more cable, and it is being pulled: the plug comes out of the hand.
+			cable["pts"] = pts
+			cable["old"] = old
+			drop()
+			return 1.0
+		elif n > 12:
+			var near := pts[n - 1].distance_to(pts[n - 8]) if at_end else pts[0].distance_to(pts[7])
+			if near < 7.0 * SEG * 0.72:
+				if at_end:
+					pts.remove_at(n - 1)
+					old.remove_at(n - 1)
+				else:
+					pts.remove_at(0)
+					old.remove_at(0)
+		n = pts.size()
 	if n < 2:
 		return 0.0
-	var moved := 0.0
+	var was := pts.duplicate()
 	for i in range(1, n - 1):
 		var p := pts[i]
 		# (Out of the hand it is let come to rest quickly.)
@@ -649,37 +738,67 @@ func _step_cable(cable: Line, dt: float) -> float:
 	# Where each end leaves its plug it goes straight out a little way first.
 	var fa := _end_frame(cable, 0).basis.x
 	var fb := _end_frame(cable, 1).basis.x
-	for pass_i in 10:
+	var stiff := n > 5
+	var others := _others(cable)
+	_phase = (_phase + 1) % 4
+	for round_i in 2:
+		for pass_i in (8 if round_i == 0 else 3):
+			pts[0] = a
+			pts[n - 1] = b
+			if stiff:
+				pts[1] = a + fa * SEG
+				pts[n - 2] = b + fb * SEG
+			for i in n - 1:
+				var d := pts[i + 1] - pts[i]
+				var l := d.length()
+				if l < 1e-5:
+					continue
+				var fix := d * ((l - SEG) / l * 0.5)
+				pts[i] += fix
+				pts[i + 1] -= fix
 		pts[0] = a
 		pts[n - 1] = b
-		if n > 4:
-			pts[1] = a + fa * SEG
-			pts[n - 2] = b + fb * SEG
-		for i in n - 1:
-			var d := pts[i + 1] - pts[i]
-			var l := d.length()
-			if l < 1e-5:
-				continue
-			var fix := d * ((l - SEG) / l * 0.5)
-			pts[i] += fix
-			pts[i + 1] -= fix
-	pts[0] = a
-	pts[n - 1] = b
-	# The ground: nothing of it goes under, and what lies on it drags.
-	for i in range(1, n - 1):
-		var p := pts[i]
-		var g := _ground(p) + THICK
-		if p.y < g:
-			p.y = g
-			var was := old[i]
-			old[i] = Vector3(lerpf(was.x, p.x, 0.55), p.y, lerpf(was.z, p.z, 0.55))
+		var first := 2 if stiff else 1
+		var last := n - 3 if stiff else n - 2
+		if round_i == 0:
+			# WHAT IS SOLID. A point that has gone into something on its way from where
+			# it was is put back on its face...
+			for i in range(first, last + 1):
+				if was[i].distance_squared_to(pts[i]) < 0.000025:
+					continue
+				var hit := _solid(was[i], pts[i])
+				if not hit.is_empty():
+					var on: Vector3 = (hit["position"] as Vector3) + (hit["normal"] as Vector3) * THICK
+					pts[i] = on
+					old[i] = old[i].lerp(on, 0.55)
+			# ... and a length of cable with something between its two ends (a corner,
+			# an edge, a post) is pushed off it, so the cable goes round and pulls
+			# tight against it. (Half the lengths a step, each way in turn.)
+			for i in range(first + (_phase & 1), last, 2):
+				var from := pts[i] if _phase < 2 else pts[i + 1]
+				var to := pts[i + 1] if _phase < 2 else pts[i]
+				var hit := _solid(from, to)
+				if not hit.is_empty():
+					var push: Vector3 = (hit["normal"] as Vector3) * 0.035
+					pts[i] += push
+					pts[i + 1] += push
+		# The other cables, and the ground: nothing of it goes under, and what lies
+		# on it drags.
+		for i in range(1, n - 1):
+			var p := pts[i]
+			if not others.is_empty():
+				p = _off_cables(p, others)
+			var g := _ground(p) + THICK
+			if p.y < g:
+				p.y = g
+				var before := old[i]
+				old[i] = Vector3(lerpf(before.x, p.x, 0.55), p.y, lerpf(before.z, p.z, 0.55))
 			pts[i] = p
+	var moved := 0.0
+	for i in range(1, n - 1):
 		moved = maxf(moved, (pts[i] - old[i]).length())
 	cable["pts"] = pts
 	cable["old"] = old
-	# Too far for the cable there is: the plug is pulled out of the hand.
-	if held and a.distance_to(b) > cable_most:
-		drop()
 	return moved / maxf(dt, 1e-4)
 
 
@@ -752,6 +871,7 @@ func _run_cables(delta: float) -> void:
 		cable["still"] = float(cable["still"]) + dt if speed < 0.3 else 0.0
 		if float(cable["still"]) > 0.6 or float(cable["age"]) > 5.0:
 			cable["live"] = false
+			_stamp += 1
 			cable["old"] = (cable["pts"] as PackedVector3Array).duplicate()
 
 
@@ -1007,4 +1127,5 @@ func restore(data: Dictionary) -> void:
 		# (As it lay: drawn once, and set.)
 		_draw_cable(cable)
 		cable["live"] = false
+	_stamp += 1
 	_tick = 0.0
