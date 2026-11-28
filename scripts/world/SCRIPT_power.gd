@@ -633,10 +633,49 @@ func _end_point(cable: Line, e: int) -> Vector3:
 	return f.origin + f.basis.x * PLUG_OUT
 
 
+## THE GROUND'S HEIGHT, KEPT. Asking the island for a height is dear (some 0.18 ms:
+## it works the whole field out at that point) and a cable asks for every one of
+## its points sixty times a second. So heights are asked for once at the corners
+## of a 40 cm grid and kept (the island does not change), and a height anywhere
+## is taken between the four corners round it.
+const GRID := 0.4
+var _heights := {}
+var _rough := {}
+
+
+func _corner(x: int, z: int) -> float:
+	var key := Vector2i(x, z)
+	var h: Variant = _heights.get(key)
+	if h == null:
+		if _heights.size() > 60000:
+			_heights.clear()
+		h = float(_world.call(&"height_at", Vector3(float(x) * GRID, 0.0, float(z) * GRID), -1e9))
+		_heights[key] = h
+	return h
+
+
 func _ground(at: Vector3) -> float:
-	if _world != null:
-		return float(_world.call(&"height_at", at, -1e9))
-	return -1e9
+	if _world == null:
+		return -1e9
+	var fx := at.x / GRID
+	var fz := at.z / GRID
+	var x := int(floor(fx))
+	var z := int(floor(fz))
+	var tx := fx - float(x)
+	var tz := fz - float(z)
+	return lerpf(lerpf(_corner(x, z), _corner(x + 1, z), tx), lerpf(_corner(x, z + 1), _corner(x + 1, z + 1), tx), tz)
+
+
+## The same, to the nearest 3 metres: for a hill between a panel and the sun.
+func _ground_rough(at: Vector3) -> float:
+	var key := Vector2i(int(round(at.x / 3.0)), int(round(at.z / 3.0)))
+	var h: Variant = _rough.get(key)
+	if h == null:
+		if _rough.size() > 20000:
+			_rough.clear()
+		h = float(_world.call(&"height_at", Vector3(float(key.x) * 3.0, 0.0, float(key.y) * 3.0), -1e9))
+		_rough[key] = h
+	return h
 
 
 ## What a cable can lie on, hang over and be pulled round: everything solid there
@@ -1066,7 +1105,7 @@ func _show_power(delta: float) -> void:
 ## HOW MUCH OF A PANEL THE SUN REACHES, 0..1, for one standing at `frame` (its
 ## foot): five places on the panel (its middle and toward its four corners), and
 ## from each a line to the sun, cut off by a hill (the island's own height, looked
-## at ten times along the line), by anything solid (one ray), or by a tree's crown
+## at nine places along the line, from heights kept to the nearest three metres), by anything solid (one ray), or by a tree's crown
 ## (Flora.tree_shade). Fifteen-odd lookups a panel, asked once every few seconds.
 func sun_share(frame: Transform3D) -> float:
 	var sun_dir: Vector3 = _enviro.get("sun_dir") if _enviro != null else Vector3.UP
@@ -1078,9 +1117,10 @@ func sun_share(frame: Transform3D) -> float:
 		var from := frame * ((Vector3(0, 3.6, 0) + off) * SCALE)
 		var dark := false
 		if _world != null:
-			for far: float in [3.0, 6.0, 10.0, 15.0, 22.0, 30.0, 42.0, 58.0, 80.0, 110.0]:
+			for far: float in [5.0, 10.0, 16.0, 24.0, 34.0, 48.0, 66.0, 90.0, 120.0]:
 				var p := from + sun_dir * far
-				if float(_world.call(&"height_at", p, -1e9)) > p.y:
+				# (A metre's grace: the heights are to the nearest three metres along.)
+				if _ground_rough(p) > p.y + 1.0:
 					dark = true
 					break
 		if not dark:
