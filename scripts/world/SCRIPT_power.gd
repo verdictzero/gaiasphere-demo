@@ -126,7 +126,6 @@ var _other := {}                  # the cables that have set, by cell: see `_oth
 var _other_of: Line
 var _other_stamp := -1
 var _stamp := 0                   # goes up whenever a cable sets, wakes or goes
-var _phase := 0
 
 
 func _ready() -> void:
@@ -743,6 +742,7 @@ func _step_cable(cable: Line, dt: float) -> float:
 	if n < 2:
 		return 0.0
 	var was := pts.duplicate()
+	var start := pts.duplicate()
 	for i in range(1, n - 1):
 		var p := pts[i]
 		# (Out of the hand it is let come to rest quickly.)
@@ -758,7 +758,6 @@ func _step_cable(cable: Line, dt: float) -> float:
 	var floor_at := PackedFloat32Array()
 	floor_at.resize(n)
 	var touching := PackedInt32Array()
-	_phase = (_phase + 1) % 4
 	for round_i in 2:
 		for pass_i in (8 if round_i == 0 else 3):
 			pts[0] = a
@@ -794,17 +793,6 @@ func _step_cable(cable: Line, dt: float) -> float:
 					old[i] = old[i].lerp(on, 0.55)
 					touching.append(i)
 					was[i] = on
-			# ... and a length of cable with something between its two ends (a corner,
-			# an edge, a post) is pushed off it, so the cable goes round and pulls
-			# tight against it. (Half the lengths a step, each way in turn.)
-			for i in range(first + (_phase & 1), last, 2):
-				var from := pts[i] if _phase < 2 else pts[i + 1]
-				var to := pts[i + 1] if _phase < 2 else pts[i]
-				var hit := _solid(from, to)
-				if not hit.is_empty():
-					var push: Vector3 = (hit["normal"] as Vector3) * 0.035
-					pts[i] += push
-					pts[i + 1] += push
 		else:
 			# (What was put back on a face and has been pulled into it again by its
 			# neighbours since: back on the face.)
@@ -827,6 +815,26 @@ func _step_cable(cable: Line, dt: float) -> float:
 				var before := old[i]
 				old[i] = Vector3(lerpf(before.x, p.x, 0.55), p.y, lerpf(before.z, p.z, 0.55))
 			pts[i] = p
+	# NO LENGTH OF IT MAY HAVE SOMETHING BETWEEN ITS TWO ENDS (a corner, an edge, a
+	# post: its points either side and the thing in the middle). A length that
+	# would is held where it was a step ago, both ends, stopped. That is what makes
+	# a cable catch on an edge and pull tight round it instead of cutting through.
+	# (Twice over, since holding one length back can put its neighbour across.)
+	var lo := 1 if stiff else 0
+	var hi := n - 2 if stiff else n - 1
+	for sweep in 2:
+		var held_back := false
+		for i in range(lo, hi):
+			var hit := _solid(pts[i], pts[i + 1])
+			if hit.is_empty():
+				continue
+			held_back = true
+			for k: int in [i, i + 1]:
+				if k > lo and k < hi:
+					pts[k] = start[k]
+					old[k] = start[k]
+		if not held_back:
+			break
 	cable["pts"] = pts
 	cable["old"] = old
 	return 0.0
