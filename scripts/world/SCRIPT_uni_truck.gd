@@ -477,7 +477,7 @@ func get_in() -> void:
 	_cam_pivot = body.global_position + Vector3.UP * chase_height
 	_cam.make_current()
 	_seat()
-	_hint_left = 7.0
+	_hint_left = 0.0          # (the controls are no longer told on getting in)
 	_prompt.visible = false
 
 
