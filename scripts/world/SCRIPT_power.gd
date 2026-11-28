@@ -1198,7 +1198,7 @@ func _say() -> void:
 		if _ghost_sun_wait <= 0.0:
 			_ghost_sun_wait = 0.3
 			_ghost_sun = sun_share(_plan["at"])
-		text = "NO SUN NOW" if _daylight() <= 0.02 else "SUN HERE: %d%%" % int(round(_ghost_sun * 100.0))
+		text = "NO SUN NOW" if _daylight() <= 0.02 else "SOLAR EFFICIENCY: %d%%" % int(round(_ghost_sun * 100.0))
 	_hint.text = text
 	_hint.visible = text != ""
 
