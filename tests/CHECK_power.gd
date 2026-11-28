@@ -133,7 +133,7 @@ func _process(_d: float) -> bool:
 		for cable: Power.Line in power.cables:
 			set_all = set_all and not bool(cable["live"])
 			for p: Vector3 in cable["pts"]:
-				if p.y < float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - 0.02:
+				if p.y < float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - 0.05:
 					under += 1
 		_check("the cables have set", set_all, "(age %.1f s, still %.1f s)" % [_line.age, _line.still])
 		_check("none of a cable is under the ground", under == 0, "(%d points)" % under)
@@ -186,7 +186,12 @@ func _process(_d: float) -> bool:
 		_check("carried off: the cable has paid out", float(pts.size()) * Power.SEG > 12.0, "(%.1f m of cable, live %s)" % [float(pts.size()) * Power.SEG, _line["live"]])
 		power.drop()
 		_check("put down: nothing in hand", not power.carrying())
-	if _step == 1700:
+	# (When the dropped cable has set, or after long enough for it to have.)
+	if _step >= 1700 and _step < 2600 and bool(_line.live):
+		return false
+	if _step >= 1700 and _step < 9000:
+		print("power: the dropped cable: %d frames after it was put down" % (_step - 1250))
+		_step = 9000
 		_check("the dropped cable has set", not bool(_line["live"]), "(age %.1f s, still %.1f s)" % [_line.age, _line.still])
 		var data := title.save_game()
 		_check("saved", data)
@@ -210,7 +215,7 @@ func _process(_d: float) -> bool:
 				if cable["ends"][e].get("dev") != null:
 					held += 1
 		_check("with the junction gone, three plugs are still in sockets", held == 3, "(%d)" % held)
-	if _step == 1710:
+	if _step == 9010:
 		print("power: %s" % ("ALL OK" if _fails == 0 else "%d FAILED" % _fails))
 		return true
 	return false

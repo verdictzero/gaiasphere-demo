@@ -636,9 +636,9 @@ func _end_point(cable: Line, e: int) -> Vector3:
 ## THE GROUND'S HEIGHT, KEPT. Asking the island for a height is dear (some 0.18 ms:
 ## it works the whole field out at that point) and a cable asks for every one of
 ## its points sixty times a second. So heights are asked for once at the corners
-## of a 40 cm grid and kept (the island does not change), and a height anywhere
+## of a 25 cm grid and kept (the island does not change), and a height anywhere
 ## is taken between the four corners round it.
-const GRID := 0.4
+const GRID := 0.25
 var _heights := {}
 var _rough := {}
 
