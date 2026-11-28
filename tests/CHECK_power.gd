@@ -18,6 +18,7 @@ var _was := 0.0
 func _initialize() -> void:
 	_scene = (load("res://scenes/SCENE_gaiasphere_demo.tscn") as PackedScene).instantiate()
 	root.add_child(_scene)
+	Engine.max_fps = 60
 
 
 func _check(what: String, ok: bool, detail := "") -> void:
@@ -75,7 +76,7 @@ func _process(_d: float) -> bool:
 			for p: Vector3 in cable["pts"]:
 				if p.y < float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - 0.02:
 					under += 1
-		_check("the cables have set", set_all)
+		_check("the cables have set", set_all, "(age %.1f s, still %.1f s)" % [_line.age, _line.still])
 		_check("none of a cable is under the ground", under == 0, "(%d points)" % under)
 		var pts: PackedVector3Array = _line["pts"]
 		var longest := 0.0
@@ -106,7 +107,7 @@ func _process(_d: float) -> bool:
 		power.drop()
 		_check("put down: nothing in hand", not power.carrying())
 	if _step == 1150:
-		_check("the dropped cable has set", not bool(_line["live"]))
+		_check("the dropped cable has set", not bool(_line["live"]), "(age %.1f s, still %.1f s)" % [_line.age, _line.still])
 		var data := title.save_game()
 		_check("saved", data)
 		_was = float(power.devices[1]["charge"])
