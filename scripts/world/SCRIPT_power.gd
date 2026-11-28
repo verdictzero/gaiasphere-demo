@@ -635,7 +635,8 @@ func _step_cable(cable: Line, dt: float) -> float:
 	var moved := 0.0
 	for i in range(1, n - 1):
 		var p := pts[i]
-		var v := (p - old[i]) * 0.985
+		# (Out of the hand it is let come to rest quickly.)
+		var v := (p - old[i]) * (0.985 if held else 0.94)
 		old[i] = p
 		p += v + Vector3(0, -9.8 * dt * dt, 0)
 		pts[i] = p
@@ -742,8 +743,8 @@ func _run_cables(delta: float) -> void:
 		# it), it SETS: no more working out, the mesh as it is.
 		var dt := float(steps) / 60.0
 		cable["age"] = float(cable["age"]) + dt
-		cable["still"] = float(cable["still"]) + dt if speed < 0.12 else 0.0
-		if float(cable["still"]) > 0.6 or float(cable["age"]) > 6.0:
+		cable["still"] = float(cable["still"]) + dt if speed < 0.3 else 0.0
+		if float(cable["still"]) > 0.6 or float(cable["age"]) > 5.0:
 			cable["live"] = false
 			cable["old"] = (cable["pts"] as PackedVector3Array).duplicate()
 
