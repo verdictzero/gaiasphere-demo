@@ -92,7 +92,7 @@ func _process(_d: float) -> bool:
 			pts.append(p0.lerp(p1, t) + Vector3(0, 2.6 * sin(PI * t), 0))
 		_line.pts = pts
 		_line.old = pts.duplicate()
-	if _step == 450:
+	if _step == 300:
 		# A SECOND CABLE laid across the first one that set.
 		var sun: Power.Dev = power.devices[0]
 		var store: Power.Dev = power.devices[1]
@@ -112,6 +112,18 @@ func _process(_d: float) -> bool:
 				var share := power.sun_share(Transform3D(Basis(), at))
 				counts[0 if share >= 0.8 else (2 if share <= 0.2 else 1)] += 1
 		var each := float(Time.get_ticks_usec() - started) / 169.0 / 1000.0
+		var t0 := Time.get_ticks_usec()
+		for k in 2000:
+			_scene.get_node("GaiaSphere").call(&"height_at", truck + Vector3(k * 0.05, 0, k * 0.03))
+		var t1 := Time.get_ticks_usec()
+		var flora := _scene.get_node("Flora")
+		for k in 200:
+			flora.call(&"tree_shade", truck + Vector3(k * 0.5, 3, 0), enviro.get("sun_dir"))
+		var t2 := Time.get_ticks_usec()
+		for k in 2000:
+			power.call(&"_solid", truck + Vector3(k * 0.05, 3, 0), truck + Vector3(k * 0.05, 3, 0) + (enviro.get("sun_dir") as Vector3) * 60.0)
+		var t3 := Time.get_ticks_usec()
+		print("power: share costs: the ground's height %.1f us, a tree line %.1f us, a ray %.1f us" % [float(t1 - t0) / 2000.0, float(t2 - t1) / 200.0, float(t3 - t2) / 2000.0])
 		_check("the sun's share: open ground and shade both found", counts[0] > 5 and counts[2] > 5,
 				"(of 169 places: %d in the sun, %d part shaded, %d in shade; %.2f ms a look)" % [counts[0], counts[1], counts[2], each])
 		enviro.set("hour", 12.0)
