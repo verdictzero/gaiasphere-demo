@@ -10,10 +10,12 @@ extends CanvasLayer
 #   left click     pick a stack up, put it down, swap, or add to a like stack
 #   right click    take half a stack, or put one down
 #
-# CRAFTING is a list beside the bag: each row a thing that can be made and what
-# it takes. A row you have the makings of is lit; click it and the makings leave
-# the bag and the thing arrives in it. Walls and the rest of the timber are made
-# of logs; foundations and steps of logs and stone.
+# CRAFTING IS ITS OWN MENU (B, the CRAFT touch button), not part of the bag: a
+# panel of TABS, one to each kind of thing (TABS: building, camp, power,
+# defence), and under the tab chosen a row for each thing of that kind that can
+# be made, with what it takes. A row you have the makings of is lit; click it and
+# the makings leave the bag and the thing arrives in it. (1-4, or the wheel, go
+# from tab to tab; B or TAB again, Escape, or a click outside shuts it.)
 
 const STACK := 64
 const HOTBAR := 9
@@ -47,24 +49,26 @@ const ITEMS := {
 }
 
 ## What can be made, in the order the list shows it, and what each takes.
+## The crafting menu's tabs, in order; each recipe says which it is under ("tab").
+const TABS := ["BUILDING", "CAMP", "POWER", "DEFENCE"]
 const RECIPES := [
 	# (Beef is cooked on the fire, not in the bag: SCRIPT_cooking.gd.)
-	{"makes": "campfire", "needs": {"log": 3, "stone": 6}},
-	{"makes": "wall", "needs": {"log": 4}},
-	{"makes": "doorway", "needs": {"log": 6}},
-	{"makes": "floor", "needs": {"log": 3}},
-	{"makes": "roof", "needs": {"log": 4}},
-	{"makes": "gable", "needs": {"log": 2}},
-	{"makes": "stairs", "needs": {"log": 5}},
-	{"makes": "foundation", "needs": {"log": 2, "stone": 8}},
-	{"makes": "steps", "needs": {"log": 2, "stone": 5}},
+	{"makes": "campfire", "tab": 1, "needs": {"log": 3, "stone": 6}},
+	{"makes": "wall", "tab": 0, "needs": {"log": 4}},
+	{"makes": "doorway", "tab": 0, "needs": {"log": 6}},
+	{"makes": "floor", "tab": 0, "needs": {"log": 3}},
+	{"makes": "roof", "tab": 0, "needs": {"log": 4}},
+	{"makes": "gable", "tab": 0, "needs": {"log": 2}},
+	{"makes": "stairs", "tab": 0, "needs": {"log": 5}},
+	{"makes": "foundation", "tab": 0, "needs": {"log": 2, "stone": 8}},
+	{"makes": "steps", "tab": 0, "needs": {"log": 2, "stone": 5}},
 	# Power (SCRIPT_power.gd).
-	{"makes": "solar_panel", "needs": {"log": 4, "stone": 12}},
-	{"makes": "battery", "needs": {"log": 4, "stone": 10}},
-	{"makes": "junction", "needs": {"log": 2, "stone": 6}},
-	{"makes": "light_pole", "needs": {"log": 6, "stone": 6}},
-	{"makes": "cable", "needs": {"log": 1, "stone": 2}},
-	{"makes": "laser_ciws", "needs": {"log": 8, "stone": 20}},
+	{"makes": "solar_panel", "tab": 2, "needs": {"log": 4, "stone": 12}},
+	{"makes": "battery", "tab": 2, "needs": {"log": 4, "stone": 10}},
+	{"makes": "junction", "tab": 2, "needs": {"log": 2, "stone": 6}},
+	{"makes": "light_pole", "tab": 2, "needs": {"log": 6, "stone": 6}},
+	{"makes": "cable", "tab": 2, "needs": {"log": 1, "stone": 2}},
+	{"makes": "laser_ciws", "tab": 3, "needs": {"log": 8, "stone": 20}},
 ]
 
 const PANEL := Color(0.075, 0.085, 0.1, 0.9)
@@ -84,6 +88,10 @@ var _icons := {}
 var _font: Font
 var _hover := -1
 var _craft_hover := -1
+var _tab := 0                # the crafting menu's tab
+var _tab_hover := -1
+## True while the menu that is up is the crafting one (and `menu_open` with it).
+static var crafting := false
 var _made := -1              # the recipe just made, and how long ago: its row flashes
 var _made_for := 0.0
 var _was_captured := false
@@ -106,6 +114,14 @@ func _ready() -> void:
 		var pad := InputEventJoypadButton.new()
 		pad.button_index = JOY_BUTTON_START
 		InputMap.action_add_event(&"wv_bag", pad)
+	if not InputMap.has_action(&"wv_craft"):
+		InputMap.add_action(&"wv_craft")
+		var craft_key := InputEventKey.new()
+		craft_key.physical_keycode = KEY_B
+		InputMap.action_add_event(&"wv_craft", craft_key)
+		var craft_pad := InputEventJoypadButton.new()
+		craft_pad.button_index = JOY_BUTTON_BACK
+		InputMap.action_add_event(&"wv_craft", craft_pad)
 	_view = Control.new()
 	_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -224,13 +240,20 @@ func craft(recipe: int) -> bool:
 
 # ------------------------------------------------------------------ open and shut
 
-func set_open(open: bool) -> void:
-	if open == menu_open:
+## Open or shut; `craft`: the crafting menu, not the bag (one or the other).
+func set_open(open: bool, craft := false) -> void:
+	if open == menu_open and (not open or craft == crafting):
 		return
+	if open and menu_open and _held != null:
+		add(_held[0], int(_held[1]))            # (from one to the other: nothing left on the cursor)
+		_held = null
+	var was_open := menu_open
 	menu_open = open
+	crafting = open and craft
 	_view.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	if open:
-		_was_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		if not was_open:
+			_was_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
 		# Nothing is left on the cursor.
@@ -239,6 +262,7 @@ func set_open(open: bool) -> void:
 			_held = null
 		_hover = -1
 		_craft_hover = -1
+		_tab_hover = -1
 		if _was_captured and not DisplayServer.is_touchscreen_available():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_view.queue_redraw()
@@ -246,14 +270,25 @@ func set_open(open: bool) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"wv_bag"):
-		set_open(not menu_open)
+		set_open(not (menu_open and not crafting), false)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"wv_craft"):
+		set_open(not (menu_open and crafting), true)
+		get_viewport().set_input_as_handled()
+	elif menu_open and crafting and event is InputEventMouseButton and event.pressed \
+			and (event as InputEventMouseButton).button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		_tab = posmod(_tab + (1 if (event as InputEventMouseButton).button_index == MOUSE_BUTTON_WHEEL_DOWN else -1), TABS.size())
+		_view.queue_redraw()
 		get_viewport().set_input_as_handled()
 	elif menu_open and event.is_action_pressed(&"ui_cancel"):
 		set_open(false)
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		var k := (event as InputEventKey).physical_keycode
-		if k >= KEY_1 and k <= KEY_9:
+		if menu_open and crafting and k >= KEY_1 and k < KEY_1 + TABS.size():
+			_tab = k - KEY_1
+			_view.queue_redraw()
+		elif k >= KEY_1 and k <= KEY_9:
 			selected = k - KEY_1
 			_view.queue_redraw()
 	elif not menu_open and event is InputEventMouseButton and event.pressed \
@@ -280,34 +315,70 @@ func _panel_rect() -> Rect2:
 	var cell := 84.0 * k
 	var w := cell * 9.0 + 56.0 * k
 	var h := cell * 4.0 + 132.0 * k
-	# The bag and the crafting list stand side by side, the pair of them centred.
-	var both := w + (CRAFT_GAP + CRAFT_W) * k
-	return Rect2(Vector2((_view.size.x - both) * 0.5, (_view.size.y - h) * 0.5), Vector2(w, h))
+	return Rect2(Vector2((_view.size.x - w) * 0.5, (_view.size.y - h) * 0.5), Vector2(w, h))
 
 
-const CRAFT_W := 430.0
-const CRAFT_GAP := 22.0
-const CRAFT_ROW := 41.0
+const CRAFT_W := 640.0
+const CRAFT_ROW := 56.0
+const CRAFT_TOP := 138.0      # the title and the tabs, above the first row
 
 
+## The recipes under the tab chosen, by their places in RECIPES.
+func _tab_recipes() -> Array:
+	var out: Array = []
+	for i in RECIPES.size():
+		if int(RECIPES[i]["tab"]) == _tab:
+			out.append(i)
+	return out
+
+
+func _most_rows() -> int:
+	var most := 1
+	for t in TABS.size():
+		var n := 0
+		for r: Dictionary in RECIPES:
+			if int(r["tab"]) == t:
+				n += 1
+		most = maxi(most, n)
+	return most
+
+
+## The crafting panel: in the middle of the screen, as tall as its longest tab
+## needs (so it does not change size from tab to tab).
 func _craft_rect() -> Rect2:
-	var p := _panel_rect()
-	# As tall as the bag, or as its list needs if that is more, the two centred
-	# on each other.
-	var tall := maxf(p.size.y, (70.0 + CRAFT_ROW * float(RECIPES.size()) + 12.0) * _k())
-	return Rect2(Vector2(p.end.x + CRAFT_GAP * _k(), p.get_center().y - tall * 0.5), Vector2(CRAFT_W * _k(), tall))
+	var k := _k()
+	var size := Vector2(CRAFT_W, CRAFT_TOP + CRAFT_ROW * float(_most_rows()) + 16.0) * k
+	return Rect2((_view.size - size) * 0.5, size)
 
 
-func _craft_row(i: int) -> Rect2:
+func _tab_rect(t: int) -> Rect2:
 	var k := _k()
 	var c := _craft_rect()
-	return Rect2(c.position + Vector2(14.0, 70.0 + CRAFT_ROW * float(i)) * k, Vector2(CRAFT_W - 28.0, CRAFT_ROW - 6.0) * k)
+	var gap := 8.0 * k
+	var w := (c.size.x - 28.0 * k - gap * float(TABS.size() - 1)) / float(TABS.size())
+	return Rect2(c.position + Vector2(14.0 * k + (w + gap) * float(t), 74.0 * k), Vector2(w, 46.0 * k))
 
 
+func _tab_at(at: Vector2) -> int:
+	for t in TABS.size():
+		if _tab_rect(t).has_point(at):
+			return t
+	return -1
+
+
+## The row of the `n`th recipe under the tab chosen.
+func _craft_row(n: int) -> Rect2:
+	var k := _k()
+	var c := _craft_rect()
+	return Rect2(c.position + Vector2(14.0, CRAFT_TOP + CRAFT_ROW * float(n)) * k, Vector2(CRAFT_W - 28.0, CRAFT_ROW - 6.0) * k)
+
+
+## The recipe (its place in RECIPES) whose row is at `at`, or -1.
 func _craft_at(at: Vector2) -> int:
-	for i in RECIPES.size():
-		if _craft_row(i).has_point(at):
-			return i
+	var list := _tab_recipes()
+	for n in list.size():
+		if _craft_row(n).has_point(at):
+			return list[n]
 	return -1
 
 
@@ -339,20 +410,31 @@ func _on_gui_input(event: InputEvent) -> void:
 	if not menu_open:
 		return
 	if event is InputEventMouseMotion:
-		_hover = _slot_at((event as InputEventMouseMotion).position)
-		_craft_hover = _craft_at((event as InputEventMouseMotion).position)
+		var at := (event as InputEventMouseMotion).position
+		_hover = -1 if crafting else _slot_at(at)
+		_craft_hover = _craft_at(at) if crafting else -1
+		_tab_hover = _tab_at(at) if crafting else -1
 		return
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed:
 		return
+	if crafting:
+		# The crafting menu: a tab, a row, or (outside it) shut.
+		if mb.button_index != MOUSE_BUTTON_LEFT:
+			return
+		var tab := _tab_at(mb.position)
+		var row := _craft_at(mb.position)
+		if tab >= 0:
+			_tab = tab
+		elif row >= 0:
+			craft(row)
+		elif not _craft_rect().has_point(mb.position):
+			set_open(false)
+		_view.queue_redraw()
+		return
 	var i := _slot_at(mb.position)
 	if i < 0:
-		var row := _craft_at(mb.position)
-		if row >= 0 and mb.button_index == MOUSE_BUTTON_LEFT and _held == null:
-			craft(row)
-			_view.queue_redraw()
-			return
-		if not _panel_rect().has_point(mb.position) and not _craft_rect().has_point(mb.position) and _held == null:
+		if not _panel_rect().has_point(mb.position) and _held == null:
 			set_open(false)       # a click outside shuts the bag
 		return
 	if mb.button_index == MOUSE_BUTTON_LEFT:
@@ -449,6 +531,10 @@ func _draw_view() -> void:
 	var ease_in := 1.0 - pow(1.0 - _shown, 3.0)
 	_view.draw_rect(Rect2(Vector2.ZERO, _view.size), Color(0.0, 0.01, 0.02, 0.55 * ease_in))
 	_view.draw_set_transform(Vector2(0.0, (1.0 - ease_in) * 26.0 * k))
+	if crafting:
+		_draw_crafting(ease_in)
+		_view.draw_set_transform(Vector2.ZERO)
+		return
 	var p := _panel_rect()
 	_box(p.grow(10.0 * k), Color(0, 0, 0, 0.22 * ease_in), 34.0)          # a soft shadow
 	_box(p, Color(PANEL.r, PANEL.g, PANEL.b, PANEL.a * ease_in), 26.0, EDGE, 1.5)
@@ -468,7 +554,6 @@ func _draw_view() -> void:
 		var r := _slot_rect(i)
 		_draw_slot(r, i, true)
 		_draw_stack(r, slots[i], ease_in)
-	_draw_crafting(ease_in)
 	var mouse := _view.get_local_mouse_position()
 	if _held != null:
 		_draw_stack(Rect2(mouse - Vector2(40, 40) * k, Vector2(80, 80) * k), _held)
@@ -481,16 +566,26 @@ func _draw_view() -> void:
 	_view.draw_set_transform(Vector2.ZERO)
 
 
-## The crafting list: a row to a recipe, its picture and name on the left, what
-## it takes on the right with how many of each you have against how many it wants.
+## The crafting menu: its tabs, and under them a row to each recipe of the tab
+## chosen, its picture and name on the left, what it takes on the right with how
+## many of each you have against how many it wants.
 func _draw_crafting(fade: float) -> void:
 	var k := _k()
 	var c := _craft_rect()
 	_box(c.grow(10.0 * k), Color(0, 0, 0, 0.22 * fade), 34.0)
 	_box(c, Color(PANEL.r, PANEL.g, PANEL.b, PANEL.a * fade), 26.0, EDGE, 1.5)
 	_label(c.position + Vector2(28.0, 50.0) * k, "CRAFTING", 26.0, Color(INK.r, INK.g, INK.b, 0.92 * fade))
-	for i in RECIPES.size():
-		var r := _craft_row(i)
+	for t in TABS.size():
+		var r := _tab_rect(t)
+		var on := t == _tab
+		_box(r, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.85 * fade) if on else Color(1, 1, 1, (0.16 if t == _tab_hover else 0.065) * fade), 12.0,
+				ACCENT if on else EDGE, 1.5)
+		_label(Vector2(r.get_center().x, r.position.y + 31.0 * k), TABS[t], 20.0,
+				Color(0.03, 0.04, 0.05, fade) if on else Color(INK.r, INK.g, INK.b, 0.9 * fade), true)
+	var list := _tab_recipes()
+	for n in list.size():
+		var i: int = list[n]
+		var r := _craft_row(n)
 		var able := can_craft(i)
 		var dim := (1.0 if able else 0.42) * fade
 		var fill := SLOT
@@ -500,25 +595,25 @@ func _draw_crafting(fade: float) -> void:
 			fill = Color(1, 1, 1, 0.16)
 		_box(r, Color(fill.r, fill.g, fill.b, fill.a * fade), 12.0, ACCENT if (able and i == _craft_hover) else EDGE, 1.5)
 		var id := String(RECIPES[i]["makes"])
-		var icon := Rect2(r.position + Vector2(6.0, 0.5) * k, Vector2(34.0, 34.0) * k)
+		var icon := Rect2(r.position + Vector2(8.0, 3.0) * k, Vector2(44.0, 44.0) * k)
 		_view.draw_texture_rect(_icons[id], icon, false, Color(1, 1, 1, dim))
-		_label(r.position + Vector2(50.0, 25.0) * k, ITEMS[id]["name"], 20.0, Color(INK.r, INK.g, INK.b, 0.95 * dim))
+		_label(r.position + Vector2(64.0, 33.0) * k, ITEMS[id]["name"], 22.0, Color(INK.r, INK.g, INK.b, 0.95 * dim))
 		# What it takes, laid out from the right: a small picture and "have / want".
-		var x := r.end.x - 10.0 * k
+		var x := r.end.x - 12.0 * k
 		var needs: Dictionary = RECIPES[i]["needs"]
 		var ids := needs.keys()
 		ids.reverse()
 		for need in ids:
 			var have := count_of(need)
 			var text := "%d/%d" % [mini(have, 999), int(needs[need])]
-			var fs := int(18.0 * k)
+			var fs := int(20.0 * k)
 			var w := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			x -= w
 			var enough := have >= int(needs[need])
 			var ink := INK if enough else Color(1.0, 0.45, 0.4)
-			_view.draw_string(_font, Vector2(x, r.position.y + 25.0 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+			_view.draw_string(_font, Vector2(x, r.position.y + 32.0 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
 					Color(ink.r, ink.g, ink.b, (0.9 if enough else 0.95) * fade * (1.0 if able or not enough else 0.6)))
-			x -= 34.0 * k
-			_view.draw_texture_rect(_icons[need], Rect2(Vector2(x, r.position.y + 3.0 * k), Vector2(29.0, 29.0) * k), false,
+			x -= 40.0 * k
+			_view.draw_texture_rect(_icons[need], Rect2(Vector2(x, r.position.y + 7.0 * k), Vector2(36.0, 36.0) * k), false,
 					Color(1, 1, 1, fade * (1.0 if enough else 0.55)))
-			x -= 14.0 * k
+			x -= 16.0 * k

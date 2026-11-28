@@ -50,6 +50,7 @@ const ROW := [
 	[&"wv_fly", "FLY"],
 	[&"wv_light", "LIGHT"],
 	[&"wv_bag", "BAG"],
+	[&"wv_craft", "CRAFT"],
 	[&"wv_turn", "TURN"],
 ]
 const MOVES := [&"wv_left", &"wv_right", &"wv_forward", &"wv_back"]
@@ -163,7 +164,7 @@ func _lift() -> float:
 
 func _row_rect(i: int) -> Rect2:
 	var k := _k()
-	var w := 128.0 * k
+	var w := 112.0 * k
 	var edge := UiFit.insets(size)
 	return Rect2(Vector2(size.x - edge.z - 24.0 * k - (w + 12.0 * k) * float(i) - w, 22.0 * k + edge.y), Vector2(w, 60.0 * k))
 
@@ -325,7 +326,9 @@ func _draw() -> void:
 		if action == &"wv_fly" and _explorer != null:
 			on = on or bool(_explorer.get("flying"))
 		elif action == &"wv_bag":
-			on = on or Inventory.menu_open
+			on = on or (Inventory.menu_open and not Inventory.crafting)
+		elif action == &"wv_craft":
+			on = on or (Inventory.menu_open and Inventory.crafting)
 		elif action == &"wv_graphics":
 			on = on or GraphicsMenu.menu_open
 		elif action == &"wv_environment":
