@@ -93,6 +93,7 @@ class Line extends RefCounted:
 	var ends: Array = [{"at": Transform3D.IDENTITY}, {"at": Transform3D.IDENTITY}]
 	var pts := PackedVector3Array()
 	var old := PackedVector3Array()
+	var mark := PackedVector3Array()      # where it was when last looked at for stillness
 	var node: MeshInstance3D
 	var plugs: Array = []
 	var live := true
@@ -754,6 +755,8 @@ func _step_cable(cable: Line, dt: float) -> float:
 	var fb := _end_frame(cable, 1).basis.x
 	var stiff := n > 5
 	var others := _others(cable)
+	var floor_at := PackedFloat32Array()
+	floor_at.resize(n)
 	_phase = (_phase + 1) % 4
 	for round_i in 2:
 		for pass_i in (8 if round_i == 0 else 3):
@@ -777,8 +780,11 @@ func _step_cable(cable: Line, dt: float) -> float:
 		if round_i == 0:
 			# WHAT IS SOLID. A point that has gone into something on its way from where
 			# it was is put back on its face...
+			for i in range(1, n - 1):
+				floor_at[i] = _ground(pts[i]) + THICK
 			for i in range(first, last + 1):
-				if was[i].distance_squared_to(pts[i]) < 0.000025:
+				# (What is going under the ground anyway is the ground's to deal with.)
+				if pts[i].y < floor_at[i] or was[i].distance_squared_to(pts[i]) < 1e-7:
 					continue
 				var hit := _solid(was[i], pts[i])
 				if not hit.is_empty():
@@ -802,18 +808,15 @@ func _step_cable(cable: Line, dt: float) -> float:
 			var p := pts[i]
 			if not others.is_empty():
 				p = _off_cables(p, others)
-			var g := _ground(p) + THICK
+			var g := floor_at[i]
 			if p.y < g:
 				p.y = g
 				var before := old[i]
 				old[i] = Vector3(lerpf(before.x, p.x, 0.55), p.y, lerpf(before.z, p.z, 0.55))
 			pts[i] = p
-	var moved := 0.0
-	for i in range(1, n - 1):
-		moved = maxf(moved, (pts[i] - old[i]).length())
 	cable["pts"] = pts
 	cable["old"] = old
-	return moved / maxf(dt, 1e-4)
+	return 0.0
 
 
 ## The cable's mesh from its points: a tube.
@@ -868,9 +871,8 @@ func _run_cables(delta: float) -> void:
 	for cable: Line in cables.duplicate():
 		if not bool(cable["live"]):
 			continue
-		var speed := 0.0
 		for s in steps:
-			speed = _step_cable(cable, 1.0 / 60.0)
+			_step_cable(cable, 1.0 / 60.0)
 			if not cables.has(cable):
 				break
 		if not cables.has(cable):
@@ -881,9 +883,20 @@ func _run_cables(delta: float) -> void:
 		# OUT OF THE HAND: once it has lain still a moment (or been long enough about
 		# it), it SETS: no more working out, the mesh as it is.
 		var dt := float(steps) / 60.0
+		# (Still: nowhere has it gone four centimetres from where it was when last
+		# marked. A cable lying on things is never quite at rest step to step.)
 		cable["age"] = float(cable["age"]) + dt
-		cable["still"] = float(cable["still"]) + dt if speed < 0.3 else 0.0
-		if float(cable["still"]) > 0.6 or float(cable["age"]) > 5.0:
+		cable["still"] = float(cable["still"]) + dt
+		var far := cable.mark.size() != cable.pts.size()
+		if not far:
+			for i in cable.pts.size():
+				if cable.pts[i].distance_squared_to(cable.mark[i]) > 0.0016:
+					far = true
+					break
+		if far:
+			cable.mark = cable.pts.duplicate()
+			cable["still"] = 0.0
+		if float(cable["still"]) > 0.7 or float(cable["age"]) > 6.0:
 			cable["live"] = false
 			_stamp += 1
 			cable["old"] = (cable["pts"] as PackedVector3Array).duplicate()

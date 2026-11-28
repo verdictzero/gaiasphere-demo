@@ -91,7 +91,7 @@ func _process(_d: float) -> bool:
 	_shot += 1
 	match _shot:
 		1:
-			_look(Vector3(13, 1.7, 5), Vector3(17, 0.9, 1))
+			_look(Vector3(14.5, 1.7, 3.5), Vector3(17, 0.5, 1))
 		2:
 			enviro.hour = 23.5
 			_look(Vector3(8, 4, 16), Vector3(22, 4, 2))

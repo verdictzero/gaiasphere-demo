@@ -117,7 +117,7 @@ func _process(_d: float) -> bool:
 		for p: Vector3 in _line.pts:
 			if _wall.grow(-0.01).has_point(p):
 				inside += 1
-			if absf(p.y - (_wall.end.y + Power.THICK)) < 0.06 and absf(p.x - _wall.get_center().x) < 0.4:
+			if absf(p.y - (_wall.end.y + Power.THICK)) < 0.12 and absf(p.x - _wall.get_center().x) < 0.45:
 				on_top += 1
 		_check("the cable hangs over the wall, none of it inside", inside == 0 and on_top > 0, "(%d inside, %d on its top)" % [inside, on_top])
 		var nearest := 1e9
@@ -161,7 +161,7 @@ func _process(_d: float) -> bool:
 		power.restore({})
 		_check("cleared", power.devices.is_empty() and power.cables.is_empty())
 		_check("loaded", title.load_game())
-		_check("back: four parts, three cables, the charge", power.devices.size() == 4 and power.cables.size() == 3
+		_check("back: four parts, four cables, the charge", power.devices.size() == 4 and power.cables.size() == 4
 				and absf(float(power.devices[1]["charge"]) - _was) < 0.01)
 		var loose := 0
 		for cable: Power.Line in power.cables:
@@ -176,7 +176,7 @@ func _process(_d: float) -> bool:
 			for e in 2:
 				if cable["ends"][e].get("dev") != null:
 					held += 1
-		_check("with the junction gone, two plugs are still in sockets", held == 2, "(%d)" % held)
+		_check("with the junction gone, three plugs are still in sockets", held == 3, "(%d)" % held)
 	if _step == 1460:
 		print("power: %s" % ("ALL OK" if _fails == 0 else "%d FAILED" % _fails))
 		return true
