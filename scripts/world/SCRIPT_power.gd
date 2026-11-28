@@ -757,6 +757,7 @@ func _step_cable(cable: Line, dt: float) -> float:
 	var others := _others(cable)
 	var floor_at := PackedFloat32Array()
 	floor_at.resize(n)
+	var touching := PackedInt32Array()
 	_phase = (_phase + 1) % 4
 	for round_i in 2:
 		for pass_i in (8 if round_i == 0 else 3):
@@ -791,6 +792,8 @@ func _step_cable(cable: Line, dt: float) -> float:
 					var on: Vector3 = (hit["position"] as Vector3) + (hit["normal"] as Vector3) * THICK
 					pts[i] = on
 					old[i] = old[i].lerp(on, 0.55)
+					touching.append(i)
+					was[i] = on
 			# ... and a length of cable with something between its two ends (a corner,
 			# an edge, a post) is pushed off it, so the cable goes round and pulls
 			# tight against it. (Half the lengths a step, each way in turn.)
@@ -802,8 +805,15 @@ func _step_cable(cable: Line, dt: float) -> float:
 					var push: Vector3 = (hit["normal"] as Vector3) * 0.035
 					pts[i] += push
 					pts[i + 1] += push
+		else:
+			# (What was put back on a face and has been pulled into it again by its
+			# neighbours since: back on the face.)
+			for i in touching:
+				var hit := _solid(was[i], pts[i])
+				if not hit.is_empty():
+					pts[i] = (hit["position"] as Vector3) + (hit["normal"] as Vector3) * THICK
 		# The other cables, and the ground: nothing of it goes under, and what lies
-		# on it drags.
+		# on it drags (and what is barely moving on it does not move at all).
 		for i in range(1, n - 1):
 			var p := pts[i]
 			if not others.is_empty():
@@ -811,6 +821,9 @@ func _step_cable(cable: Line, dt: float) -> float:
 			var g := floor_at[i]
 			if p.y < g:
 				p.y = g
+				if round_i == 1 and Vector2(p.x - was[i].x, p.z - was[i].z).length_squared() < 0.000012:
+					p.x = was[i].x
+					p.z = was[i].z
 				var before := old[i]
 				old[i] = Vector3(lerpf(before.x, p.x, 0.55), p.y, lerpf(before.z, p.z, 0.55))
 			pts[i] = p

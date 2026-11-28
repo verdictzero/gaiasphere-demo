@@ -92,12 +92,12 @@ func _process(_d: float) -> bool:
 			pts.append(p0.lerp(p1, t) + Vector3(0, 2.6 * sin(PI * t), 0))
 		_line.pts = pts
 		_line.old = pts.duplicate()
-	if _step == 200:
+	if _step == 450:
 		# A SECOND CABLE laid across the first one that set.
 		var sun: Power.Dev = power.devices[0]
 		var store: Power.Dev = power.devices[1]
 		_cross = _join(power, sun, 2, power.devices[2], 2)
-	if _step == 700:
+	if _step == 950:
 		var set_all := true
 		var under := 0
 		for cable: Power.Line in power.cables:
@@ -119,6 +119,9 @@ func _process(_d: float) -> bool:
 				inside += 1
 			if absf(p.y - (_wall.end.y + Power.THICK)) < 0.12 and absf(p.x - _wall.get_center().x) < 0.45:
 				on_top += 1
+		for p: Vector3 in _line.pts:
+			if absf(p.x - _wall.get_center().x) < 0.8:
+				print("power:   by the wall: %.2f across, %.2f above its top" % [p.x - _wall.get_center().x, p.y - _wall.end.y])
 		_check("the cable hangs over the wall, none of it inside", inside == 0 and on_top > 0, "(%d inside, %d on its top)" % [inside, on_top])
 		var nearest := 1e9
 		for cable: Power.Line in power.cables:
@@ -137,7 +140,7 @@ func _process(_d: float) -> bool:
 				power.devices[0]["net"] == power.devices[3]["net"]])
 		_was = float(battery["charge"])
 		enviro.set("hour", 0.5)
-	if _step == 820:
+	if _step == 1070:
 		var battery: Power.Dev = power.devices[1]
 		_check("night: the pole is lit from the battery", float(power.devices[3]["lit"]) > 0.99 and float(battery["charge"]) < _was,
 				"(%s, battery %s)" % [power.devices[3]["state"], battery["state"]])
@@ -145,15 +148,15 @@ func _process(_d: float) -> bool:
 		# The pole's cable pulled out at the pole and carried off.
 		power.call(&"_take_up", _line, 1)
 		_check("a plug in hand", power.carrying())
-	if _step == 860:
+	if _step == 1110:
 		_check("unplugged: the pole goes dark", float(power.devices[3]["lit"]) == 0.0, "(%s)" % power.devices[3]["state"])
 		ex.global_position += Vector3(0, 0, 14)
-	if _step == 1000:
+	if _step == 1250:
 		var pts: PackedVector3Array = _line["pts"]
 		_check("carried off: the cable has paid out", float(pts.size()) * Power.SEG > 12.0, "(%.1f m of cable, live %s)" % [float(pts.size()) * Power.SEG, _line["live"]])
 		power.drop()
 		_check("put down: nothing in hand", not power.carrying())
-	if _step == 1450:
+	if _step == 1700:
 		_check("the dropped cable has set", not bool(_line["live"]), "(age %.1f s, still %.1f s)" % [_line.age, _line.still])
 		var data := title.save_game()
 		_check("saved", data)
@@ -177,7 +180,7 @@ func _process(_d: float) -> bool:
 				if cable["ends"][e].get("dev") != null:
 					held += 1
 		_check("with the junction gone, three plugs are still in sockets", held == 3, "(%d)" % held)
-	if _step == 1460:
+	if _step == 1710:
 		print("power: %s" % ("ALL OK" if _fails == 0 else "%d FAILED" % _fails))
 		return true
 	return false
