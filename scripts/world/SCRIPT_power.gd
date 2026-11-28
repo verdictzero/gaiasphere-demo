@@ -105,7 +105,7 @@ class Dev extends RefCounted:
 	var glowing := true
 	var tilt: Node3D
 	var shaft: Node3D
-	var turn: Node3D              # the turret's riser and head
+	var turn: Node3D              # the turret's head (its riser stands still)
 	var sun := 1.0                # how much of the panel the sun reaches, 0..1
 
 
@@ -278,15 +278,17 @@ static func model(kind: String, plain := false) -> Node3D:
 		node.position = p[1]
 		body.add_child(node)
 	if kind == "laser_ciws":
-		# The riser and the head on it turn together about the upright.
+		# The riser stands on the base and does not move; ONLY THE HEAD on it turns,
+		# about the upright.
+		var riser := _piece("ciws_riser", false, plain)
+		riser.position = CIWS_RISER
+		body.add_child(riser)
 		var turn := Node3D.new()
 		turn.name = "Turn"
-		turn.position = CIWS_RISER
+		turn.position = CIWS_RISER + CIWS_HEAD
 		body.add_child(turn)
-		turn.add_child(_piece("ciws_riser", false, plain))
 		var head := _piece("ciws_emitter", true, plain)
 		head.name = "Head"
-		head.position = CIWS_HEAD
 		turn.add_child(head)
 	if kind == "solar_panel":
 		# AS THE PART IS LAYERED: the box; on it the SHAFT (the support), which turns
