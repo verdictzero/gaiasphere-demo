@@ -1366,11 +1366,23 @@ func tree_shade(from: Vector3, dir: Vector3, reach := 70.0) -> bool:
 	var flat := Vector2(dir.x, dir.z)
 	var d := flat.normalized() if flat.length() > 0.001 else Vector2.ZERO
 	var rise := dir.y / maxf(flat.length(), 0.001)        # metres up for a metre along
-	var span := int(ceil(reach / tile))
-	var at_tile := Vector2i(int(floor(from.x / tile)), int(floor(from.z / tile)))
-	for dz in range(-span, span + 1):
-		for dx in range(-span, span + 1):
-			var bufs: Variant = cache.get(at_tile + Vector2i(dx, dz))
+	# Only the tiles the line passes over (and those a crown's width to either
+	# side of it), and only as far as a tree could still be tall enough to reach it.
+	var highest := 0.0
+	for h in tall:
+		highest = maxf(highest, h * 1.6)
+	reach = minf(reach, highest / maxf(rise, 0.01))
+	var side := Vector2(-d.y, d.x) * 7.0
+	var tiles := {}
+	var along := 0.0
+	while along <= reach + tile * 0.5:
+		var mid := a + d * minf(along, reach)
+		for off: Vector2 in [Vector2.ZERO, side, -side]:
+			tiles[Vector2i(int(floor((mid.x + off.x) / tile)), int(floor((mid.y + off.y) / tile)))] = true
+		along += tile * 0.5
+	for key: Vector2i in tiles:
+		if true:
+			var bufs: Variant = cache.get(key)
 			if bufs == null:
 				continue
 			for k in kinds.size():
