@@ -10,6 +10,7 @@ extends SceneTree
 var _power: Power
 var _line: Power.Line
 var _step := 0
+var _cross: Power.Line
 var _wall := AABB(Vector3(-0.2, 0, -3), Vector3(0.4, 1.6, 6))
 
 
@@ -62,5 +63,31 @@ func _process(_d: float) -> bool:
 				print("drape:   %.2f across, %.2f up" % [p.x, p.y])
 		print("drape: %s  %d inside the wall, %d under the floor, %d on the wall's top, set %s (age %.1f)" % [
 				"ok" if inside == 0 and under == 0 and on_top > 0 else "FAIL", inside, under, on_top, not _line.live, _line.age])
+		# A SECOND CABLE let fall across the first where that lies on the floor.
+		_cross = _power.call(&"_new_cable")
+		_cross.ends[0] = {"at": Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(2.5, 0.1, -3))}
+		_cross.ends[1] = {"at": Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(2.5, 0.1, 3))}
+		var p0: Vector3 = _power.call(&"_end_point", _cross, 0)
+		var p1: Vector3 = _power.call(&"_end_point", _cross, 1)
+		var n := int(ceil((p0.distance_to(p1) + 1.0) / Power.SEG))
+		var pts := PackedVector3Array()
+		for i in n:
+			var t := float(i) / float(n - 1)
+			pts.append(p0.lerp(p1, t) + Vector3(0, 1.0 * sin(PI * t), 0))
+		_cross.pts = pts
+		_cross.old = pts.duplicate()
+	if _step == 960:
+		var nearest := 1e9
+		var top := 0.0
+		for p: Vector3 in _cross.pts:
+			for i in _line.pts.size() - 1:
+				var ab := _line.pts[i + 1] - _line.pts[i]
+				var t := clampf((p - _line.pts[i]).dot(ab) / ab.length_squared(), 0.0, 1.0)
+				nearest = minf(nearest, p.distance_to(_line.pts[i] + ab * t))
+			if absf(p.z) < 0.5:
+				top = maxf(top, p.y)
+				print("cross:   %.2f along, %.3f up" % [p.z, p.y])
+		print("cross: %s  nearest %.3f m to the cable under it (cables %.3f thick), highest %.3f over it, set %s (age %.1f)" % [
+				"ok" if nearest > Power.THICK * 1.8 and top > Power.THICK * 2.5 else "FAIL", nearest, Power.THICK * 2.0, top, not _cross.live, _cross.age])
 		return true
 	return false

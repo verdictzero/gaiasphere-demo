@@ -659,7 +659,9 @@ func _others(but: Line) -> Dictionary:
 	_other = {}
 	_other_of = but
 	_other_stamp = _stamp
-	var reach := Vector3.ONE * (THICK * 2.0)
+	# (Each filed a little wider than it is: it is asked for by the middle of a
+	# length of the other cable, whose ends reach half a length further.)
+	var reach := Vector3.ONE * (THICK * 2.0 + SEG * 0.5)
 	for cable: Line in cables:
 		if cable == but or cable.live:
 			continue
@@ -671,29 +673,30 @@ func _others(but: Line) -> Dictionary:
 				for y in range(int(lo.y), int(hi.y) + 1):
 					for z in range(int(lo.z), int(hi.z) + 1):
 						var key := Vector3i(x, y, z)
-						if not _other.has(key):
-							_other[key] = PackedVector3Array()
-						(_other[key] as PackedVector3Array).append_array([pts[i], pts[i + 1]])
+						var filed: PackedVector3Array = _other.get(key, PackedVector3Array())
+						filed.append(pts[i])
+						filed.append(pts[i + 1])
+						_other[key] = filed
 	return _other
 
 
-## A point kept off the other cables: out of any it is in, and that mostly upward,
-## so the one that comes later lies over the one that was there.
-func _off_cables(p: Vector3, others: Dictionary) -> Vector3:
-	var lengths: Variant = others.get(Vector3i((p / CELL).floor()))
+## A length of cable (from `p` to `q`) kept off the other cables: how its two ends
+## must move to be out of any it is in, and that mostly upward, so the one that
+## comes later lies over the one that was there.
+func _off_cables(p: Vector3, q: Vector3, others: Dictionary) -> Vector3:
+	var lengths: Variant = others.get(Vector3i(((p + q) * 0.5 / CELL).floor()))
 	if lengths == null:
-		return p
+		return Vector3.ZERO
 	var list: PackedVector3Array = lengths
+	var move := Vector3.ZERO
 	for k in range(0, list.size(), 2):
-		var a := list[k]
-		var ab := list[k + 1] - a
-		var t := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-8), 0.0, 1.0)
-		var away := p - (a + ab * t)
+		var near := Geometry3D.get_closest_points_between_segments(p + move, q + move, list[k], list[k + 1])
+		var away := near[0] - near[1]
 		var d := away.length()
 		if d < THICK * 2.0:
 			away = (away / d if d > 1e-4 else Vector3.UP) + Vector3.UP * 0.6
-			p += away.normalized() * (THICK * 2.0 - d)
-	return p
+			move += away.normalized() * (THICK * 2.0 - d)
+	return move
 
 
 ## The cable worked out for one step: a string of points each a fixed way from the
@@ -802,10 +805,16 @@ func _step_cable(cable: Line, dt: float) -> float:
 					pts[i] = (hit["position"] as Vector3) + (hit["normal"] as Vector3) * THICK
 		# The other cables, and the ground: nothing of it goes under, and what lies
 		# on it drags (and what is barely moving on it does not move at all).
+		if not others.is_empty():
+			for i in range(first - 1, last + 1):
+				var move := _off_cables(pts[i], pts[i + 1], others)
+				if move != Vector3.ZERO:
+					if i >= first:
+						pts[i] += move
+					if i + 1 <= last:
+						pts[i + 1] += move
 		for i in range(1, n - 1):
 			var p := pts[i]
-			if not others.is_empty():
-				p = _off_cables(p, others)
 			var g := floor_at[i]
 			if p.y < g:
 				p.y = g
