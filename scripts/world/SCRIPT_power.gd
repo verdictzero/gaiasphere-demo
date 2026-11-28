@@ -287,8 +287,8 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 		body.add_child(post)
 		var lamp := OmniLight3D.new()
 		lamp.position = Vector3(0, 2.068, 0) + LAMP_AT - Vector3(0, 0.9, 0)
-		lamp.omni_range = 34.0
-		lamp.omni_attenuation = 1.1
+		lamp.omni_range = 42.0
+		lamp.omni_attenuation = 0.7
 		lamp.light_color = Color(1.0, 0.93, 0.8)
 		lamp.light_energy = 0.0
 		lamp.shadow_enabled = false
@@ -850,8 +850,8 @@ func _show_power(delta: float) -> void:
 	for dev: Dev in devices:
 		if dev.lamp != null:
 			var lamp := dev["lamp"] as OmniLight3D
-			var to := float(dev["lit"]) * 7.0
-			lamp.light_energy = move_toward(lamp.light_energy, to, delta * 9.0)
+			var to := float(dev["lit"]) * 16.0
+			lamp.light_energy = move_toward(lamp.light_energy, to, delta * 20.0)
 			lamp.visible = lamp.light_energy > 0.01
 			_set_glow(dev, lamp.light_energy > 0.5)
 		elif dev.tilt != null:
