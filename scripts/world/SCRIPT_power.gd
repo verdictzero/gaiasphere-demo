@@ -54,6 +54,8 @@ extends Node3D
 @export var lamp_draw := 1.0
 ## What a turret draws, armed, day and night.
 @export var ciws_draw := 2.0
+## How near a part its meters come up.
+@export var meter_reach := 5.0
 ## Nights of one light that a full battery holds.
 @export var battery_nights := 2.0
 
@@ -107,6 +109,7 @@ class Dev extends RefCounted:
 	var shaft: Node3D
 	var turn: Node3D              # the turret's head (its riser stands still)
 	var sun := 1.0                # how much of the panel the sun reaches, 0..1
+	var flow := 0.0               # what it is giving the circuit now (taking from it, if under 0)
 
 
 ## A cable: its two ends (each {"dev", "socket"}, or {"hand"}, or {"at"} lying
@@ -144,6 +147,10 @@ var _tick := 0.0
 var _dark_lamp := {}              # a lit material -> the same with its glow off
 var _step_left := 0.0
 var _sun_wait := 0.0
+var _plug_ghost: MeshInstance3D
+var _meters: Control
+var _meter_dev: Dev
+var _nets := {}                   # each circuit's sums, by its number: see `_circuits`
 var _sun_turn := 0
 var _ghost_sun := 1.0             # the share of sun where the panel in hand would stand
 var _ghost_sun_wait := 0.0
@@ -183,6 +190,11 @@ func _ready() -> void:
 	_hint.offset_right = 500.0
 	_hint.visible = false
 	layer.add_child(_hint)
+	_meters = Control.new()
+	_meters.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_meters.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_meters.draw.connect(_draw_meters)
+	layer.add_child(_meters)
 
 
 func _menus() -> bool:
@@ -395,7 +407,10 @@ func set_down(kind: String, at: Transform3D, charge := 0.0) -> Dev:
 	devices.append(dev)
 	for grower in [get_node_or_null(^"../Flora"), get_node_or_null(^"../BerryBushes")]:
 		if grower != null:
-			grower.call(&"clear_ground", at, Vector2(0.9, 0.9))
+			# (Nothing grows under a part or within a good step of it: the grass and
+			# ferns would stand up through it and hide its sockets and its cables.)
+			var bare := Vector2((box[0] as Vector3).x, (box[0] as Vector3).z) * 0.5 + Vector2(1.1, 1.1)
+			grower.call(&"clear_ground", at, bare if kind != "solar_panel" else Vector2(2.0, 2.0))
 	_tick = 0.0
 	return dev
 
@@ -601,8 +616,122 @@ func _new_cable() -> Line:
 func _plug(cable: Line, e: int, dev: Dev, socket: int) -> void:
 	cable["ends"][e] = {"dev": dev, "socket": socket}
 	dev["sockets"][socket]["cable"] = cable
+	_lead_round(cable, e)
 	_wake(cable)
 	_tick = 0.0
+
+
+## A CABLE DOES NOT GO THROUGH THE PART IT IS PLUGGED INTO. The moment an end
+## goes into a socket, the cable's last stretch is in the wrong place (it ran to
+## the hand, which may have been the other side of the part, and the socket may
+## face away from where the cable comes from). So that stretch is laid again:
+## straight out of the socket a little way, then ROUND the part's box by
+## whichever way is shorter, to where the cable was already clear of it. From
+## there on it is worked out as ever, and being outside the box to begin with it
+## stays outside, pulling tight round the corners.
+func _lead_round(cable: Line, e: int) -> void:
+	var end: Dictionary = cable.ends[e]
+	var dev := end.get("dev") as Dev
+	if dev == null or cable.pts.size() < 5:
+		return
+	var seq := cable.pts.duplicate()
+	if e == 1:
+		seq.reverse()
+	var frame := dev.node.global_transform
+	var to_local := frame.affine_inverse()
+	var box: Array = KINDS[dev.kind]["box"]
+	var half := Vector2((box[0] as Vector3).x, (box[0] as Vector3).z) * 0.5 + Vector2(0.24, 0.24)
+	var out_frame := _socket_world(dev, int(end["socket"]))
+	var exit := out_frame.origin + out_frame.basis.x * PLUG_OUT
+	var lead := exit + out_frame.basis.x * SEG
+	# Where the cable is first well clear of the part.
+	var j := seq.size() - 1
+	for i in range(2, seq.size()):
+		var l := to_local * seq[i]
+		if absf(l.x) > half.x + 0.5 or absf(l.z) > half.y + 0.5:
+			j = i
+			break
+	var a3 := to_local * seq[j]
+	var l3 := to_local * lead
+	var a := Vector2(a3.x, a3.z)
+	var l := Vector2(l3.x, l3.z)
+	var path: Array = [l]
+	if _crosses(l, a, half):
+		# Round by the corners, one way and the other; the shorter.
+		var corners: Array = []
+		for c: Vector2 in [Vector2(1, 1), Vector2(-1, 1), Vector2(-1, -1), Vector2(1, -1)]:
+			corners.append(c * (half + Vector2(0.1, 0.1)))
+		var best: Array = []
+		var best_len := 1e9
+		for way: int in [1, -1]:
+			var route: Array = [l]
+			var from := l.angle()
+			var sweep := fposmod((a.angle() - from) * float(way), TAU)
+			var between: Array = []
+			for c: Vector2 in corners:
+				var at := fposmod((c.angle() - from) * float(way), TAU)
+				if at < sweep:
+					between.append([at, c])
+			between.sort_custom(func(p: Array, q: Array) -> bool: return float(p[0]) < float(q[0]))
+			for b: Array in between:
+				route.append(b[1])
+			var length := 0.0
+			route.append(a)
+			for i in route.size() - 1:
+				length += (route[i] as Vector2).distance_to(route[i + 1])
+			route.pop_back()
+			if length < best_len:
+				best_len = length
+				best = route
+		path = best
+	# The new stretch, a point every SEG along it, falling evenly from the socket's
+	# height to the cable's (the ground will take it from there).
+	var line: Array = []
+	for p2: Vector2 in path:
+		line.append(frame * Vector3(p2.x, 0.0, p2.y))
+	line.append(seq[j])
+	var total := 0.0
+	for i in line.size() - 1:
+		total += Vector2((line[i] as Vector3).x - (line[i + 1] as Vector3).x, (line[i] as Vector3).z - (line[i + 1] as Vector3).z).length()
+	var fresh := PackedVector3Array([exit])
+	var count := maxi(int(ceil(total / SEG)), 1)
+	for k in count:
+		var want := total * float(k) / float(count)
+		var gone := 0.0
+		for i in line.size() - 1:
+			var p0: Vector3 = line[i]
+			var p1: Vector3 = line[i + 1]
+			var step := Vector2(p0.x - p1.x, p0.z - p1.z).length()
+			if want <= gone + step or i == line.size() - 2:
+				var at := p0.lerp(p1, clampf((want - gone) / maxf(step, 1e-4), 0.0, 1.0))
+				at.y = maxf(lerpf(lead.y, seq[j].y, want / maxf(total, 1e-4)), _ground(at) + THICK)
+				fresh.append(at)
+				break
+			gone += step
+	for i in range(j, seq.size()):
+		fresh.append(seq[i])
+	if e == 1:
+		fresh.reverse()
+	cable.pts = fresh
+	cable.old = fresh.duplicate()
+
+
+## Does the line from `a` to `b` pass through the rectangle of half-size `half`
+## about the origin? (Both points being outside it.)
+static func _crosses(a: Vector2, b: Vector2, half: Vector2) -> bool:
+	var t0 := 0.0
+	var t1 := 1.0
+	var d := b - a
+	for axis in 2:
+		if absf(d[axis]) < 1e-6:
+			if absf(a[axis]) >= half[axis]:
+				return false
+			continue
+		var near := (-half[axis] - a[axis]) / d[axis]
+		var far := (half[axis] - a[axis]) / d[axis]
+		t0 = maxf(t0, minf(near, far))
+		t1 = minf(t1, maxf(near, far))
+	return t0 < t1
 
 
 func _unplug(cable: Line, e: int) -> void:
@@ -627,6 +756,14 @@ func _take_up(cable: Line, e: int) -> void:
 func drop() -> void:
 	if not carrying():
 		return
+	_carry["ends"][_carry_end] = {"at": _drop_pose()}
+	_wake(_carry)
+	_carry = null
+	_carry_end = -1
+
+
+## Where the plug in hand would lie if it were put down now.
+func _drop_pose() -> Transform3D:
 	var at := (_carry["plugs"][_carry_end] as Node3D).global_transform
 	var foot := at.origin
 	if _explorer != null:
@@ -644,10 +781,7 @@ func drop() -> void:
 		back = pts[2 if _carry_end == 0 else pts.size() - 3] - foot
 	back.y = 0.0
 	back = back.normalized() if back.length() > 0.01 else Vector3.FORWARD
-	_carry["ends"][_carry_end] = {"at": Transform3D(Basis(back, Vector3.UP, back.cross(Vector3.UP)), foot)}
-	_wake(_carry)
-	_carry = null
-	_carry_end = -1
+	return Transform3D(Basis(back, Vector3.UP, back.cross(Vector3.UP)), foot)
 
 
 ## The whole cable back into the bag.
@@ -1074,6 +1208,7 @@ func _circuits(dt: float) -> void:
 			d1.net = low
 			changed = true
 	var nets := {}
+	_nets.clear()
 	for dev: Dev in devices:
 		if not nets.has(dev["net"]):
 			nets[dev["net"]] = []
@@ -1088,10 +1223,13 @@ func _circuits(dt: float) -> void:
 		var batteries: Array = []
 		var lamps: Array = []
 		var turrets: Array = []
+		var panels := 0
 		for dev: Dev in nets[key]:
 			match String(dev["kind"]):
 				"solar_panel":
+					panels += 1
 					made += solar_power * sun * dev.sun
+					dev.flow = solar_power * sun * dev.sun
 					dev["state"] = "no sun" if sun <= 0.02 else ("%.1f kW%s" % [solar_power * sun * dev.sun,
 							"" if dev.sun > 0.99 else ("   ·   all in shade" if dev.sun < 0.01 else "   ·   %d%% in shade" % int(round((1.0 - dev.sun) * 100.0)))])
 				"battery":
@@ -1106,10 +1244,14 @@ func _circuits(dt: float) -> void:
 					turrets.append(dev)
 					wanted += ciws_draw
 				"junction":
-					dev["state"] = "%d of 4 in use" % _in_use(dev)
+					dev["state"] = "%d of %d in use" % [_in_use(dev), dev.sockets.size()]
 		var can := made + stored / maxf(dt, 1e-4)
 		var share := clampf(can / wanted, 0.0, 1.0) if wanted > 0.0 else 0.0
 		var flow := (made - wanted * share) * dt          # into the batteries (out of them, if under 0)
+		for b: Dev in batteries:
+			b.flow = 0.0
+		_nets[key] = {"made": made, "made_max": solar_power * float(panels), "wanted": wanted, "served": wanted * share,
+			"stored": stored, "room": full * float(batteries.size()), "parts": (nets[key] as Array).size()}
 		if not batteries.is_empty():
 			# Shared between them, as each has room (or has any).
 			for round_i in 3:
@@ -1123,15 +1265,18 @@ func _circuits(dt: float) -> void:
 				for b: Dev in open:
 					var to := clampf(float(b["charge"]) + each, 0.0, full)
 					flow -= to - float(b["charge"])
+					b.flow -= (to - b.charge) / maxf(dt, 1e-4)
 					b["charge"] = to
 			for b: Dev in batteries:
 				var rate := made - wanted * share
 				b["state"] = "%d%%%s" % [int(round(float(b["charge"]) / full * 100.0)),
 						"  charging" if rate > 0.01 and float(b["charge"]) < full else ("  in use" if rate < -0.01 else "")]
 		for turret: Dev in turrets:
+			turret.flow = -ciws_draw * share
 			turret.lit = share
 			turret.state = "armed" if share > 0.99 else ("short of power" if share > 0.01 else "no power")
 		for lamp: Dev in lamps:
+			lamp.flow = -lamp_draw * share if dark else 0.0
 			lamp["lit"] = share if dark else 0.0
 			lamp["state"] = ("lit" if share > 0.99 else ("dim: short of power" if share > 0.01 else "no power")) if dark \
 					else ("waiting for dark" if (made > 0.0 or stored > 0.0) else "no power")
@@ -1232,6 +1377,10 @@ func _process(delta: float) -> void:
 	_look_at_sun(delta)
 	_place()
 	_say()
+	var metered := _metered()
+	if metered != _meter_dev or metered != null:
+		_meter_dev = metered
+		_meters.queue_redraw()
 
 
 ## The part in hand: shown where it would go, and set down on the use button.
@@ -1296,6 +1445,15 @@ func _say() -> void:
 				text = "TAKE THE PLUG"
 			"drop":
 				text = "PUT THE PLUG DOWN   ·   TURN: COIL THE CABLE UP"
+		# THE GHOST OF THE PLUG, where using would put it: in the socket looked at,
+		# or on the ground.
+		match String(plan.get("do", "")):
+			"start", "plug":
+				_show_ghost_plug(_socket_world(plan["dev"] as Dev, int(plan["socket"])))
+			"drop":
+				_show_ghost_plug(_drop_pose())
+			_:
+				_show_ghost_plug(Transform3D.IDENTITY, false)
 		if text == "" or String(plan.get("do", "")) in ["start", "plug"]:
 			var hit := _ray(from, dir, plug_reach + 4.0)
 			var dev: Dev = _device_of(hit["collider"]) if not hit.is_empty() else null
@@ -1309,8 +1467,129 @@ func _say() -> void:
 			_ghost_sun_wait = 0.3
 			_ghost_sun = sun_share(_plan["at"])
 		text = "NO SUN NOW" if _daylight() <= 0.02 else "SOLAR EFFICIENCY: %d%%" % int(round(_ghost_sun * 100.0))
+	if cam == null or _menus():
+		_show_ghost_plug(Transform3D.IDENTITY, false)
 	_hint.text = text
 	_hint.visible = text != ""
+
+
+func _show_ghost_plug(at: Transform3D, shown := true) -> void:
+	if not shown:
+		if _plug_ghost != null:
+			_plug_ghost.visible = false
+		return
+	if _plug_ghost == null:
+		_plug_ghost = MeshInstance3D.new()
+		_plug_ghost.mesh = PowerKit.lods("plug_end")[0]
+		_plug_ghost.material_override = _ghost_ok
+		_plug_ghost.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_plug_ghost)
+	_plug_ghost.visible = true
+	_plug_ghost.global_transform = at.scaled_local(Vector3.ONE * SCALE)
+
+
+# ------------------------------------------------------------------ the meters
+
+## THE METERS: within a few steps of a part (the one looked at, else the nearest),
+## a small panel at the side of the screen. What THIS PART is doing (a panel's
+## supply against the most it can make, a light's or a turret's load against what
+## it wants, a battery's charge and whether it is filling or emptying) and what
+## its whole CIRCUIT is doing: supply, load (what is served of what is wanted)
+## and what is stored.
+func _metered() -> Dev:
+	if _explorer == null or _menus() or devices.is_empty():
+		return null
+	var cam := get_viewport().get_camera_3d()
+	if cam != null:
+		var hit := _ray(cam.global_position, -cam.global_basis.z, meter_reach + 3.0)
+		if not hit.is_empty():
+			var looked := _device_of(hit["collider"])
+			if looked != null:
+				return looked
+	var best: Dev = null
+	var nearest := meter_reach
+	for dev: Dev in devices:
+		var d := Vector2(dev.node.global_position.x - _explorer.global_position.x, dev.node.global_position.z - _explorer.global_position.z).length()
+		if d < nearest and absf(dev.node.global_position.y - _explorer.global_position.y) < 6.0:
+			nearest = d
+			best = dev
+	return best
+
+
+func _draw_meters() -> void:
+	var dev := _meter_dev
+	if dev == null or not devices.has(dev):
+		return
+	var k := UiFit.scale(_meters.size)
+	var font := _hint.get_theme_font(&"font")
+	var info: Dictionary = _nets.get(dev.net, {})
+	var w := 330.0 * k
+	var rows: Array = []         # [label, text, share 0..1 or -1 for none, colour]
+	var green := Color(0.45, 0.85, 0.5)
+	var amber := Color(1.0, 0.72, 0.3)
+	var blue := Color(0.45, 0.75, 1.0)
+	var red := Color(1.0, 0.42, 0.38)
+	match dev.kind:
+		"solar_panel":
+			rows.append(["SUPPLY", "%.1f of %.1f kW" % [dev.flow, solar_power], dev.flow / solar_power, green])
+			rows.append(["IN SUN", "%d%%" % int(round(dev.sun * 100.0)), dev.sun, green])
+		"battery":
+			rows.append(["CHARGE", "%d%%" % int(round(dev.charge / capacity() * 100.0)), dev.charge / capacity(), blue])
+			rows.append(["GIVING" if dev.flow > 0.005 else ("TAKING" if dev.flow < -0.005 else "IDLE"), "%.1f kW" % absf(dev.flow), -1.0, blue])
+		"light_pole", "laser_ciws":
+			var want := lamp_draw if dev.kind == "light_pole" else ciws_draw
+			rows.append(["LOAD", "%.1f of %.1f kW" % [-dev.flow, want], -dev.flow / want, amber if -dev.flow > want * 0.99 or dev.flow == 0.0 else red])
+			rows.append(["STATE", dev.state.to_upper(), -1.0, amber])
+		"junction":
+			rows.append(["PORTS", "%d of %d in use" % [_in_use(dev), dev.sockets.size()], float(_in_use(dev)) / float(dev.sockets.size()), blue])
+	var system: Array = []
+	if not info.is_empty():
+		system.append(["SUPPLY", "%.1f of %.1f kW" % [info["made"], info["made_max"]], float(info["made"]) / maxf(float(info["made_max"]), 0.001) if float(info["made_max"]) > 0.0 else 0.0, green])
+		var short: bool = float(info["served"]) < float(info["wanted"]) - 0.01
+		system.append(["LOAD", "%.1f of %.1f kW" % [info["served"], info["wanted"]], float(info["served"]) / maxf(float(info["wanted"]), 0.001) if float(info["wanted"]) > 0.0 else 0.0, red if short else amber])
+		if float(info["room"]) > 0.0:
+			system.append(["STORED", "%d%%" % int(round(float(info["stored"]) / float(info["room"]) * 100.0)), float(info["stored"]) / float(info["room"]), blue])
+		else:
+			system.append(["STORED", "NO BATTERY", -1.0, blue])
+	var row_h := 40.0 * k
+	var tall := (58.0 + float(rows.size()) * 40.0 + 44.0 + float(system.size()) * 40.0 + 14.0) * k
+	var edge := UiFit.insets(_meters.size)
+	var at := Vector2(_meters.size.x - edge.z - 24.0 * k - w, (_meters.size.y - tall) * 0.5)
+	var back := StyleBoxFlat.new()
+	back.bg_color = Color(0.075, 0.085, 0.1, 0.86)
+	back.set_corner_radius_all(int(18.0 * k))
+	back.set_border_width_all(maxi(1, int(1.5 * k)))
+	back.border_color = Color(1, 1, 1, 0.14)
+	back.anti_aliasing = true
+	_meters.draw_style_box(back, Rect2(at, Vector2(w, tall)))
+	var ink := Color(0.93, 0.95, 0.97)
+	_meters.draw_string(font, at + Vector2(18.0, 36.0) * k, String(KINDS[dev.kind]["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(22.0 * k), ink)
+	var y := at.y + 58.0 * k
+	for group: Array in [rows, system]:
+		if group == system:
+			_meters.draw_string(font, Vector2(at.x + 18.0 * k, y + 26.0 * k), "CIRCUIT   ·   %d PARTS" % int(info.get("parts", 1)),
+					HORIZONTAL_ALIGNMENT_LEFT, -1, int(17.0 * k), Color(ink.r, ink.g, ink.b, 0.55))
+			y += 44.0 * k
+		for row: Array in group:
+			_meters.draw_string(font, Vector2(at.x + 18.0 * k, y + 15.0 * k), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(16.0 * k), Color(ink.r, ink.g, ink.b, 0.6))
+			var text := String(row[1])
+			var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(17.0 * k)).x
+			_meters.draw_string(font, Vector2(at.x + w - 18.0 * k - tw, y + 15.0 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(17.0 * k), ink)
+			if float(row[2]) >= 0.0:
+				var bar := Rect2(Vector2(at.x + 18.0 * k, y + 22.0 * k), Vector2(w - 36.0 * k, 9.0 * k))
+				var track := StyleBoxFlat.new()
+				track.bg_color = Color(1, 1, 1, 0.1)
+				track.set_corner_radius_all(int(4.5 * k))
+				track.anti_aliasing = true
+				_meters.draw_style_box(track, bar)
+				var share := clampf(float(row[2]), 0.0, 1.0)
+				if share > 0.01:
+					var fill := StyleBoxFlat.new()
+					fill.bg_color = row[3]
+					fill.set_corner_radius_all(int(4.5 * k))
+					fill.anti_aliasing = true
+					_meters.draw_style_box(fill, Rect2(bar.position, Vector2(maxf(bar.size.x * share, 9.0 * k), bar.size.y)))
+			y += row_h
 
 
 # ------------------------------------------------------------------ saving
