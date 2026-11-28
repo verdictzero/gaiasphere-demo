@@ -828,6 +828,10 @@ func _step_cable(cable: Line, dt: float) -> float:
 			var hit := _solid(pts[i], pts[i + 1])
 			if hit.is_empty():
 				continue
+			# (Not the ground: a cable lying on it is kept up by the island's own
+			# height, which the ground's coarser collision can stand a little proud of.)
+			if _world != null and hit["collider"] is Node and _world.is_ancestor_of(hit["collider"] as Node):
+				continue
 			held_back = true
 			for k: int in [i, i + 1]:
 				if k > lo and k < hi:
