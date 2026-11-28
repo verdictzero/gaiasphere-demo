@@ -586,7 +586,7 @@ func _end_frame(cable: Line, e: int) -> Transform3D:
 		if cam != null:
 			# In the right hand, prongs forward, the cable out behind and down.
 			var b := cam.global_basis
-			return Transform3D(Basis(b.z, b.y, -b.x), cam.global_position + b.x * 0.42 - b.y * 0.36 - b.z * 0.95)
+			return Transform3D(Basis(b.z, b.y, -b.x), cam.global_position + b.x * 0.62 - b.y * 0.5 - b.z * 1.25)
 	return end.get("at", Transform3D.IDENTITY)
 
 

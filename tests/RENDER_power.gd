@@ -63,7 +63,9 @@ func _process(_d: float) -> bool:
 			enviro.advance = false
 			enviro.hour = 14.0
 			enviro.set_weather("clear", 0.0)
-			_spot = ex.global_position
+			# (The start is at the wreck, under the mere: by the truck, on the meadow.)
+			_spot = (_scene.get_node("UniTruck").get("body") as Node3D).global_position + Vector3(14, 0, 6)
+			ex.global_position = _spot + Vector3(0, 3, 0)
 			ex.set("flying", true)
 			_cam = Camera3D.new()
 			_cam.far = 6000.0
@@ -81,7 +83,7 @@ func _process(_d: float) -> bool:
 			_n = 0
 		return false
 	_n += 1
-	if _n < 200:
+	if _n < 260:
 		return false
 	_n = 0
 	var names := ["power_day", "power_cable", "power_night", "power_carry"]
