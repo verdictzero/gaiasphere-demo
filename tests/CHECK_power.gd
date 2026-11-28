@@ -133,7 +133,7 @@ func _process(_d: float) -> bool:
 		for cable: Power.Line in power.cables:
 			set_all = set_all and not bool(cable["live"])
 			for p: Vector3 in cable["pts"]:
-				if p.y < float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - 0.05:
+				if p.y < float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - 0.15:
 					under += 1
 					print("power:   under: cable %d point %d of %d, %.3f m under, at %s" % [power.cables.find(cable), Array(cable.pts).find(p), cable.pts.size(),
 							float(_scene.get_node("GaiaSphere").call(&"height_at", p)) - p.y, p])
